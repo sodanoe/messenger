@@ -47,3 +47,4 @@ venv.bak/
 htmlcov/
 .coverage.*
 .pre-commit-config.yaml
+/.venv/
