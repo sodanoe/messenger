@@ -1,19 +1,14 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
-from .config import settings
+from src.app.config import settings
+from src.app.models import Base
 
-# Создаем движок базы данных
-engine = create_engine(settings.DATABASE_URL)
+SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
-# Создаем фабрику сессий
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Базовый класс для моделей
-Base = declarative_base()
 
-
-# Dependency для получения сессии БД
 def get_db():
     db = SessionLocal()
     try:
@@ -22,6 +17,17 @@ def get_db():
         db.close()
 
 
-# Функция для создания всех таблиц
 def create_tables():
-    Base.metadata.create_all(bind=engine)
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+    all_tables = Base.metadata.tables.keys()
+    created_tables = []
+
+    for table_name in all_tables:
+        if table_name not in existing_tables:
+            Base.metadata.create_all(
+                bind=engine, tables=[Base.metadata.tables[table_name]]
+            )
+            created_tables.append(table_name)
+
+    return created_tables
