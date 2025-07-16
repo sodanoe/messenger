@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test - Messenger (Fixed)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #f0f8ff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .messages {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #f9f9f9;
+            font-family: monospace;
+        }
+        .message { margin: 5px 0; }
+        .status { font-weight: bold; }
+        .user-button {
+            display: block;
+            margin: 5px 0;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: left;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .user-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3>Онлайн пользователи</h3>
+        <div id="userList"></div>
+        <button onclick="getOnlineUsers()">🔄 Обновить</button>
+    </div>
+    <div class="main">
+        <div class="container">
+            <h2>WebSocket Chat</h2>
+            <input id="token" placeholder="JWT Token" style="width: 300px;">
+            <button onclick="connect()">Подключиться</button>
+            <button onclick="disconnect()">Отключиться</button>
+            <br>
+            <input id="chatId" placeholder="Chat ID">
+            <button onclick="subscribeToChat()">Подписаться</button>
+            <button onclick="unsubscribeFromChat()">Отписаться</button>
+            <br>
+            <div class="messages" id="messages"></div>
+            <input id="messageText" placeholder="Сообщение" style="width: 70%;">
+            <button onclick="sendPing()">Ping</button>
+            <button onclick="clearMessages()">Очистить</button>
+        </div>
+    </div>
+    <script>
+        let ws = null;
+        let pingTime = 0;
+
+        function connect() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) return alert('Введите токен!');
+            ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${token}`);
+            ws.onopen = () => addMessage('✅ Подключено к серверу');
+            ws.onmessage = (event) => handleMessage(JSON.parse(event.data));
+            ws.onclose = (e) => addMessage('❌ Соединение закрыто: ' + e.reason);
+            ws.onerror = () => addMessage('❌ Ошибка WebSocket');
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                addMessage('🔌 Отключено');
+            }
+        }
+
+        function sendPing() {
+            if (!ws) return;
+            pingTime = Date.now();
+            ws.send(JSON.stringify({ type: 'ping' }));
+        }
+
+        function subscribeToChat() {
+            const chatId = parseInt(document.getElementById('chatId').value);
+            if (ws && chatId) {
+                ws.send(JSON.stringify({ type: 'subscribe_chat', chat_id: chatId }));
+                addMessage(`🟢 Подписан на чат ${chatId}`);
+            }
+        }
+
+        function unsubscribeFromChat() {
+            const chatId = parseInt(document.getElementById('chatId').value);
+            if (ws && chatId) {
+                ws.send(JSON.stringify({ type: 'unsubscribe_chat', chat_id: chatId }));
+                addMessage(`🔴 Отписан от чата ${chatId}`);
+            }
+        }
+
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('messages').appendChild(div);
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function handleMessage(data) {
+            if (data.type === 'pong') {
+                const latency = Date.now() - pingTime;
+                addMessage(`🏓 Pong (${latency}ms)`);
+            } else if (data.type === 'private_message') {
+                addMessage(`📥 Личное сообщение от ${data.from_user_id}: ${data.text}`);
+            } else {
+                addMessage(`📦 ${JSON.stringify(data)}`);
+            }
+        }
+
+        function getOnlineUsers() {
+            fetch('http://127.0.0.1:8000/ws/online-users')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('userList');
+                    container.innerHTML = '';
+                    data.online_users.forEach(user => {
+                        const btn = document.createElement('button');
+                        btn.className = 'user-button';
+                        btn.textContent = `👤 ${user.username} (id: ${user.id})`;
+                        btn.onclick = () => sendPrivateMessage(user.id);
+                        container.appendChild(btn);
+                    });
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка fetch:', error);
+                    addMessage(`❌ Ошибка получения онлайн: ${error.message}`);
+                });
+        }
+
+
+        function sendPrivateMessage(userId) {
+            const text = prompt(`Введите сообщение для пользователя ${userId}:`);
+            if (text && ws) {
+                ws.send(JSON.stringify({
+                    type: 'private_message',
+                    to_user_id: userId,
+                    text: text
+                }));
+                addMessage(`📤 Отправлено пользователю ${userId}: ${text}`);
+            }
+        }
+    </script>
+</body>
+</html>

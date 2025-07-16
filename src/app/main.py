@@ -4,6 +4,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from src.app.database import get_db, create_tables
 from src.app.config import settings
+from src.app.user_routes import router as user_router
+from src.app.chat_routes import router as chat_router
+from src.app.message_routes import router as message_router
+from src.app.websocket_routes import router as websocket_router
+from fastapi.middleware.cors import CORSMiddleware
 import time
 import logging
 import sys
@@ -48,6 +53,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Подключение роутов
+app.include_router(user_router)
+app.include_router(chat_router)
+app.include_router(message_router)
+app.include_router(websocket_router)
+
 
 @app.get("/")
 async def root():
@@ -56,6 +75,14 @@ async def root():
         "message": "Messenger API is running!",
         "version": settings.VERSION,
         "project": settings.PROJECT_NAME,
+        "endpoints": {
+            "auth": "/auth",
+            "chats": "/chats",
+            "messages": "/messages",
+            "websocket": "/ws",
+            "docs": "/docs",
+            "health": "/health",
+        },
     }
 
 
@@ -64,7 +91,7 @@ async def health_check(db: Session = Depends(get_db)):
     """Проверка здоровья приложения и подключения к БД"""
     try:
         db.execute(text("SELECT 1"))
-        db.commit()  # Убедимся, что транзакция закрыта
+        db.commit()
         return {
             "status": "healthy",
             "database": "connected",
@@ -108,8 +135,7 @@ async def db_status(db: Session = Depends(get_db)):
             "extra_tables": extra_tables,
             "database_url": settings.DATABASE_URL.split("@")[1]
             if "@" in settings.DATABASE_URL
-            else "hidden"
-            # Скрываем пароль
+            else "hidden",
         }
     except Exception as e:
         logger.error(f"DB status check failed: {e}")
@@ -132,7 +158,7 @@ async def internal_server_error_handler(request, exc):
     }
 
 
-# Middleware для логирования запросов (опционально)
+# Middleware для логирования запросов
 @app.middleware("http")
 async def log_requests(request, call_next):
     start_time = time.time()
@@ -141,7 +167,8 @@ async def log_requests(request, call_next):
 
     process_time = time.time() - start_time
     logger.info(
-        f"{request.method}{request.url}-{response.status_code}- {process_time: .3f}s"
+        f"{request.method} {request.url} - {response.status_code} "
+        f"- {process_time: .3f}s"
     )
 
     return response
