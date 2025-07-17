@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import List
-from src.app.database import get_db
+from src.app.core.database.database import get_db
 from src.app.models import User, Chat, Message, ChatMember
 from src.app.schemas import MessageCreate, MessageResponse
-from src.app.auth import get_current_active_user
-from src.app.websocket_manager import manager
+from src.app.routers.auth import get_current_active_user
+from src.app.core.websocket import manager
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 

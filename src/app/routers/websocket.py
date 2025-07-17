@@ -9,10 +9,10 @@ from fastapi import (
 from sqlalchemy.orm import Session
 import json
 import logging
-from src.app.database import get_db
+from src.app.core.database.database import get_db
 from src.app.models import User, ChatMember
-from src.app.websocket_manager import manager, handle_websocket_message
-from src.app.auth import verify_token
+from src.app.core.websocket import manager, handle_websocket_message
+from src.app.routers.auth import verify_token
 
 logger = logging.getLogger(__name__)
 
