@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 
-from src.app.schemas import UserResponse
+from src.app.schemas.users import UserResponse
 
 
 # Схемы для сообщений

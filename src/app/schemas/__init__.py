@@ -1,6 +1,6 @@
-from auth import Token, TokenData
-from chats import ChatBase, ChatResponse, ChatCreate, ChatWithMessages, ChatWithMembers
-from common import (
+from .auth import Token, TokenData
+from .chats import ChatBase, ChatResponse, ChatCreate, ChatWithMessages, ChatWithMembers
+from .common import (
     PaginatedResponse,
     PaginationParams,
     PrivateChatCreate,
@@ -8,15 +8,14 @@ from common import (
     ChatStats,
     ErrorResponse,
 )
-from members import InviteUserRequest, ChatMemberBase, ChatMemberResponse
-from messages import (
+from .members import InviteUserRequest, ChatMemberBase, ChatMemberResponse
+from .messages import (
     MessageWithAuthor,
     MessageBase,
     MessageEdit,
     MessageCreate,
-    MessageResponse,
 )
-from users import UserResponse, UserBase, UserStats, UserLogin, UserCreate
+from .users import UserBase, UserStats, UserLogin, UserCreate
 
 __all__ = [
     # Auth

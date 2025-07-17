@@ -4,7 +4,8 @@ from sqlalchemy import and_
 from typing import List
 from src.app.core.database.database import get_db
 from src.app.models import User, Chat, Message, ChatMember
-from src.app.schemas import MessageCreate, MessageResponse
+from src.app.schemas import MessageCreate
+from src.app.schemas.messages import MessageResponse
 from src.app.routers.auth import get_current_active_user
 from src.app.core.websocket import manager
 

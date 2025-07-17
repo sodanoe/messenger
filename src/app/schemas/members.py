@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from src.app.schemas import UserResponse
+from src.app.schemas.users import UserResponse
 
 
 # Схемы для приглашения пользователя

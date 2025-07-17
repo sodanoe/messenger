@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
-from src.app.schemas import UserResponse, MessageResponse
+from src.app.schemas.users import UserResponse
+from src.app.schemas.messages import MessageResponse
 
 
 # Схемы для чатов

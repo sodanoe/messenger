@@ -4,7 +4,8 @@ from sqlalchemy import and_
 from typing import List
 from src.app.core.database.database import get_db
 from src.app.models import User, Chat, ChatMember
-from src.app.schemas import ChatCreate, ChatResponse, UserResponse
+from src.app.schemas import ChatCreate, ChatResponse
+from src.app.schemas.users import UserResponse
 from src.app.routers.auth import get_current_active_user
 
 router = APIRouter(prefix="/chats", tags=["Chats"])
