@@ -1,14 +1,14 @@
 # messenger-backend
 
-Self-hosted ICQ-style messenger. FastAPI + PostgreSQL + Redis + WebSockets.
+Самохостящийся мессенджер в стиле ICQ. FastAPI + PostgreSQL + Redis + WebSockets.
 
-## Stack
+## Стек
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy (async), Alembic
-- **DB**: PostgreSQL 16
-- **Cache/Pub-Sub**: Redis 7
-- **Frontend**: Vanilla JS (single-page, built-in)
-- **Deploy**: Docker Compose + nginx + certbot
+- **БД**: PostgreSQL 16
+- **Кэш / Pub-Sub**: Redis 7
+- **Frontend**: Vanilla JS (single-page, встроен в бэкенд)
+- **Деплой**: Docker Compose + nginx + certbot
 
 ---
 
@@ -19,24 +19,26 @@ bash setup_local.sh
 ```
 
 Скрипт сам создаст `.env`, сгенерирует секреты, поднимет БД и Redis в Docker,
-накатит миграции и запустит uvicorn. Открыть: http://localhost:8000
+накатит миграции и запустит uvicorn.
+
+Открыть: http://localhost:8000
 
 ---
 
-## Deploy на VPS
+## Деплой на VPS
 
 ### 1. Что поправить перед деплоем
 
 **`deploy/deploy.sh`** — настройки подключения к серверу:
 ```bash
-REMOTE_USER="your_vps_user"       # ← пользователь на VPS
-REMOTE_HOST="your.vps.ip"         # ← IP адрес VPS
+REMOTE_USER="your_vps_user"                 # ← пользователь на VPS
+REMOTE_HOST="your.vps.ip"                   # ← IP адрес VPS
 REMOTE_DIR="/home/your_vps_user/messenger"  # ← путь на сервере
-SSH_KEY="$HOME/.ssh/your_key"     # ← путь к SSH ключу
-DOMAIN="your-domain.example.com"  # ← твой домен
+SSH_KEY="$HOME/.ssh/your_key"               # ← путь к SSH ключу
+DOMAIN="your-domain.example.com"            # ← твой домен
 ```
 
-**`deploy/nginx_vps.conf`** — три места с доменом и путём к медиа:
+**`deploy/nginx_vps.conf`** — три места с доменом и путём к медиафайлам:
 ```nginx
 server_name your-domain.example.com;
 ssl_certificate /etc/letsencrypt/live/your-domain.example.com/fullchain.pem;
@@ -47,8 +49,7 @@ alias /home/your_vps_user/messenger/media/;
 **`.env`** на сервере — создать из примера и заполнить:
 ```bash
 cp .env.example .env
-# Минимум поменять:
-# POSTGRES_PASSWORD, JWT_SECRET, CRYPTO_KEY
+# Минимум поменять: POSTGRES_PASSWORD, JWT_SECRET, CRYPTO_KEY
 ```
 
 > JWT_SECRET и CRYPTO_KEY можно сгенерировать командой: `openssl rand -hex 32`
