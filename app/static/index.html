@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<title>Messenger</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-logo">// messenger</div>
+  <div class="auth-sub">test client — <span id="api-host-label">localhost:8000</span></div>
+  <div class="auth-tabs">
+    <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+    <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+  </div>
+  <div id="form-login">
+    <div class="field"><label>Username</label>
+      <input id="l-user" type="text" autocomplete="username" placeholder="admin">
+    </div>
+    <div class="field"><label>Password</label>
+      <input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <button class="btn" id="login-btn" onclick="doLogin()">Войти</button>
+    <div class="auth-error" id="login-err"></div>
+  </div>
+  <div id="form-register" style="display:none">
+    <div class="field"><label>Username</label>
+      <input id="r-user" type="text" autocomplete="username" placeholder="username">
+    </div>
+    <div class="field"><label>Password</label>
+      <input id="r-pass" type="password" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <div class="field"><label>Invite code</label>
+      <input id="r-invite" type="text" placeholder="Код от администратора" autocomplete="off">
+    </div>
+    <button class="btn" id="reg-btn" onclick="doRegister()">Зарегистрироваться</button>
+    <div class="auth-error" id="reg-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">// msg</div>
+      <div class="me-badge" id="me-username"></div>
+      <span class="admin-badge" id="admin-badge" style="display:none">ADMIN</span>
+      <div id="ws-status" title="WebSocket"></div>
+      <button class="icon-btn danger" onclick="doLogout()" title="Выйти">⏻</button>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search-input" id="search-input" placeholder="🔍 Найти пользователя…" oninput="onSearchInput(this.value)" autocomplete="off">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <div id="search-results"></div>
+
+    <div class="sidebar-tabs" id="sidebar-tabs">
+      <button class="tab-btn active" id="tab-dm" onclick="switchTab('dm')">DMs</button>
+      <button class="tab-btn" id="tab-groups" onclick="switchTab('groups')">Groups</button>
+    </div>
+    <div class="contact-list" id="contact-list"></div>
+
+    <div id="admin-panel">
+      <div class="admin-panel-title">⚡ Инвайты</div>
+      <div class="invite-row">
+        <div class="invite-code-box empty" id="invite-code-box" onclick="copyInvite()" title="Нажми чтобы скопировать">нет кода</div>
+        <button class="small-btn" onclick="genInvite()">+ Создать</button>
+      </div>
+      <div class="invite-hint" id="invite-hint">Создай код и отправь новому пользователю</div>
+      <div class="admin-media-settings" id="media-settings-panel">
+        <div class="admin-panel-title">🖼 Сжатие картинок</div>
+        <div class="setting-row">
+          <span class="setting-label">Quality</span>
+          <input class="setting-input" id="s-quality" type="number" min="1" max="95" placeholder="55">
+          <span class="setting-hint">1–95</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Max px</span>
+          <input class="setting-input" id="s-maxsize" type="number" min="64" max="4096" placeholder="256">
+          <span class="setting-hint">сторона</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Colors</span>
+          <input class="setting-input" id="s-colors" type="number" min="8" max="256" placeholder="64">
+          <span class="setting-hint">палитра</span>
+        </div>
+        <button class="save-settings-btn" onclick="saveMediaSettings()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="chat-area">
+    <div id="chat-placeholder">
+      <div class="big">💬</div>
+      <div>Выбери контакт или найди пользователя</div>
+    </div>
+    <div id="chat-window">
+      <div class="chat-header">
+        <button id="back-btn" onclick="goBack()" style="display:none;background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0 6px 0 0;line-height:1;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">‹</button>
+        <div class="avatar" id="chat-avatar">?</div>
+        <div style="flex:1;min-width:0">
+          <div class="chat-header-name" id="chat-name">—</div>
+          <div class="chat-status" id="chat-status">offline</div>
+        </div>
+      </div>
+      <div class="messages-wrap" id="messages"></div>
+      <div id="media-preview-container" style="display:none;"></div>
+      <!-- Reply preview strip -->
+      <div id="reply-preview">
+        <span id="reply-preview-icon">↩</span>
+        <span id="reply-preview-text"></span>
+        <button class="reply-close-btn" onclick="clearReply()">✕</button>
+      </div>
+      <div class="chat-input-area" id="chat-input-area"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <button class="attach-btn" id="attach-btn" onclick="document.getElementById('media-input').click()">📎</button>
+        <input type="file" id="media-input" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="onMediaSelected(this)">
+        <textarea id="msg-input" rows="1" placeholder="Сообщение… (Enter — отправить)" onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global reaction picker -->
+<div id="reaction-picker">
+  <button class="react-btn" onclick="doReact('❤️')">❤️</button>
+  <button class="react-btn" onclick="doReact('😂')">😂</button>
+  <button class="react-btn" onclick="doReact('😮')">😮</button>
+  <button class="react-btn" onclick="doReact('😢')">😢</button>
+  <button class="react-btn" onclick="doReact('😡')">😡</button>
+  <button class="react-btn" onclick="doReact('👍')">👍</button>
+</div>
+
+<div id="toast"></div>
+
+<div id="lightbox" onclick="closeLightbox(event)">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<!-- JS: порядок важен — state первым, ui последним -->
+<script src="/static/js/state.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/contacts.js"></script>
+<script src="/static/js/messages.js"></script>
+<script src="/static/js/reactions.js"></script>
+<script src="/static/js/send.js"></script>
+<script src="/static/js/media.js"></script>
+<script src="/static/js/websocket.js"></script>
+<script src="/static/js/notifications.js"></script>
+
+</body>
+</html>

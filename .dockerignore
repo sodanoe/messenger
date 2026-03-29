@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyc
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic (миграции нужны, versions — тоже, но history не нужна)
+# alembic/versions/  ← НЕ игнорируем, миграции нужны в контейнере
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Бэкапы от степов
+*.bak
+
+# Скрипты деплоя и разработки
+deploy/
+*.sh
+add_docker.sh
+
+# Docker
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Env файлы (секреты не в образ!)
+.env
+.env.*
+!.env.example
+
+# Документация
+*.md
+README*
+
+# OS
+.DS_Store
+Thumbs.db
