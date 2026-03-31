@@ -6,6 +6,7 @@ async function openDM(userId, username, isOnline) {
   currentChat = { type: 'dm', id: userId, name: username, is_online: isOnline };
   el('app').classList.add('chat-open');
   showChat(true);
+  el('chat-members-btn').style.display = 'none';
   el('chat-name').textContent = username;
   el('chat-avatar').textContent = initials(username);
   el('chat-avatar').style.color = 'var(--accent)';
@@ -26,6 +27,7 @@ async function openGroup(groupId, groupName) {
   currentChat = { type: 'group', id: groupId, name: groupName };
   el('app').classList.add('chat-open');
   showChat(true);
+  el('chat-members-btn').style.display = 'block';
   el('chat-name').textContent = groupName;
   el('chat-avatar').textContent = '#';
   el('chat-avatar').style.color = 'var(--accent2)';

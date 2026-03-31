@@ -79,11 +79,23 @@ async function loadGroups() { try { groups = await api('/groups'); if (activeTab
 
 function renderGroups() {
   const wrap = el('contact-list');
-  if (!groups.length) { wrap.innerHTML = '<div class="empty-list">Нет групп.</div>'; return; }
-  wrap.innerHTML = groups.map(g => `<div class="contact-item ${isActiveGroup(g.id)}" onclick="openGroup(${g.id},'${esc(g.name)}')">
+  const createBtn = `<button class="create-group-btn" onclick="promptCreateGroup()">＋ Создать группу</button>`;
+  if (!groups.length) { wrap.innerHTML = createBtn + '<div class="empty-list">Нет групп.</div>'; return; }
+  wrap.innerHTML = createBtn + groups.map(g => `<div class="contact-item ${isActiveGroup(g.id)}" onclick="openGroup(${g.id},'${esc(g.name)}')">
     <div class="avatar" style="color:var(--accent2)">#</div>
     <div class="contact-info"><div class="contact-name">${esc(g.name)}</div><div class="contact-last">group</div></div>
   </div>`).join('');
+}
+
+async function promptCreateGroup() {
+  const name = prompt('Название группы:');
+  if (!name?.trim()) return;
+  try {
+    await api('/groups', 'POST', { name: name.trim() });
+    await loadGroups();
+    if (activeTab === 'groups') renderGroups();
+    toast('Группа создана', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 function switchTab(tab) {
