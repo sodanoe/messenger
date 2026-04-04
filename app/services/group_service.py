@@ -42,7 +42,12 @@ class GroupService:
     async def list_members(self, user_id: int, group_id: int) -> list[dict]:
         await self._require_member(group_id, user_id)
         members = await self.repo.list_members(group_id)
-        return [{"user_id": m.user_id, "role": m.role} for m in members]
+        user_ids = [m.user_id for m in members]
+        users = {u.id: u for u in await self.users.get_by_ids(user_ids)}
+        return [
+            {"user_id": m.user_id, "role": m.role, "username": users[m.user_id].username}
+            for m in members
+        ]
 
     async def invite_member(self, user_id: int, group_id: int, username: str) -> dict:
         await self._require_admin(group_id, user_id)
@@ -86,6 +91,8 @@ class GroupService:
         # Батч реплаев
         reply_ids = [m.reply_to_id for m in msgs if m.reply_to_id]
         reply_map = {m.id: m for m in await self.repo.get_messages_by_ids(reply_ids)}
+        sender_ids = list({m.sender_id for m in msgs})
+        sender_map = {u.id: u.username for u in await self.users.get_by_ids(sender_ids)}
 
         messages = []
         for m in msgs:
@@ -96,6 +103,7 @@ class GroupService:
                 "created_at": m.created_at,
                 "reactions": reactions_by_msg.get(m.id, []),
                 "reply_to": None,
+                "sender_username": sender_map.get(m.sender_id, f"#{m.sender_id}"),
             }
 
             if m.reply_to_id and m.reply_to_id in reply_map:
@@ -162,6 +170,7 @@ class GroupService:
 
         response: dict = {
             "id": msg.id,
+            "sender_username": (await self.users.get_by_id(user_id)).username,
             "group_id": group_id,
             "sender_id": user_id,
             "content": content,
@@ -178,6 +187,7 @@ class GroupService:
             "type": "new_group_message",
             "group_id": group_id,
             "id": msg.id,
+            "sender_username": (await self.users.get_by_id(user_id)).username,
             "from": user_id,
             "content": content,
             "created_at": msg.created_at.isoformat(),
@@ -191,6 +201,19 @@ class GroupService:
             await manager.send_to(member_id, ws_payload)
 
         return response
+
+    async def delete_message(self, user_id: int, group_id: int, message_id: int) -> None:
+        msg = await self.repo.get_message_by_id(message_id)
+        if not msg or msg.group_id != group_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+        if msg.sender_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя удалить чужое сообщение")
+        await self.repo.delete_message(msg)
+        await self.db.commit()
+        member_ids = await self.repo.get_member_ids(group_id)
+        for member_id in member_ids:
+            await manager.send_to(member_id,
+                                  {"type": "group_message_deleted", "group_id": group_id, "message_id": message_id})
 
     # ── Reactions ─────────────────────────────────────────────
 

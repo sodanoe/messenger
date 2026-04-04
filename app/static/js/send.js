@@ -57,3 +57,15 @@ async function sendMessage() {
 
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+
+async function deleteMsg(msgId) {
+  if (!confirm('Удалить сообщение?')) return;
+  try {
+    if (currentChat.type === 'dm') {
+      await api(`/messages/${msgId}`, 'DELETE');
+    } else {
+      await api(`/groups/${currentChat.id}/messages/${msgId}`, 'DELETE');
+    }
+    document.querySelector(`[data-msg-id="${msgId}"]`)?.remove();
+  } catch(e) { toast(e.message, 'err'); }
+}

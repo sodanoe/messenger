@@ -119,6 +119,15 @@ async def send_message(
         current_user.id, group_id, body.content, body.media_id, body.reply_to_id
     )
 
+@router.delete("/{group_id}/messages/{message_id}", status_code=204)
+async def delete_group_message(
+    group_id: int,
+    message_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await GroupService(db).delete_message(current_user.id, group_id, message_id)
+
 
 # ── Reactions ─────────────────────────────────────────────────
 

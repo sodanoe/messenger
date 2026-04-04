@@ -116,6 +116,9 @@ class GroupRepository:
         await self.db.refresh(msg)
         return msg
 
+    async def delete_message(self, msg: GroupMessage) -> None:
+        await self.db.delete(msg)
+
     # ── Reactions ─────────────────────────────────────────────
 
     async def get_reactions_for_messages(self, message_ids: list[int]) -> list[GroupMessageReaction]:

@@ -46,7 +46,6 @@ async function openGroup(groupId, groupName) {
 function showChat(visible) {
   el('chat-placeholder').style.display = visible ? 'none' : 'flex';
   el('chat-window').style.display = visible ? 'flex' : 'none';
-  // FIX: управляем back-btn из JS, а не только из CSS
   el('back-btn').style.display = (visible && window.innerWidth < 768) ? 'block' : 'none';
 }
 
@@ -73,31 +72,31 @@ function renderMessages(msgs) {
       mediaUrl: m.media_url || null,
       replyTo: m.reply_to || null,
       reactions: m.reactions || [],
+      senderUsername: m.sender_username || null,
     }, false);
   });
   scrollBottom();
 }
 
-/**
- * Добавляет одно сообщение в DOM.
- * @param {object} msg - данные сообщения
- * @param {boolean} animate
- */
-function appendMessage({ id = null, content, isMe, createdAt, mediaUrl = null, replyTo = null, reactions = [] }, animate = true) {
+function appendMessage({ id = null, content, isMe, createdAt, mediaUrl = null, replyTo = null, reactions = [], senderUsername = null }, animate = true) {
   const wrap = el('messages');
   const row  = document.createElement('div');
   row.className = `msg-row ${isMe ? 'me' : 'other'}`;
   if (!animate) row.style.animation = 'none';
   if (id) {
     row.dataset.msgId = id;
-    // Сохраняем данные для обработчиков
     msgStore[id] = {
       id,
-      senderName: isMe ? 'Вы' : (currentChat?.name || `#${id}`),
+      senderName: isMe ? 'Вы' : (senderUsername || currentChat?.name || `#${id}`),
       content: content || '',
       mediaUrl: mediaUrl || null,
     };
   }
+
+  // Подпись отправителя — только в группах для чужих сообщений
+  const senderLabel = (!isMe && currentChat?.type === 'group')
+    ? `<div class="msg-sender-name">${esc(senderUsername || '?')}</div>`
+    : '';
 
   // Reply quote
   let replyHtml = '';
@@ -108,10 +107,7 @@ function appendMessage({ id = null, content, isMe, createdAt, mediaUrl = null, r
     const snippet = hasText ? esc(replyTo.content.slice(0, 80)) : (hasMedia ? '📷 Фото' : '—');
     const thumbUrl = hasMedia ? (hasMedia.startsWith('http') ? hasMedia : API_BASE() + hasMedia) : null;
     const thumbHtml = thumbUrl
-      ? `<img class="reply-thumb"
-          src="${thumbUrl}"
-          onclick="event.stopPropagation();openLightbox('${thumbUrl}')"
-          alt="фото">`
+      ? `<img class="reply-thumb" src="${thumbUrl}" onclick="event.stopPropagation();openLightbox('${thumbUrl}')" alt="фото">`
       : '';
     replyHtml = `<div class="msg-reply-quote" onclick="scrollToMsg(${replyTo.id})">
       <div style="flex:1;min-width:0;">
@@ -135,13 +131,14 @@ function appendMessage({ id = null, content, isMe, createdAt, mediaUrl = null, r
   // Reactions
   const reactionsHtml = `<div class="msg-reactions">${renderReactionPills(id, reactions)}</div>`;
 
-  // Actions (only for messages with server ID)
+  // Actions
   const actionsHtml = id ? `<div class="msg-actions">
     <button class="msg-action-btn" onclick="replyToMsg(${id})" title="Ответить">↩</button>
     <button class="msg-action-btn" onclick="showReactionPicker(${id}, this)" title="Реакция">😊</button>
+    ${isMe ? `<button class="msg-action-btn danger" onclick="deleteMsg(${id})" title="Удалить">🗑</button>` : ''}
   </div>` : '';
 
-  row.innerHTML = `<div>${actionsHtml}${replyHtml}${mediaHtml}${bubbleHtml}${reactionsHtml}<div class="msg-meta"><span class="msg-time">${fmtTime(createdAt)}</span></div></div>`;
+  row.innerHTML = `<div>${actionsHtml}${senderLabel}${replyHtml}${mediaHtml}${bubbleHtml}${reactionsHtml}<div class="msg-meta"><span class="msg-time">${fmtTime(createdAt)}</span></div></div>`;
   wrap.appendChild(row);
   if (animate) scrollBottom(true);
 }

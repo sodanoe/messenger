@@ -44,15 +44,16 @@ function connectWS() {
       if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
         const isMe = msg.from === me?.id;
         if (!isMe) {
-          appendMessage({
-            id: msg.id,
-            content: msg.content,
-            isMe: false,
-            createdAt: msg.created_at,
-            mediaUrl: msg.media_url || null,
-            replyTo: msg.reply_to || null,
-            reactions: [],
-          }, true);
+            appendMessage({
+              id: msg.id,
+              content: msg.content,
+              isMe: false,
+              createdAt: msg.created_at,
+              mediaUrl: msg.media_url || null,
+              replyTo: msg.reply_to || null,
+              reactions: [],
+              senderUsername: msg.sender_username || null,
+            }, true);
         }
       } else {
         const g = groups.find(g => g.id === msg.group_id);
@@ -63,6 +64,14 @@ function connectWS() {
 
     if (msg.type === 'reaction_update') {
       updateMessageReactions(msg.message_id, msg.reactions);
+    }
+    if (msg.type === 'message_deleted') {
+      document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
+    }
+    if (msg.type === 'group_message_deleted') {
+      if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
+        document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
+      }
     }
 
     // FIX: новый тип для групповых реакций

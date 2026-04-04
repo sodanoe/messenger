@@ -16,6 +16,12 @@ class UserRepository:
         result = await self.db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, user_ids: list[int]) -> list[User]:
+        if not user_ids:
+            return []
+        result = await self.db.execute(select(User).where(User.id.in_(user_ids)))
+        return list(result.scalars().all())
+
     async def create(self, username: str, password_hash: str) -> User:
         user = User(username=username, password_hash=password_hash)
         self.db.add(user)

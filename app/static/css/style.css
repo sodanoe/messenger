@@ -449,7 +449,13 @@
   }
   .attach-btn:hover { color: var(--accent); background: var(--bg3); }
   .attach-btn:disabled { opacity: 0.5; cursor: wait; }
-
+  .msg-sender-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+  .msg-action-btn.danger:hover { color: var(--danger, #e55); }
   #msg-input {
     flex: 1; background: var(--bg3); border: 1px solid var(--border);
     border-radius: 12px; padding: 10px 14px; color: var(--text);

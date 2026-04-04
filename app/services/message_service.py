@@ -172,3 +172,14 @@ class MessageService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts")
         await self.contacts.set_unread(me, other_id, False)
         await self.db.commit()
+
+    async def delete_message(self, me: int, message_id: int) -> None:
+        msg = await self.messages.get_by_id(message_id)
+        if not msg:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+        if msg.sender_id != me:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя удалить чужое сообщение")
+        await self.messages.delete(msg)
+        await self.db.commit()
+        await manager.send_to(msg.receiver_id, {"type": "message_deleted", "message_id": message_id})
+        await manager.send_to(me, {"type": "message_deleted", "message_id": message_id})
