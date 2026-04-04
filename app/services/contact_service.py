@@ -31,24 +31,33 @@ class ContactService:
             # contact username
             user = await self.users.get_by_id(c.contact_user_id)
 
-            result.append({
-                "id": c.id,
-                "contact_user_id": c.contact_user_id,
-                "username": user.username if user else None,
-                "status": c.status,
-                "has_unread": c.has_unread,
-                "is_online": is_online,
-                "last_message": {
-                    "id": last_msg.id,
-                    "sender_id": last_msg.sender_id,
-                    "created_at": last_msg.created_at,
-                } if last_msg else None,
-            })
+            result.append(
+                {
+                    "id": c.id,
+                    "contact_user_id": c.contact_user_id,
+                    "username": user.username if user else None,
+                    "status": c.status,
+                    "has_unread": c.has_unread,
+                    "is_online": is_online,
+                    "last_message": (
+                        {
+                            "id": last_msg.id,
+                            "sender_id": last_msg.sender_id,
+                            "created_at": last_msg.created_at,
+                        }
+                        if last_msg
+                        else None
+                    ),
+                }
+            )
 
         # sort by last message desc (nulls last)
         result.sort(
-            key=lambda x: x["last_message"]["created_at"] if x["last_message"] else datetime.min.replace(
-                tzinfo=timezone.utc),
+            key=lambda x: (
+                x["last_message"]["created_at"]
+                if x["last_message"]
+                else datetime.min.replace(tzinfo=timezone.utc)
+            ),
             reverse=True,
         )
         return result
@@ -56,13 +65,19 @@ class ContactService:
     async def add_contact(self, me: int, username: str) -> dict:
         target = await self.users.get_by_username(username)
         if not target:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
         if target.id == me:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot add yourself")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot add yourself"
+            )
 
         existing = await self.contacts.get(me, target.id)
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already a contact")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Already a contact"
+            )
 
         c1, _ = await self.contacts.create_pair(me, target.id)
         await self.db.commit()
@@ -71,14 +86,18 @@ class ContactService:
     async def delete_contact(self, me: int, contact_user_id: int) -> None:
         existing = await self.contacts.get(me, contact_user_id)
         if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found"
+            )
         await self.contacts.delete_pair(me, contact_user_id)
         await self.db.commit()
 
     async def block_contact(self, me: int, contact_user_id: int) -> None:
         existing = await self.contacts.get(me, contact_user_id)
         if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found"
+            )
         await self.contacts.block(me, contact_user_id)
         await self.db.commit()
 

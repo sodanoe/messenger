@@ -28,7 +28,9 @@ class TokenResponse(BaseModel):
 
 @router.post("/register", response_model=TokenResponse)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    return await AuthService(db).register(body.username, body.password, body.invite_code)
+    return await AuthService(db).register(
+        body.username, body.password, body.invite_code
+    )
 
 
 @router.post("/login", response_model=TokenResponse)

@@ -22,7 +22,9 @@ class MessageService:
     async def get_history(self, me: int, other_id: int, cursor: int | None) -> dict:
         contact = await self.contacts.get(me, other_id)
         if not contact:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts"
+            )
 
         msgs = await self.messages.get_history(me, other_id, cursor)
         next_cursor = msgs[-1].id if len(msgs) == 50 else None
@@ -89,14 +91,19 @@ class MessageService:
     ) -> dict:
         contact = await self.contacts.get(me, receiver_id)
         if not contact:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts"
+            )
         if contact.status == ContactStatus.blocked:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Contact is blocked")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Contact is blocked"
+            )
 
         reverse = await self.contacts.get(receiver_id, me)
         if reverse and reverse.status == ContactStatus.blocked:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="You are blocked by this user"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are blocked by this user",
             )
 
         if media_id:
@@ -130,7 +137,9 @@ class MessageService:
                 reply_to_id = None  # игнорируем невалидный reply
 
         encrypted = self.crypto.encrypt(content)
-        msg = await self.messages.create(me, receiver_id, encrypted, media_id, reply_to_id)
+        msg = await self.messages.create(
+            me, receiver_id, encrypted, media_id, reply_to_id
+        )
 
         if media_id:
             await self.media.assign_to_message(media_id, msg.id)
@@ -169,17 +178,26 @@ class MessageService:
     async def mark_read(self, me: int, other_id: int) -> None:
         contact = await self.contacts.get(me, other_id)
         if not contact:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts"
+            )
         await self.contacts.set_unread(me, other_id, False)
         await self.db.commit()
 
     async def delete_message(self, me: int, message_id: int) -> None:
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
+            )
         if msg.sender_id != me:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя удалить чужое сообщение")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Нельзя удалить чужое сообщение",
+            )
         await self.messages.delete(msg)
         await self.db.commit()
-        await manager.send_to(msg.receiver_id, {"type": "message_deleted", "message_id": message_id})
+        await manager.send_to(
+            msg.receiver_id, {"type": "message_deleted", "message_id": message_id}
+        )
         await manager.send_to(me, {"type": "message_deleted", "message_id": message_id})

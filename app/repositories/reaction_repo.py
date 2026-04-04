@@ -46,11 +46,13 @@ class ReactionRepository:
             await self.db.delete(reaction)
             added = False
         else:
-            self.db.add(MessageReaction(
-                message_id=message_id,
-                user_id=user_id,
-                emoji=emoji,
-            ))
+            self.db.add(
+                MessageReaction(
+                    message_id=message_id,
+                    user_id=user_id,
+                    emoji=emoji,
+                )
+            )
             added = True
 
         await self.db.flush()

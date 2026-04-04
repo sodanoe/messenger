@@ -4,6 +4,7 @@ WebSocket Connection Manager.
 Singleton `manager` хранит активные соединения user_id → WebSocket.
 Используется в роутере /ws и в сервисах (DM, group messages).
 """
+
 import asyncio
 import logging
 from typing import Dict
@@ -34,12 +35,16 @@ class ConnectionManager:
 
         await ws.accept()
         self._connections[user_id] = ws
-        logger.debug("WS connected: user_id=%s  total=%s", user_id, len(self._connections))
+        logger.debug(
+            "WS connected: user_id=%s  total=%s", user_id, len(self._connections)
+        )
 
     def disconnect(self, user_id: int) -> None:
         """Remove user from the registry (does NOT close the socket)."""
         self._connections.pop(user_id, None)
-        logger.debug("WS disconnected: user_id=%s  total=%s", user_id, len(self._connections))
+        logger.debug(
+            "WS disconnected: user_id=%s  total=%s", user_id, len(self._connections)
+        )
 
     # ------------------------------------------------------------------ #
     #  send helpers                                                        #

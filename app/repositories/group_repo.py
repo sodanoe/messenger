@@ -1,7 +1,13 @@
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.group import Group, GroupMember, GroupMessage, GroupMessageReaction, GroupRole
+from app.models.group import (
+    Group,
+    GroupMember,
+    GroupMessage,
+    GroupMessageReaction,
+    GroupRole,
+)
 
 
 class GroupRepository:
@@ -52,7 +58,9 @@ class GroupRepository:
         )
         return list(result.scalars().all())
 
-    async def add_member(self, group_id: int, user_id: int, role: GroupRole = GroupRole.member) -> GroupMember:
+    async def add_member(
+        self, group_id: int, user_id: int, role: GroupRole = GroupRole.member
+    ) -> GroupMember:
         member = GroupMember(group_id=group_id, user_id=user_id, role=role)
         self.db.add(member)
         await self.db.flush()
@@ -121,17 +129,25 @@ class GroupRepository:
 
     # ── Reactions ─────────────────────────────────────────────
 
-    async def get_reactions_for_messages(self, message_ids: list[int]) -> list[GroupMessageReaction]:
+    async def get_reactions_for_messages(
+        self, message_ids: list[int]
+    ) -> list[GroupMessageReaction]:
         if not message_ids:
             return []
         result = await self.db.execute(
-            select(GroupMessageReaction).where(GroupMessageReaction.message_id.in_(message_ids))
+            select(GroupMessageReaction).where(
+                GroupMessageReaction.message_id.in_(message_ids)
+            )
         )
         return list(result.scalars().all())
 
-    async def get_reactions_for_message(self, message_id: int) -> list[GroupMessageReaction]:
+    async def get_reactions_for_message(
+        self, message_id: int
+    ) -> list[GroupMessageReaction]:
         result = await self.db.execute(
-            select(GroupMessageReaction).where(GroupMessageReaction.message_id == message_id)
+            select(GroupMessageReaction).where(
+                GroupMessageReaction.message_id == message_id
+            )
         )
         return list(result.scalars().all())
 
@@ -154,11 +170,13 @@ class GroupRepository:
             await self.db.delete(reaction)
             added = False
         else:
-            self.db.add(GroupMessageReaction(
-                message_id=message_id,
-                user_id=user_id,
-                emoji=emoji,
-            ))
+            self.db.add(
+                GroupMessageReaction(
+                    message_id=message_id,
+                    user_id=user_id,
+                    emoji=emoji,
+                )
+            )
             added = True
 
         await self.db.flush()

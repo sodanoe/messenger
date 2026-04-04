@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 # Загружаем .env файл
 from dotenv import load_dotenv
+
 load_dotenv()  # ищет .env в текущей директории
 
 from app.models import Base  # noqa: F401

@@ -23,7 +23,9 @@ class GroupService:
 
     async def list_groups(self, user_id: int) -> list[dict]:
         groups = await self.repo.list_for_user(user_id)
-        return [{"id": g.id, "name": g.name, "created_by": g.created_by} for g in groups]
+        return [
+            {"id": g.id, "name": g.name, "created_by": g.created_by} for g in groups
+        ]
 
     async def create_group(self, user_id: int, name: str) -> dict:
         group = await self.repo.create(name=name, created_by=user_id)
@@ -45,7 +47,11 @@ class GroupService:
         user_ids = [m.user_id for m in members]
         users = {u.id: u for u in await self.users.get_by_ids(user_ids)}
         return [
-            {"user_id": m.user_id, "role": m.role, "username": users[m.user_id].username}
+            {
+                "user_id": m.user_id,
+                "role": m.role,
+                "username": users[m.user_id].username,
+            }
             for m in members
         ]
 
@@ -53,10 +59,14 @@ class GroupService:
         await self._require_admin(group_id, user_id)
         target = await self.users.get_by_username(username)
         if not target:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден"
+            )
         existing = await self.repo.get_membership(group_id, target.id)
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Уже в группе")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Уже в группе"
+            )
         member = await self.repo.add_member(group_id, target.id)
         await self.db.commit()
         return {"user_id": member.user_id, "role": member.role}
@@ -74,7 +84,9 @@ class GroupService:
 
     # ── Messages ─────────────────────────────────────────────
 
-    async def get_messages(self, user_id: int, group_id: int, cursor: int | None) -> dict:
+    async def get_messages(
+        self, user_id: int, group_id: int, cursor: int | None
+    ) -> dict:
         await self._require_member(group_id, user_id)
         msgs = await self.repo.get_messages(group_id, cursor)
         next_cursor = msgs[-1].id if len(msgs) == 50 else None
@@ -141,7 +153,9 @@ class GroupService:
         if media_id:
             media = await self.media.get_by_id(media_id)
             if not media or media.uploader_id != user_id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file"
+                )
 
         # Валидируем reply_to_id: сообщение должно быть из этой группы
         reply_info: dict | None = None
@@ -161,7 +175,9 @@ class GroupService:
                 reply_to_id = None
 
         encrypted = self.crypto.encrypt(content)
-        msg = await self.repo.create_message(group_id, user_id, encrypted, media_id, reply_to_id)
+        msg = await self.repo.create_message(
+            group_id, user_id, encrypted, media_id, reply_to_id
+        )
 
         if media_id:
             await self.media.assign_to_message(media_id, msg.id)
@@ -202,22 +218,37 @@ class GroupService:
 
         return response
 
-    async def delete_message(self, user_id: int, group_id: int, message_id: int) -> None:
+    async def delete_message(
+        self, user_id: int, group_id: int, message_id: int
+    ) -> None:
         msg = await self.repo.get_message_by_id(message_id)
         if not msg or msg.group_id != group_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
+            )
         if msg.sender_id != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя удалить чужое сообщение")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Нельзя удалить чужое сообщение",
+            )
         await self.repo.delete_message(msg)
         await self.db.commit()
         member_ids = await self.repo.get_member_ids(group_id)
         for member_id in member_ids:
-            await manager.send_to(member_id,
-                                  {"type": "group_message_deleted", "group_id": group_id, "message_id": message_id})
+            await manager.send_to(
+                member_id,
+                {
+                    "type": "group_message_deleted",
+                    "group_id": group_id,
+                    "message_id": message_id,
+                },
+            )
 
     # ── Reactions ─────────────────────────────────────────────
 
-    async def react(self, user_id: int, group_id: int, message_id: int, emoji: str) -> list[dict]:
+    async def react(
+        self, user_id: int, group_id: int, message_id: int, emoji: str
+    ) -> list[dict]:
         if emoji not in ALLOWED_EMOJIS:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -226,7 +257,9 @@ class GroupService:
         await self._require_member(group_id, user_id)
         msg = await self.repo.get_message_by_id(message_id)
         if not msg or msg.group_id != group_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
+            )
 
         _, updated = await self.repo.toggle_reaction(message_id, user_id, emoji)
         await self.db.commit()
@@ -251,15 +284,22 @@ class GroupService:
     async def _get_group_or_404(self, group_id: int):
         group = await self.repo.get_by_id(group_id)
         if not group:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Группа не найдена")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Группа не найдена"
+            )
         return group
 
     async def _require_member(self, group_id: int, user_id: int):
         membership = await self.repo.get_membership(group_id, user_id)
         if not membership:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к группе")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к группе"
+            )
 
     async def _require_admin(self, group_id: int, user_id: int):
         membership = await self.repo.get_membership(group_id, user_id)
         if not membership or membership.role != GroupRole.admin:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Требуются права администратора")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Требуются права администратора",
+            )

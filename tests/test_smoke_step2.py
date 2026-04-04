@@ -29,8 +29,11 @@ def auth_headers(token: str) -> dict:
 #  1. Получить invite-коды под admin
 # ════════════════════════════════════════════════════════════
 
+
 def test_1_admin_login_and_get_invite(client):
-    resp = client.post("/auth/login", json={"username": "admin", "password": "adminpass"})
+    resp = client.post(
+        "/auth/login", json={"username": "admin", "password": "adminpass"}
+    )
     assert resp.status_code == 200, f"Admin login failed: {resp.text}"
     state["admin_token"] = resp.json()["access_token"]
 
@@ -46,20 +49,27 @@ def test_1_admin_login_and_get_invite(client):
 #  2. Регистрация двух пользователей
 # ════════════════════════════════════════════════════════════
 
+
 def test_2_register_two_users(client):
-    resp_a = client.post("/auth/register", json={
-        "username": f"alice_{RUN}",
-        "password": "password123",
-        "invite_code": state["invite_a"],
-    })
+    resp_a = client.post(
+        "/auth/register",
+        json={
+            "username": f"alice_{RUN}",
+            "password": "password123",
+            "invite_code": state["invite_a"],
+        },
+    )
     assert resp_a.status_code == 200, f"Register alice failed: {resp_a.text}"
     state["token_a"] = resp_a.json()["access_token"]
 
-    resp_b = client.post("/auth/register", json={
-        "username": f"bob_{RUN}",
-        "password": "password123",
-        "invite_code": state["invite_b"],
-    })
+    resp_b = client.post(
+        "/auth/register",
+        json={
+            "username": f"bob_{RUN}",
+            "password": "password123",
+            "invite_code": state["invite_b"],
+        },
+    )
     assert resp_b.status_code == 200, f"Register bob failed: {resp_b.text}"
     state["token_b"] = resp_b.json()["access_token"]
 
@@ -75,6 +85,7 @@ def test_2_register_two_users(client):
 # ════════════════════════════════════════════════════════════
 #  3. Добавить друг друга в контакты
 # ════════════════════════════════════════════════════════════
+
 
 def test_3_add_contacts(client):
     resp = client.post(
@@ -104,6 +115,7 @@ def test_3_add_contacts(client):
 #  4. Alice отправляет сообщение Bob'у
 # ════════════════════════════════════════════════════════════
 
+
 def test_4_send_message(client):
     resp = client.post(
         f"/messages/{state['user_id_b']}",
@@ -129,6 +141,7 @@ def test_4_send_message(client):
 #  5. GET история сообщений
 # ════════════════════════════════════════════════════════════
 
+
 def test_5_get_history(client):
     resp = client.get(
         f"/messages/{state['user_id_b']}",
@@ -153,18 +166,24 @@ def test_5_get_history(client):
 #  6. GET /contacts — у Bob has_unread=true
 # ════════════════════════════════════════════════════════════
 
+
 def test_6_contacts_has_unread_true(client):
     resp = client.get("/contacts", headers=auth_headers(state["token_b"]))
     assert resp.status_code == 200
     contacts = resp.json()
-    alice_contact = next((c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None)
+    alice_contact = next(
+        (c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None
+    )
     assert alice_contact is not None, "Alice not found in Bob's contacts"
-    assert alice_contact["has_unread"] is True, f"Expected has_unread=True, got {alice_contact}"
+    assert (
+        alice_contact["has_unread"] is True
+    ), f"Expected has_unread=True, got {alice_contact}"
 
 
 # ════════════════════════════════════════════════════════════
 #  7. Bob отмечает сообщения как прочитанными
 # ════════════════════════════════════════════════════════════
+
 
 def test_7_mark_read(client):
     resp = client.post(
@@ -178,18 +197,24 @@ def test_7_mark_read(client):
 #  8. GET /contacts — у Bob has_unread=false
 # ════════════════════════════════════════════════════════════
 
+
 def test_8_contacts_has_unread_false(client):
     resp = client.get("/contacts", headers=auth_headers(state["token_b"]))
     assert resp.status_code == 200
     contacts = resp.json()
-    alice_contact = next((c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None)
+    alice_contact = next(
+        (c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None
+    )
     assert alice_contact is not None
-    assert alice_contact["has_unread"] is False, f"Expected has_unread=False, got {alice_contact}"
+    assert (
+        alice_contact["has_unread"] is False
+    ), f"Expected has_unread=False, got {alice_contact}"
 
 
 # ════════════════════════════════════════════════════════════
 #  Бонус: поиск пользователей
 # ════════════════════════════════════════════════════════════
+
 
 def test_bonus_user_search(client):
     resp = client.get(
@@ -209,6 +234,7 @@ def test_bonus_user_search(client):
 #  Бонус: блокировка
 # ════════════════════════════════════════════════════════════
 
+
 def test_bonus_block(client):
     resp = client.post(
         f"/contacts/{state['user_id_b']}/block",
@@ -222,4 +248,6 @@ def test_bonus_block(client):
         json={"content": "можно?"},
         headers=auth_headers(state["token_b"]),
     )
-    assert resp2.status_code == 403, f"Expected 403 after block, got {resp2.status_code}"
+    assert (
+        resp2.status_code == 403
+    ), f"Expected 403 after block, got {resp2.status_code}"

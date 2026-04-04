@@ -14,9 +14,9 @@ import httpx
 import pytest
 import websockets
 
-BASE    = "http://localhost:8000"
+BASE = "http://localhost:8000"
 WS_BASE = "ws://localhost:8000"
-RUN     = uuid.uuid4().hex[:6]
+RUN = uuid.uuid4().hex[:6]
 state: dict = {}
 
 pytestmark = pytest.mark.asyncio
@@ -25,6 +25,7 @@ pytestmark = pytest.mark.asyncio
 # ────────────────────────────────────────────────────────────────────────────
 #  Helpers
 # ────────────────────────────────────────────────────────────────────────────
+
 
 def auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
@@ -44,6 +45,7 @@ async def recv_with_timeout(ws, timeout: float = 3.0) -> dict:
 #  Setup: admin + 3 пользователя + контакты alice↔bob
 # ────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module")
 def client():
     with httpx.Client(base_url=BASE, timeout=10) as c:
@@ -54,25 +56,30 @@ def client():
 def setup_users(client):
     """Synchronous setup: login admin, register alice/bob/carol, add contacts."""
     # Admin login
-    resp = client.post("/auth/login", json={"username": "admin", "password": "adminpass"})
+    resp = client.post(
+        "/auth/login", json={"username": "admin", "password": "adminpass"}
+    )
     assert resp.status_code == 200, f"Admin login: {resp.text}"
     state["admin_token"] = resp.json()["access_token"]
 
     # Register alice, bob, carol
     for name_key, token_key, uid_key in [
         (f"ws_alice_{RUN}", "token_a", "uid_a"),
-        (f"ws_bob_{RUN}",   "token_b", "uid_b"),
+        (f"ws_bob_{RUN}", "token_b", "uid_b"),
         (f"ws_carol_{RUN}", "token_c", "uid_c"),
     ]:
         inv = client.post("/auth/invite", headers=auth_headers(state["admin_token"]))
         assert inv.status_code == 200
         code = inv.json()["code"]
 
-        reg = client.post("/auth/register", json={
-            "username": name_key,
-            "password": "password123",
-            "invite_code": code,
-        })
+        reg = client.post(
+            "/auth/register",
+            json={
+                "username": name_key,
+                "password": "password123",
+                "invite_code": code,
+            },
+        )
         assert reg.status_code == 200, f"Register {name_key}: {reg.text}"
         state[token_key] = reg.json()["access_token"]
         me = client.get("/users/me", headers=auth_headers(state[token_key]))
@@ -86,12 +93,15 @@ def setup_users(client):
     )
     assert r.status_code == 201, f"Add contact: {r.text}"
 
-    print(f"\n  RUN={RUN}  alice={state['uid_a']}  bob={state['uid_b']}  carol={state['uid_c']}")
+    print(
+        f"\n  RUN={RUN}  alice={state['uid_a']}  bob={state['uid_b']}  carol={state['uid_c']}"
+    )
 
 
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 1: базовое подключение и отключение
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_1_connect_and_disconnect():
     """Client can connect and server cleanly accepts."""
@@ -108,6 +118,7 @@ async def test_1_connect_and_disconnect():
 #  Test 2: неверный токен → сервер закрывает соединение
 # ────────────────────────────────────────────────────────────────────────────
 
+
 async def test_2_invalid_token_rejected():
     """Bad JWT → server closes with 1008."""
     with pytest.raises(Exception):
@@ -119,6 +130,7 @@ async def test_2_invalid_token_rejected():
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 3: online presence — Bob видит alice_online при её подключении
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_3_online_presence_notification():
     """
@@ -144,6 +156,7 @@ async def test_3_online_presence_notification():
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 4: DM через WS — Alice шлёт Bob'у, Bob получает мгновенно
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_4_dm_realtime_delivery(client):
     """POST /messages/:bob_id while Bob is connected → Bob's WS receives it."""
@@ -176,6 +189,7 @@ async def test_4_dm_realtime_delivery(client):
 #  Test 5: offline receiver — сообщение сохраняется в БД без ошибок
 # ────────────────────────────────────────────────────────────────────────────
 
+
 async def test_5_dm_to_offline_user_no_error(client):
     """Sending DM to user with no WS connection must still return 201."""
     # Bob не подключён по WS
@@ -190,6 +204,7 @@ async def test_5_dm_to_offline_user_no_error(client):
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 6: heartbeat продлевает TTL
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_6_heartbeat(client):
     """Client sends ping text → server resets Redis TTL, no disconnect."""
@@ -210,14 +225,15 @@ async def test_6_heartbeat(client):
             (c for c in contacts if c["contact_user_id"] == state["uid_a"]), None
         )
         assert alice_contact is not None
-        assert alice_contact.get("is_online") is True, (
-            f"Expected is_online=True while WS open, got {alice_contact}"
-        )
+        assert (
+            alice_contact.get("is_online") is True
+        ), f"Expected is_online=True while WS open, got {alice_contact}"
 
 
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 7: группа — fan-out group_message
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_7_group_message_fanout(client):
     """
@@ -273,6 +289,7 @@ async def test_7_group_message_fanout(client):
 #  Test 8: Alice не получает собственный group message
 # ────────────────────────────────────────────────────────────────────────────
 
+
 async def test_8_sender_excluded_from_fanout(client):
     """Sender should NOT receive their own group message via WS."""
     group_id = state["group_id"]
@@ -291,14 +308,15 @@ async def test_8_sender_excluded_from_fanout(client):
         with pytest.raises(asyncio.TimeoutError):
             msg = await recv_with_timeout(ws_alice, timeout=1.5)
             # Если что-то пришло — убеждаемся что это НЕ group_message
-            assert msg.get("type") != "group_message", (
-                f"Sender should not receive own group_message, got {msg}"
-            )
+            assert (
+                msg.get("type") != "group_message"
+            ), f"Sender should not receive own group_message, got {msg}"
 
 
 # ────────────────────────────────────────────────────────────────────────────
 #  Test 9: Carol не получает group_message (не участник)
 # ────────────────────────────────────────────────────────────────────────────
+
 
 async def test_9_non_member_no_message(client):
     """Carol is not in the group → must not receive group_message."""
@@ -321,6 +339,7 @@ async def test_9_non_member_no_message(client):
 #  Test 10: is_online в /contacts обновляется live
 # ────────────────────────────────────────────────────────────────────────────
 
+
 async def test_10_contacts_is_online_live(client):
     """
     GET /contacts for Bob:
@@ -336,13 +355,13 @@ async def test_10_contacts_is_online_live(client):
         (c for c in contacts_before if c["contact_user_id"] == state["uid_a"]), None
     )
     assert alice_before is not None
-    assert alice_before.get("is_online") is False, (
-        f"Expected is_online=False before connect, got {alice_before}"
-    )
+    assert (
+        alice_before.get("is_online") is False
+    ), f"Expected is_online=False before connect, got {alice_before}"
 
     # Alice подключается
     async with websockets.connect(ws_url(state["token_a"])):
-        await asyncio.sleep(0.2)   # Redis TTL должен проставиться
+        await asyncio.sleep(0.2)  # Redis TTL должен проставиться
 
         resp_after = client.get("/contacts", headers=auth_headers(state["token_b"]))
         contacts_after = resp_after.json()
@@ -350,6 +369,6 @@ async def test_10_contacts_is_online_live(client):
             (c for c in contacts_after if c["contact_user_id"] == state["uid_a"]), None
         )
         assert alice_after is not None
-        assert alice_after.get("is_online") is True, (
-            f"Expected is_online=True after connect, got {alice_after}"
-        )
+        assert (
+            alice_after.get("is_online") is True
+        ), f"Expected is_online=True after connect, got {alice_after}"

@@ -13,7 +13,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "username": current_user.username, "last_seen": current_user.last_seen}
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "last_seen": current_user.last_seen,
+    }
 
 
 @router.get("/search")
@@ -23,6 +27,7 @@ async def search_users(
     db: AsyncSession = Depends(get_db),
 ):
     return await ContactService(db).search_users(current_user.id, q)
+
 
 @router.delete("/me", status_code=204)
 async def delete_account(

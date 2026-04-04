@@ -30,8 +30,11 @@ def auth_headers(token: str) -> dict:
 #  Подготовка: логин admin + регистрация двух юзеров
 # ════════════════════════════════════════════════════════════
 
+
 def test_0_setup(client):
-    resp = client.post("/auth/login", json={"username": "admin", "password": "adminpass"})
+    resp = client.post(
+        "/auth/login", json={"username": "admin", "password": "adminpass"}
+    )
     assert resp.status_code == 200, f"Admin login failed: {resp.text}"
     state["admin_token"] = resp.json()["access_token"]
 
@@ -42,13 +45,16 @@ def test_0_setup(client):
 
     for name, invite_key, token_key, uid_key in [
         (f"alice_g_{RUN}", "invite_a", "token_a", "uid_a"),
-        (f"bob_g_{RUN}",   "invite_b", "token_b", "uid_b"),
+        (f"bob_g_{RUN}", "invite_b", "token_b", "uid_b"),
     ]:
-        resp = client.post("/auth/register", json={
-            "username": name,
-            "password": "password123",
-            "invite_code": state[invite_key],
-        })
+        resp = client.post(
+            "/auth/register",
+            json={
+                "username": name,
+                "password": "password123",
+                "invite_code": state[invite_key],
+            },
+        )
         assert resp.status_code == 200, f"Register {name} failed: {resp.text}"
         state[token_key] = resp.json()["access_token"]
         me = client.get("/users/me", headers=auth_headers(state[token_key]))
@@ -60,6 +66,7 @@ def test_0_setup(client):
 # ════════════════════════════════════════════════════════════
 #  1. Alice создаёт группу
 # ════════════════════════════════════════════════════════════
+
 
 def test_1_create_group(client):
     resp = client.post(
@@ -78,6 +85,7 @@ def test_1_create_group(client):
 #  2. GET /groups — Alice видит свою группу
 # ════════════════════════════════════════════════════════════
 
+
 def test_2_list_groups(client):
     resp = client.get("/groups", headers=auth_headers(state["token_a"]))
     assert resp.status_code == 200
@@ -93,12 +101,15 @@ def test_2_list_groups(client):
 #  3. Bob не может зайти в группу (не участник)
 # ════════════════════════════════════════════════════════════
 
+
 def test_3_non_member_gets_403(client):
     resp = client.get(
         f"/groups/{state['group_id']}/messages",
         headers=auth_headers(state["token_b"]),
     )
-    assert resp.status_code == 403, f"Expected 403 for non-member, got {resp.status_code}"
+    assert (
+        resp.status_code == 403
+    ), f"Expected 403 for non-member, got {resp.status_code}"
 
     resp2 = client.get(
         f"/groups/{state['group_id']}/members",
@@ -110,6 +121,7 @@ def test_3_non_member_gets_403(client):
 # ════════════════════════════════════════════════════════════
 #  4. Alice (admin) приглашает Bob
 # ════════════════════════════════════════════════════════════
+
 
 def test_4_invite_member(client):
     resp = client.post(
@@ -135,6 +147,7 @@ def test_4_invite_member(client):
 #  5. GET /groups/:id/members — оба видны
 # ════════════════════════════════════════════════════════════
 
+
 def test_5_list_members(client):
     resp = client.get(
         f"/groups/{state['group_id']}/members",
@@ -147,7 +160,7 @@ def test_5_list_members(client):
     assert state["uid_b"] in user_ids
 
     alice_member = next(m for m in members if m["user_id"] == state["uid_a"])
-    bob_member   = next(m for m in members if m["user_id"] == state["uid_b"])
+    bob_member = next(m for m in members if m["user_id"] == state["uid_b"])
     assert alice_member["role"] == "admin"
     assert bob_member["role"] == "member"
 
@@ -156,14 +169,18 @@ def test_5_list_members(client):
 #  6. Bob (member) не может приглашать — 403
 # ════════════════════════════════════════════════════════════
 
+
 def test_6_member_cannot_invite(client):
     invite = client.post("/auth/invite", headers=auth_headers(state["admin_token"]))
     code = invite.json()["code"]
-    client.post("/auth/register", json={
-        "username": f"charlie_g_{RUN}",
-        "password": "password123",
-        "invite_code": code,
-    })
+    client.post(
+        "/auth/register",
+        json={
+            "username": f"charlie_g_{RUN}",
+            "password": "password123",
+            "invite_code": code,
+        },
+    )
 
     resp = client.post(
         f"/groups/{state['group_id']}/invite",
@@ -176,6 +193,7 @@ def test_6_member_cannot_invite(client):
 # ════════════════════════════════════════════════════════════
 #  7. Alice отправляет сообщение в группу
 # ════════════════════════════════════════════════════════════
+
 
 def test_7_send_group_message(client):
     resp = client.post(
@@ -195,6 +213,7 @@ def test_7_send_group_message(client):
 #  8. Bob читает историю группы
 # ════════════════════════════════════════════════════════════
 
+
 def test_8_get_group_messages(client):
     resp = client.get(
         f"/groups/{state['group_id']}/messages",
@@ -211,6 +230,7 @@ def test_8_get_group_messages(client):
 # ════════════════════════════════════════════════════════════
 #  9. Cursor pagination
 # ════════════════════════════════════════════════════════════
+
 
 def test_9_cursor_pagination(client):
     for i in range(2):
@@ -241,6 +261,7 @@ def test_9_cursor_pagination(client):
 #  10. Bob (member) выходит из группы сам
 # ════════════════════════════════════════════════════════════
 
+
 def test_10_self_leave(client):
     resp = client.delete(
         f"/groups/{state['group_id']}/members/{state['uid_b']}",
@@ -255,6 +276,7 @@ def test_10_self_leave(client):
 # ════════════════════════════════════════════════════════════
 #  11. Alice (admin) удаляет группу
 # ════════════════════════════════════════════════════════════
+
 
 def test_11_delete_group(client):
     resp = client.delete(
@@ -271,20 +293,30 @@ def test_11_delete_group(client):
 #  12. Не-admin не может удалить группу
 # ════════════════════════════════════════════════════════════
 
+
 def test_12_member_cannot_delete_group(client):
     invite = client.post("/auth/invite", headers=auth_headers(state["admin_token"]))
     code = invite.json()["code"]
-    reg = client.post("/auth/register", json={
-        "username": f"dave_g_{RUN}",
-        "password": "password123",
-        "invite_code": code,
-    })
+    reg = client.post(
+        "/auth/register",
+        json={
+            "username": f"dave_g_{RUN}",
+            "password": "password123",
+            "invite_code": code,
+        },
+    )
     assert reg.status_code == 200, f"Register dave failed: {reg.text}"
     token_d = reg.json()["access_token"]
 
-    g = client.post("/groups", json={"name": f"G2_{RUN}"}, headers=auth_headers(state["token_a"]))
+    g = client.post(
+        "/groups", json={"name": f"G2_{RUN}"}, headers=auth_headers(state["token_a"])
+    )
     gid = g.json()["id"]
-    client.post(f"/groups/{gid}/invite", json={"username": f"dave_g_{RUN}"}, headers=auth_headers(state["token_a"]))
+    client.post(
+        f"/groups/{gid}/invite",
+        json={"username": f"dave_g_{RUN}"},
+        headers=auth_headers(state["token_a"]),
+    )
 
     # Dave (member) пытается удалить → 403
     resp = client.delete(f"/groups/{gid}", headers=auth_headers(token_d))

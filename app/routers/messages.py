@@ -46,6 +46,7 @@ async def mark_read(
 ):
     await MessageService(db).mark_read(current_user.id, user_id)
 
+
 @router.delete("/{message_id}", status_code=204)
 async def delete_message(
     message_id: int,

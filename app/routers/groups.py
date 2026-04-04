@@ -30,6 +30,7 @@ class ReactRequest(BaseModel):
 
 # ── Group CRUD ───────────────────────────────────────────────
 
+
 @router.get("")
 async def list_groups(
     current_user: User = Depends(get_current_user),
@@ -58,6 +59,7 @@ async def delete_group(
 
 # ── Members ──────────────────────────────────────────────────
 
+
 @router.get("/{group_id}/members")
 async def list_members(
     group_id: int,
@@ -74,7 +76,9 @@ async def invite_member(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await GroupService(db).invite_member(current_user.id, group_id, body.username)
+    return await GroupService(db).invite_member(
+        current_user.id, group_id, body.username
+    )
 
 
 @router.delete("/{group_id}/members/{user_id}", status_code=204)
@@ -98,6 +102,7 @@ async def leave_group(
 
 # ── Messages ─────────────────────────────────────────────────
 
+
 @router.get("/{group_id}/messages")
 async def get_messages(
     group_id: int,
@@ -119,6 +124,7 @@ async def send_message(
         current_user.id, group_id, body.content, body.media_id, body.reply_to_id
     )
 
+
 @router.delete("/{group_id}/messages/{message_id}", status_code=204)
 async def delete_group_message(
     group_id: int,
@@ -131,6 +137,7 @@ async def delete_group_message(
 
 # ── Reactions ─────────────────────────────────────────────────
 
+
 @router.post("/{group_id}/messages/{message_id}/react", status_code=200)
 async def react_to_message(
     group_id: int,
@@ -139,4 +146,6 @@ async def react_to_message(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await GroupService(db).react(current_user.id, group_id, message_id, body.emoji)
+    return await GroupService(db).react(
+        current_user.id, group_id, message_id, body.emoji
+    )

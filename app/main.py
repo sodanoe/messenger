@@ -9,8 +9,17 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.database import engine
 from app.models import Base
-from app.routers import auth, contacts, groups, messages, users, ws, media, admin, reactions
-
+from app.routers import (
+    auth,
+    contacts,
+    groups,
+    messages,
+    users,
+    ws,
+    media,
+    admin,
+    reactions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +31,7 @@ async def _media_cleanup_loop() -> None:
         try:
             from app.core.database import AsyncSessionLocal
             from app.services.media_service import MediaService
+
             async with AsyncSessionLocal() as db:
                 deleted = await MediaService(db).cleanup_old_files()
                 if deleted:

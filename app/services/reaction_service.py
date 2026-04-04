@@ -27,11 +27,15 @@ class ReactionService:
 
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
+            )
 
         # Только участники переписки могут реагировать
         if user_id not in (msg.sender_id, msg.receiver_id):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа"
+            )
 
         _, updated = await self.reactions.toggle(message_id, user_id, emoji)
         await self.db.commit()

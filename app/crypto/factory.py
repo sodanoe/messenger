@@ -10,5 +10,6 @@ def get_crypto() -> BaseCrypto:
     backend = settings.CRYPTO_BACKEND.lower()
     if backend == "aes":
         from app.crypto.aes import AESCrypto
+
         return AESCrypto(settings.CRYPTO_KEY)
     raise ValueError(f"Unknown CRYPTO_BACKEND: {backend!r}")

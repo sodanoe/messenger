@@ -17,7 +17,9 @@ class ContactRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_id_and_owner(self, contact_id: int, user_id: int) -> Contact | None:
+    async def get_by_id_and_owner(
+        self, contact_id: int, user_id: int
+    ) -> Contact | None:
         result = await self.db.execute(
             select(Contact).where(
                 Contact.id == contact_id,
@@ -36,8 +38,16 @@ class ContactRepository:
         self, user_id: int, contact_user_id: int
     ) -> tuple[Contact, Contact]:
         """Insert both directions atomically."""
-        c1 = Contact(user_id=user_id, contact_user_id=contact_user_id, status=ContactStatus.accepted)
-        c2 = Contact(user_id=contact_user_id, contact_user_id=user_id, status=ContactStatus.accepted)
+        c1 = Contact(
+            user_id=user_id,
+            contact_user_id=contact_user_id,
+            status=ContactStatus.accepted,
+        )
+        c2 = Contact(
+            user_id=contact_user_id,
+            contact_user_id=user_id,
+            status=ContactStatus.accepted,
+        )
         self.db.add(c1)
         self.db.add(c2)
         await self.db.flush()
@@ -49,8 +59,14 @@ class ContactRepository:
         await self.db.execute(
             delete(Contact).where(
                 or_(
-                    and_(Contact.user_id == user_id, Contact.contact_user_id == contact_user_id),
-                    and_(Contact.user_id == contact_user_id, Contact.contact_user_id == user_id),
+                    and_(
+                        Contact.user_id == user_id,
+                        Contact.contact_user_id == contact_user_id,
+                    ),
+                    and_(
+                        Contact.user_id == contact_user_id,
+                        Contact.contact_user_id == user_id,
+                    ),
                 )
             )
         )
@@ -58,13 +74,17 @@ class ContactRepository:
     async def block(self, user_id: int, contact_user_id: int) -> None:
         await self.db.execute(
             update(Contact)
-            .where(Contact.user_id == user_id, Contact.contact_user_id == contact_user_id)
+            .where(
+                Contact.user_id == user_id, Contact.contact_user_id == contact_user_id
+            )
             .values(status=ContactStatus.blocked)
         )
 
     async def set_unread(self, user_id: int, contact_user_id: int, value: bool) -> None:
         await self.db.execute(
             update(Contact)
-            .where(Contact.user_id == user_id, Contact.contact_user_id == contact_user_id)
+            .where(
+                Contact.user_id == user_id, Contact.contact_user_id == contact_user_id
+            )
             .values(has_unread=value)
         )

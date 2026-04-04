@@ -9,17 +9,13 @@ class MessageRepository:
         self.db = db
 
     async def get_by_id(self, message_id: int) -> Message | None:
-        result = await self.db.execute(
-            select(Message).where(Message.id == message_id)
-        )
+        result = await self.db.execute(select(Message).where(Message.id == message_id))
         return result.scalar_one_or_none()
 
     async def get_by_ids(self, ids: list[int]) -> list[Message]:
         if not ids:
             return []
-        result = await self.db.execute(
-            select(Message).where(Message.id.in_(ids))
-        )
+        result = await self.db.execute(select(Message).where(Message.id.in_(ids)))
         return list(result.scalars().all())
 
     async def get_history(

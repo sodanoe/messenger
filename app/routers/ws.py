@@ -9,6 +9,7 @@ WebSocket endpoint  –  GET /ws?token=<jwt>
   5. Receive-loop: любое сообщение от клиента -> redis.expire (heartbeat)
   6. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
 """
+
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -32,8 +33,7 @@ async def _get_accepted_contact_ids(user_id: int) -> list[int]:
         repo = ContactRepository(db)
         contacts = await repo.list_for_user(user_id)
         return [
-            c.contact_user_id for c in contacts
-            if c.status == ContactStatus.accepted
+            c.contact_user_id for c in contacts if c.status == ContactStatus.accepted
         ]
 
 

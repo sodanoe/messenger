@@ -27,10 +27,15 @@ class AuthService:
     async def register(self, username: str, password: str, invite_code: str) -> dict:
         invite = await self.invites.get_unused(invite_code)
         if not invite:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or used invite code")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or used invite code",
+            )
 
         if await self.users.get_by_username(username):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Username already taken"
+            )
 
         pw_hash = _hash_password(password)
         user = await self.users.create(username, pw_hash)
@@ -43,7 +48,9 @@ class AuthService:
     async def login(self, username: str, password: str) -> dict:
         user = await self.users.get_by_username(username)
         if not user or not _verify_password(password, user.password_hash):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            )
 
         token = create_access_token(user.id)
         return {"access_token": token, "token_type": "bearer"}

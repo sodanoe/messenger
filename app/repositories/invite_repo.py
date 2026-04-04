@@ -10,7 +10,9 @@ class InviteRepository:
 
     async def get_unused(self, code: str) -> InviteCode | None:
         result = await self.db.execute(
-            select(InviteCode).where(InviteCode.code == code, InviteCode.used_by.is_(None))
+            select(InviteCode).where(
+                InviteCode.code == code, InviteCode.used_by.is_(None)
+            )
         )
         return result.scalar_one_or_none()
 
@@ -23,6 +25,7 @@ class InviteRepository:
 
     async def mark_used(self, invite: InviteCode, user_id: int) -> None:
         from datetime import datetime, timezone
+
         invite.used_by = user_id
         invite.used_at = datetime.now(timezone.utc)
         await self.db.flush()

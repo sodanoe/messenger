@@ -3,6 +3,7 @@
 Скрипт для очистки старых медиафайлов.
 Запускается как фоновая задача каждые 24 часа.
 """
+
 import asyncio
 import sys
 from pathlib import Path

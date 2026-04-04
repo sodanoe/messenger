@@ -29,9 +29,7 @@ class MediaRepository:
         return result.scalar_one_or_none()
 
     async def assign_to_message(self, media_id: int, message_id: int) -> None:
-        await self.db.execute(
-            select(MediaFile).where(MediaFile.id == media_id)
-        )
+        await self.db.execute(select(MediaFile).where(MediaFile.id == media_id))
         media = await self.get_by_id(media_id)
         if media:
             media.message_id = message_id
@@ -42,13 +40,10 @@ class MediaRepository:
         cutoff = datetime.now() - timedelta(days=days)
         result = await self.db.execute(
             select(MediaFile).where(
-                MediaFile.created_at < cutoff,
-                MediaFile.message_id.is_(None)
+                MediaFile.created_at < cutoff, MediaFile.message_id.is_(None)
             )
         )
         return list(result.scalars().all())
 
     async def delete_media(self, media_id: int) -> None:
-        await self.db.execute(
-            delete(MediaFile).where(MediaFile.id == media_id)
-        )
+        await self.db.execute(delete(MediaFile).where(MediaFile.id == media_id))
