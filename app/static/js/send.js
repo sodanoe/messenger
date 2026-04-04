@@ -10,13 +10,11 @@ async function sendMessage() {
 
   input.value = ''; autoGrow(input);
 
-  // Сохраняем состояние ДО очистки
   const sentReplyTo  = replyTo ? { ...replyTo } : null;
-  const sentMediaId  = pendingMediaId;   // FIX: сохраняем до removePendingMedia()
+  const sentMediaId  = pendingMediaId;
   const sentMediaUrl = pendingMediaUrl;
   clearReply();
 
-  // Оптимистичное отображение — показываем сразу
   appendMessage({
     id: null,
     content: content || '',
@@ -31,21 +29,29 @@ async function sendMessage() {
   try {
     if (currentChat.type === 'dm') {
       await api(`/messages/${currentChat.id}`, 'POST', {
-        content:      content || '',
-        media_id:     sentMediaId,        // FIX: используем сохранённый id
-        reply_to_id:  sentReplyTo?.id || null,
+        content:     content || '',
+        media_id:    sentMediaId,
+        reply_to_id: sentReplyTo?.id || null,
       });
     } else {
-      await api(`/groups/${currentChat.id}/messages`, 'POST', { content: content || '' });
+      // FIX: передаём media_id и reply_to_id для групп
+      await api(`/groups/${currentChat.id}/messages`, 'POST', {
+        content:     content || '',
+        media_id:    sentMediaId,
+        reply_to_id: sentReplyTo?.id || null,
+      });
     }
   } catch(e) {
-    // FIX: убираем оптимистичный «призрак» при ошибке
     const wrap = el('messages');
     const ghost = [...wrap.querySelectorAll('.msg-row')].reverse().find(r => !r.dataset.msgId);
     if (ghost) ghost.remove();
     toast(e.message + ' (сообщение не доставлено)', 'err');
     input.value = content;
-    if (sentReplyTo) { replyTo = sentReplyTo; el('reply-preview-text').textContent = `${sentReplyTo.senderName}: ${sentReplyTo.content ? sentReplyTo.content.slice(0,60) : '📷 Фото'}`; el('reply-preview').style.display = 'flex'; }
+    if (sentReplyTo) {
+      replyTo = sentReplyTo;
+      el('reply-preview-text').textContent = `${sentReplyTo.senderName}: ${sentReplyTo.content ? sentReplyTo.content.slice(0,60) : '📷 Фото'}`;
+      el('reply-preview').style.display = 'flex';
+    }
   }
 }
 

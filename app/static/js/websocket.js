@@ -12,7 +12,7 @@ function connectWS() {
   const indicator = el('ws-status');
   ws.onopen = () => {
     indicator.className = 'connected';
-    reconnectDelay = 3000;  // сбрасываем backoff при успешном коннекте
+    reconnectDelay = 3000;
     heartbeatTimer = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping'); }, 20000);
   };
   ws.onmessage = ({ data }) => {
@@ -39,12 +39,20 @@ function connectWS() {
       loadContacts().then(() => { if (!searchActive) renderContacts(); });
     }
 
-    if (msg.type === 'group_message') {
+    // FIX: было 'group_message', бэкенд шлёт 'new_group_message'
+    if (msg.type === 'new_group_message') {
       if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
-        const isMe = msg.sender_id === me?.id;
-        // Не дублируем своё оптимистичное сообщение
+        const isMe = msg.from === me?.id;
         if (!isMe) {
-          appendMessage({ id: msg.id ?? null, content: msg.content, isMe: false, createdAt: msg.created_at, reactions: [] }, true);
+          appendMessage({
+            id: msg.id,
+            content: msg.content,
+            isMe: false,
+            createdAt: msg.created_at,
+            mediaUrl: msg.media_url || null,
+            replyTo: msg.reply_to || null,
+            reactions: [],
+          }, true);
         }
       } else {
         const g = groups.find(g => g.id === msg.group_id);
@@ -57,6 +65,13 @@ function connectWS() {
       updateMessageReactions(msg.message_id, msg.reactions);
     }
 
+    // FIX: новый тип для групповых реакций
+    if (msg.type === 'group_reaction_update') {
+      if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
+        updateMessageReactions(msg.message_id, msg.reactions);
+      }
+    }
+
     if (msg.type === 'user_online')  { updateOnlineStatus(msg.user_id, true);  loadContacts().then(()=>{ if(!searchActive) renderContacts(); }); }
     if (msg.type === 'user_offline') { updateOnlineStatus(msg.user_id, false); loadContacts().then(()=>{ if(!searchActive) renderContacts(); }); }
   };
@@ -65,9 +80,9 @@ function connectWS() {
     indicator.className = '';
     clearInterval(heartbeatTimer);
     if (token) {
-      clearTimeout(reconnectTimer);   // FIX: не накапливаем таймеры
+      clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(connectWS, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);  // FIX: exponential backoff, макс 30с
+      reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
     }
   };
 }

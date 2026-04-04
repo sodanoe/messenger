@@ -4,7 +4,6 @@
 
 function renderReactionPills(msgId, reactions) {
   if (!reactions || !reactions.length) return '';
-  // Группируем: { emoji → { count, mine } }
   const grouped = {};
   reactions.forEach(r => {
     if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, mine: false };
@@ -23,12 +22,17 @@ function updateMessageReactions(msgId, reactions) {
   if (container) container.innerHTML = renderReactionPills(msgId, reactions);
 }
 
+// FIX: выбираем эндпоинт в зависимости от типа чата
 async function reactToMessage(msgId, emoji) {
-  try { await api(`/messages/${msgId}/react`, 'POST', { emoji }); }
-  catch(e) { toast(e.message, 'err'); }
+  try {
+    if (currentChat?.type === 'group') {
+      await api(`/groups/${currentChat.id}/messages/${msgId}/react`, 'POST', { emoji });
+    } else {
+      await api(`/messages/${msgId}/react`, 'POST', { emoji });
+    }
+  } catch(e) { toast(e.message, 'err'); }
 }
 
-// Reaction picker
 function showReactionPicker(msgId, anchor) {
   pickerMsgId = msgId;
   const picker = el('reaction-picker');
@@ -52,7 +56,6 @@ async function doReact(emoji) {
   await reactToMessage(id, emoji);
 }
 
-// Закрываем пикер кликом снаружи
 document.addEventListener('click', e => {
   if (!el('reaction-picker').contains(e.target) && !e.target.closest('.msg-action-btn')) {
     hideReactionPicker();

@@ -20,6 +20,12 @@ class InviteMemberRequest(BaseModel):
 
 class SendGroupMessageRequest(BaseModel):
     content: str
+    media_id: int | None = None
+    reply_to_id: int | None = None
+
+
+class ReactRequest(BaseModel):
+    emoji: str
 
 
 # ── Group CRUD ───────────────────────────────────────────────
@@ -81,6 +87,15 @@ async def remove_member(
     await GroupService(db).remove_member(current_user.id, group_id, user_id)
 
 
+@router.post("/{group_id}/leave", status_code=204)
+async def leave_group(
+    group_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await GroupService(db).leave_group(current_user.id, group_id)
+
+
 # ── Messages ─────────────────────────────────────────────────
 
 @router.get("/{group_id}/messages")
@@ -100,4 +115,19 @@ async def send_message(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await GroupService(db).send_message(current_user.id, group_id, body.content)
+    return await GroupService(db).send_message(
+        current_user.id, group_id, body.content, body.media_id, body.reply_to_id
+    )
+
+
+# ── Reactions ─────────────────────────────────────────────────
+
+@router.post("/{group_id}/messages/{message_id}/react", status_code=200)
+async def react_to_message(
+    group_id: int,
+    message_id: int,
+    body: ReactRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await GroupService(db).react(current_user.id, group_id, message_id, body.emoji)

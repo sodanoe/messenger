@@ -1,148 +1,242 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crypto.factory import get_crypto
-from app.models.group import GroupRole
-from app.repositories.group_repo import GroupRepository
 from app.core.connection_manager import manager
+from app.crypto.factory import get_crypto
+from app.repositories.group_repo import GroupRepository
+from app.repositories.media_repo import MediaRepository
 from app.repositories.user_repo import UserRepository
+from app.models.group import GroupRole
+
+ALLOWED_EMOJIS = {"❤️", "😂", "😮", "😢", "😡", "👍"}
 
 
 class GroupService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
-        self.groups = GroupRepository(db)
+        self.repo = GroupRepository(db)
+        self.media = MediaRepository(db)
         self.users = UserRepository(db)
         self.crypto = get_crypto()
 
-    # ── helpers ──────────────────────────────────────────────
-
-    async def _get_membership_or_403(self, group_id: int, user_id: int):
-        """Returns GroupMember or raises 403."""
-        group = await self.groups.get_by_id(group_id)
-        if not group:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
-        member = await self.groups.get_membership(group_id, user_id)
-        if not member:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a group member")
-        return group, member
-
-    async def _require_admin(self, group_id: int, user_id: int):
-        group, member = await self._get_membership_or_403(group_id, user_id)
-        if member.role != GroupRole.admin:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
-        return group, member
-
     # ── Groups ───────────────────────────────────────────────
 
-    async def list_groups(self, me: int) -> list[dict]:
-        groups = await self.groups.list_for_user(me)
-        return [{"id": g.id, "name": g.name, "created_by": g.created_by, "created_at": g.created_at} for g in groups]
+    async def list_groups(self, user_id: int) -> list[dict]:
+        groups = await self.repo.list_for_user(user_id)
+        return [{"id": g.id, "name": g.name, "created_by": g.created_by} for g in groups]
 
-    async def create_group(self, me: int, name: str) -> dict:
-        group = await self.groups.create(name, me)
-        await self.groups.add_member(group.id, me, GroupRole.admin)
+    async def create_group(self, user_id: int, name: str) -> dict:
+        group = await self.repo.create(name=name, created_by=user_id)
+        await self.repo.add_member(group.id, user_id, role=GroupRole.admin)
         await self.db.commit()
-        return {"id": group.id, "name": group.name, "created_by": group.created_by, "created_at": group.created_at}
+        return {"id": group.id, "name": group.name}
 
-    async def delete_group(self, me: int, group_id: int) -> None:
-        group, _ = await self._require_admin(group_id, me)
-        await self.groups.delete(group)
+    async def delete_group(self, user_id: int, group_id: int) -> None:
+        group = await self._get_group_or_404(group_id)
+        await self._require_admin(group_id, user_id)
+        await self.repo.delete(group)
         await self.db.commit()
 
     # ── Members ──────────────────────────────────────────────
 
-    async def list_members(self, me: int, group_id: int) -> list[dict]:
-        await self._get_membership_or_403(group_id, me)
-        members = await self.groups.list_members(group_id)
-        result = []
-        for m in members:
-            user = await self.users.get_by_id(m.user_id)
-            result.append({
-                "user_id": m.user_id,
-                "username": user.username if user else None,
-                "role": m.role,
-            })
-        return result
+    async def list_members(self, user_id: int, group_id: int) -> list[dict]:
+        await self._require_member(group_id, user_id)
+        members = await self.repo.list_members(group_id)
+        return [{"user_id": m.user_id, "role": m.role} for m in members]
 
-    async def invite_member(self, me: int, group_id: int, username: str) -> dict:
-        await self._require_admin(group_id, me)
-
+    async def invite_member(self, user_id: int, group_id: int, username: str) -> dict:
+        await self._require_admin(group_id, user_id)
         target = await self.users.get_by_username(username)
         if not target:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-        existing = await self.groups.get_membership(group_id, target.id)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+        existing = await self.repo.get_membership(group_id, target.id)
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already in group")
-
-        member = await self.groups.add_member(group_id, target.id, GroupRole.member)
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Уже в группе")
+        member = await self.repo.add_member(group_id, target.id)
         await self.db.commit()
-        return {"user_id": target.id, "username": target.username, "role": member.role}
+        return {"user_id": member.user_id, "role": member.role}
 
-    async def remove_member(self, me: int, group_id: int, target_user_id: int) -> None:
-        _, my_membership = await self._get_membership_or_403(group_id, me)
+    async def remove_member(self, user_id: int, group_id: int, target_id: int) -> None:
+        await self._require_admin(group_id, user_id)
+        await self._require_member(group_id, target_id)
+        await self.repo.remove_member(group_id, target_id)
+        await self.db.commit()
 
-        if target_user_id == me:
-            # Self-leave — any role allowed
-            await self.groups.remove_member(group_id, me)
-            await self.db.commit()
-            return
-
-        # Kicking someone else — must be admin
-        if my_membership.role != GroupRole.admin:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
-
-        target = await self.groups.get_membership(group_id, target_user_id)
-        if not target:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
-
-        await self.groups.remove_member(group_id, target_user_id)
+    async def leave_group(self, user_id: int, group_id: int) -> None:
+        await self._require_member(group_id, user_id)
+        await self.repo.remove_member(group_id, user_id)
         await self.db.commit()
 
     # ── Messages ─────────────────────────────────────────────
 
-    async def get_messages(self, me: int, group_id: int, cursor: int | None) -> dict:
-        await self._get_membership_or_403(group_id, me)
-        msgs = await self.groups.get_messages(group_id, cursor)
+    async def get_messages(self, user_id: int, group_id: int, cursor: int | None) -> dict:
+        await self._require_member(group_id, user_id)
+        msgs = await self.repo.get_messages(group_id, cursor)
         next_cursor = msgs[-1].id if len(msgs) == 50 else None
-        return {
-            "messages": [
-                {
-                    "id": m.id,
-                    "sender_id": m.sender_id,
-                    "content": self.crypto.decrypt(m.content_encrypted),
-                    "created_at": m.created_at,
-                }
-                for m in msgs
-            ],
-            "next_cursor": next_cursor,
-        }
 
-    async def send_message(self, me: int, group_id: int, content: str) -> dict:
-        await self._get_membership_or_403(group_id, me)
+        # Батч реакций
+        msg_ids = [m.id for m in msgs]
+        all_reactions = await self.repo.get_reactions_for_messages(msg_ids)
+        reactions_by_msg: dict[int, list[dict]] = {}
+        for r in all_reactions:
+            reactions_by_msg.setdefault(r.message_id, []).append(
+                {"emoji": r.emoji, "user_id": r.user_id}
+            )
+
+        # Батч реплаев
+        reply_ids = [m.reply_to_id for m in msgs if m.reply_to_id]
+        reply_map = {m.id: m for m in await self.repo.get_messages_by_ids(reply_ids)}
+
+        messages = []
+        for m in msgs:
+            msg_data: dict = {
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "content": self.crypto.decrypt(m.content_encrypted),
+                "created_at": m.created_at,
+                "reactions": reactions_by_msg.get(m.id, []),
+                "reply_to": None,
+            }
+
+            if m.reply_to_id and m.reply_to_id in reply_map:
+                orig = reply_map[m.reply_to_id]
+                reply_obj = {
+                    "id": orig.id,
+                    "sender_id": orig.sender_id,
+                    "content": self.crypto.decrypt(orig.content_encrypted)[:120],
+                }
+                if orig.media_id:
+                    media = await self.media.get_by_id(orig.media_id)
+                    if media:
+                        reply_obj["media_url"] = media.path
+                msg_data["reply_to"] = reply_obj
+
+            if m.media_id:
+                media = await self.media.get_by_id(m.media_id)
+                if media:
+                    msg_data["media_url"] = media.path
+
+            messages.append(msg_data)
+
+        return {"messages": messages, "next_cursor": next_cursor}
+
+    async def send_message(
+        self,
+        user_id: int,
+        group_id: int,
+        content: str,
+        media_id: int | None = None,
+        reply_to_id: int | None = None,
+    ) -> dict:
+        await self._require_member(group_id, user_id)
+
+        if media_id:
+            media = await self.media.get_by_id(media_id)
+            if not media or media.uploader_id != user_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file")
+
+        # Валидируем reply_to_id: сообщение должно быть из этой группы
+        reply_info: dict | None = None
+        if reply_to_id:
+            reply_msg = await self.repo.get_message_by_id(reply_to_id)
+            if reply_msg and reply_msg.group_id == group_id:
+                reply_info = {
+                    "id": reply_msg.id,
+                    "sender_id": reply_msg.sender_id,
+                    "content": self.crypto.decrypt(reply_msg.content_encrypted)[:120],
+                }
+                if reply_msg.media_id:
+                    media = await self.media.get_by_id(reply_msg.media_id)
+                    if media:
+                        reply_info["media_url"] = media.path
+            else:
+                reply_to_id = None
+
         encrypted = self.crypto.encrypt(content)
-        msg = await self.groups.create_message(group_id, me, encrypted)
+        msg = await self.repo.create_message(group_id, user_id, encrypted, media_id, reply_to_id)
+
+        if media_id:
+            await self.media.assign_to_message(media_id, msg.id)
+
         await self.db.commit()
 
-        # WS fan-out — доставляем всем участникам группы кроме отправителя
-        member_ids = await self.groups.get_member_ids(group_id)
-        recipient_ids = [uid for uid in member_ids if uid != me]
-        await manager.send_to_many(
-            recipient_ids,
-            {
-                "type": "group_message",
-                "group_id": group_id,
-                "from": me,
-                "content": content,
-                "created_at": msg.created_at.isoformat(),
-            },
-        )
-
-        return {
+        response: dict = {
             "id": msg.id,
-            "group_id": msg.group_id,
-            "sender_id": msg.sender_id,
+            "group_id": group_id,
+            "sender_id": user_id,
             "content": content,
             "created_at": msg.created_at,
+            "reply_to": reply_info,
+            "reactions": [],
         }
+        if media_id:
+            response["media_url"] = media.path
+
+        # WS-пуш всем участникам группы
+        member_ids = await self.repo.get_member_ids(group_id)
+        ws_payload: dict = {
+            "type": "new_group_message",
+            "group_id": group_id,
+            "id": msg.id,
+            "from": user_id,
+            "content": content,
+            "created_at": msg.created_at.isoformat(),
+            "reply_to": reply_info,
+            "reactions": [],
+        }
+        if media_id:
+            ws_payload["media_url"] = media.path
+
+        for member_id in member_ids:
+            await manager.send_to(member_id, ws_payload)
+
+        return response
+
+    # ── Reactions ─────────────────────────────────────────────
+
+    async def react(self, user_id: int, group_id: int, message_id: int, emoji: str) -> list[dict]:
+        if emoji not in ALLOWED_EMOJIS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Недопустимый эмодзи. Доступны: {', '.join(sorted(ALLOWED_EMOJIS))}",
+            )
+        await self._require_member(group_id, user_id)
+        msg = await self.repo.get_message_by_id(message_id)
+        if not msg or msg.group_id != group_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
+
+        _, updated = await self.repo.toggle_reaction(message_id, user_id, emoji)
+        await self.db.commit()
+
+        serialized = [{"emoji": r.emoji, "user_id": r.user_id} for r in updated]
+
+        # WS-пуш всем участникам
+        member_ids = await self.repo.get_member_ids(group_id)
+        ws_payload = {
+            "type": "group_reaction_update",
+            "group_id": group_id,
+            "message_id": message_id,
+            "reactions": serialized,
+        }
+        for member_id in member_ids:
+            await manager.send_to(member_id, ws_payload)
+
+        return serialized
+
+    # ── Helpers ───────────────────────────────────────────────
+
+    async def _get_group_or_404(self, group_id: int):
+        group = await self.repo.get_by_id(group_id)
+        if not group:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Группа не найдена")
+        return group
+
+    async def _require_member(self, group_id: int, user_id: int):
+        membership = await self.repo.get_membership(group_id, user_id)
+        if not membership:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нет доступа к группе")
+
+    async def _require_admin(self, group_id: int, user_id: int):
+        membership = await self.repo.get_membership(group_id, user_id)
+        if not membership or membership.role != GroupRole.admin:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Требуются права администратора")
