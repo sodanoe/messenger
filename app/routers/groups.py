@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 
 
 class CreateGroupRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=128)
 
 
 class InviteMemberRequest(BaseModel):
@@ -19,9 +19,16 @@ class InviteMemberRequest(BaseModel):
 
 
 class SendGroupMessageRequest(BaseModel):
-    content: str
+    # FIX: та же логика что в messages.py — нельзя слать пустоту без медиа
+    content: str = Field(default="", max_length=4096)
     media_id: int | None = None
     reply_to_id: int | None = None
+
+    @model_validator(mode="after")
+    def content_or_media_required(self) -> "SendGroupMessageRequest":
+        if not self.content.strip() and self.media_id is None:
+            raise ValueError("Укажите текст сообщения или прикрепите медиафайл")
+        return self
 
 
 class ReactRequest(BaseModel):

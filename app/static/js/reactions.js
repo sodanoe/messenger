@@ -29,11 +29,7 @@ function updateMessageReactions(msgId, reactions) {
 async function reactToMessage(msgId, emoji) {
     try {
         if (currentChat?.type === 'group') {
-            await api(
-                `/groups/${currentChat.id}/messages/${msgId}/react`,
-                'POST',
-                { emoji },
-            );
+            await api(`/groups/${currentChat.id}/messages/${msgId}/react`, 'POST', { emoji });
         } else {
             await api(`/messages/${msgId}/react`, 'POST', { emoji });
         }
@@ -66,10 +62,7 @@ async function doReact(emoji) {
 }
 
 document.addEventListener('click', (e) => {
-    if (
-        !el('reaction-picker').contains(e.target) &&
-        !e.target.closest('.msg-action-btn')
-    ) {
+    if (!el('reaction-picker').contains(e.target) && !e.target.closest('.msg-action-btn')) {
         hideReactionPicker();
     }
 });
@@ -87,11 +80,7 @@ function replyToMsg(msgId) {
         content: data.content,
         mediaUrl: data.mediaUrl || null,
     };
-    const preview = data.content
-        ? data.content.slice(0, 60)
-        : data.mediaUrl
-          ? '📷 Фото'
-          : '—';
+    const preview = data.content ? data.content.slice(0, 60) : data.mediaUrl ? '📷 Фото' : '—';
     el('reply-preview-text').textContent = `${data.senderName}: ${preview}`;
     el('reply-preview').style.display = 'flex';
     el('msg-input').focus();

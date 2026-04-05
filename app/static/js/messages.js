@@ -59,8 +59,7 @@ async function openGroup(groupId, groupName) {
 function showChat(visible) {
     el('chat-placeholder').style.display = visible ? 'none' : 'flex';
     el('chat-window').style.display = visible ? 'flex' : 'none';
-    el('back-btn').style.display =
-        visible && window.innerWidth < 768 ? 'block' : 'none';
+    el('back-btn').style.display = visible && window.innerWidth < 768 ? 'block' : 'none';
 }
 
 // ─────────────────────────────────────────────────────────
@@ -120,9 +119,7 @@ function appendMessage(
         row.dataset.msgId = id;
         msgStore[id] = {
             id,
-            senderName: isMe
-                ? 'Вы'
-                : senderUsername || currentChat?.name || `#${id}`,
+            senderName: isMe ? 'Вы' : senderUsername || currentChat?.name || `#${id}`,
             content: content || '',
             mediaUrl: mediaUrl || null,
         };
@@ -138,16 +135,10 @@ function appendMessage(
     let replyHtml = '';
     if (replyTo) {
         const author =
-            replyTo.sender_id === me?.id
-                ? 'Вы'
-                : currentChat?.name || `#${replyTo.sender_id}`;
+            replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`;
         const hasText = replyTo.content && replyTo.content.trim();
         const hasMedia = replyTo.media_url;
-        const snippet = hasText
-            ? esc(replyTo.content.slice(0, 80))
-            : hasMedia
-              ? '📷 Фото'
-              : '—';
+        const snippet = hasText ? esc(replyTo.content.slice(0, 80)) : hasMedia ? '📷 Фото' : '—';
         const thumbUrl = hasMedia
             ? hasMedia.startsWith('http')
                 ? hasMedia
@@ -168,16 +159,12 @@ function appendMessage(
     // Media
     let mediaHtml = '';
     if (mediaUrl) {
-        const fullUrl = mediaUrl.startsWith('http')
-            ? mediaUrl
-            : API_BASE() + mediaUrl;
+        const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : API_BASE() + mediaUrl;
         mediaHtml = `<div class="msg-media"><img src="${fullUrl}" onclick="openLightbox('${fullUrl}')" alt="photo" loading="lazy"></div>`;
     }
 
     // Bubble
-    const bubbleHtml = content
-        ? `<div class="msg-bubble">${esc(content)}</div>`
-        : '';
+    const bubbleHtml = content ? `<div class="msg-bubble">${esc(content)}</div>` : '';
 
     // Reactions
     const reactionsHtml = `<div class="msg-reactions">${renderReactionPills(id, reactions)}</div>`;

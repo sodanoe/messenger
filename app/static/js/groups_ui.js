@@ -39,8 +39,7 @@ async function refreshGroupMembers() {
 function renderGroupMembers(members) {
     const wrap = el('group-members-list');
     if (!members.length) {
-        wrap.innerHTML =
-            '<div style="color:var(--text2);font-size:13px">Нет участников</div>';
+        wrap.innerHTML = '<div style="color:var(--text2);font-size:13px">Нет участников</div>';
         return;
     }
 
@@ -168,12 +167,7 @@ async function doLeaveGroup() {
 
 async function doDeleteGroup() {
     if (!_modalGroupId) return;
-    if (
-        !confirm(
-            `Удалить группу «${currentChat?.name}»? Это действие необратимо.`,
-        )
-    )
-        return;
+    if (!confirm(`Удалить группу «${currentChat?.name}»? Это действие необратимо.`)) return;
     try {
         await api(`/groups/${_modalGroupId}`, 'DELETE');
         closeGroupModal();

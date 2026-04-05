@@ -56,7 +56,8 @@ class MediaService:
 
         # CPU-heavy Pillow — запускаем в threadpool, не блокируем event loop
         try:
-            loop = asyncio.get_event_loop()
+            # FIX: get_event_loop() устарел с Python 3.10, используем get_running_loop()
+            loop = asyncio.get_running_loop()
             processed_content, ext = await loop.run_in_executor(
                 None,
                 self._process_image_sync,

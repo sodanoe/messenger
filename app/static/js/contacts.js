@@ -37,9 +37,7 @@ function renderSearch(users) {
         users
             .map((u) => {
                 const isContact = contactIds.has(u.id);
-                const onlineDot = u.is_online
-                    ? '<div class="online-dot"></div>'
-                    : '';
+                const onlineDot = u.is_online ? '<div class="online-dot"></div>' : '';
                 const statusColor = u.is_online ? 'color:var(--green)' : '';
                 // FIX: data-атрибуты вместо inline строк с username (XSS через esc + HTML decode)
                 return `<div class="search-item">

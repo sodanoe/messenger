@@ -1,7 +1,6 @@
 const el = (id) => document.getElementById(id);
 const v = (id) => el(id).value.trim();
-const API_BASE = () =>
-    location.protocol === 'file:' ? 'http://localhost:8000' : location.origin;
+const API_BASE = () => (location.protocol === 'file:' ? 'http://localhost:8000' : location.origin);
 
 let token = null,
     me = null,

@@ -10,9 +10,7 @@ async function requestNotifPermission() {
 
     // Регистрируем Service Worker — нужен Chrome для показа уведомлений
     if ('serviceWorker' in navigator && !swReg) {
-        swReg = await navigator.serviceWorker
-            .register('/sw.js')
-            .catch(() => null);
+        swReg = await navigator.serviceWorker.register('/sw.js').catch(() => null);
     }
 
     if (Notification.permission === 'granted') {

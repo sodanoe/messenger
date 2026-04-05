@@ -56,24 +56,22 @@ class MessageService:
 
             if m.reply_to_id and m.reply_to_id in reply_map:
                 orig = reply_map[m.reply_to_id]
-
                 reply_obj = {
                     "id": orig.id,
                     "sender_id": orig.sender_id,
                     "content": self.crypto.decrypt(orig.content_encrypted)[:120],
                 }
-
                 if orig.media_id:
-                    media = await self.media.get_by_id(orig.media_id)
-                    if media:
-                        reply_obj["media_url"] = media.path
-
+                    # FIX: было `media` — затирало переменную сообщения
+                    reply_media = await self.media.get_by_id(orig.media_id)
+                    if reply_media:
+                        reply_obj["media_url"] = reply_media.path
                 msg_data["reply_to"] = reply_obj
 
             if m.media_id:
-                media = await self.media.get_by_id(m.media_id)
-                if media:
-                    msg_data["media_url"] = media.path
+                msg_media = await self.media.get_by_id(m.media_id)
+                if msg_media:
+                    msg_data["media_url"] = msg_media.path
 
             messages.append(msg_data)
 
@@ -107,9 +105,11 @@ class MessageService:
                 detail="You are blocked by this user",
             )
 
+        # FIX: переименовано в msg_media — изолируем от reply_media ниже
+        msg_media = None
         if media_id:
-            media = await self.media.get_by_id(media_id)
-            if not media or media.uploader_id != me:
+            msg_media = await self.media.get_by_id(media_id)
+            if not msg_media or msg_media.uploader_id != me:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file"
                 )
@@ -129,11 +129,11 @@ class MessageService:
                     "sender_id": reply_msg.sender_id,
                     "content": self.crypto.decrypt(reply_msg.content_encrypted)[:120],
                 }
-
                 if reply_msg.media_id:
-                    media = await self.media.get_by_id(reply_msg.media_id)
-                    if media:
-                        reply_info["media_url"] = media.path
+                    # FIX: было `media` — затирало msg_media выше и роняло AttributeError
+                    reply_media = await self.media.get_by_id(reply_msg.media_id)
+                    if reply_media:
+                        reply_info["media_url"] = reply_media.path
             else:
                 reply_to_id = None  # игнорируем невалидный reply
 
@@ -157,8 +157,8 @@ class MessageService:
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id:
-            response["media_url"] = media.path
+        if media_id and msg_media:  # FIX: guard + правильная переменная
+            response["media_url"] = msg_media.path
 
         ws_payload: dict = {
             "type": "new_message",
@@ -169,8 +169,8 @@ class MessageService:
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id:
-            ws_payload["media_url"] = media.path
+        if media_id and msg_media:  # FIX
+            ws_payload["media_url"] = msg_media.path
 
         await manager.send_to(receiver_id, ws_payload)
 

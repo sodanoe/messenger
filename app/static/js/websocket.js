@@ -62,10 +62,7 @@ async function connectWS() {
                     if (!searchActive) renderContacts();
                 }
                 notifyUser(getUsername(msg.from), msg.content);
-                toast(
-                    `💬 ${getUsername(msg.from)}: ${msg.content.slice(0, 50)}`,
-                    'ok',
-                );
+                toast(`💬 ${getUsername(msg.from)}: ${msg.content.slice(0, 50)}`, 'ok');
             }
             loadContacts().then(() => {
                 if (!searchActive) renderContacts();
@@ -73,10 +70,7 @@ async function connectWS() {
         }
 
         if (msg.type === 'new_group_message') {
-            if (
-                currentChat?.type === 'group' &&
-                currentChat?.id === msg.group_id
-            ) {
+            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
                 const isMe = msg.from === me?.id;
                 if (!isMe) {
                     appendMessage(
@@ -96,10 +90,7 @@ async function connectWS() {
             } else {
                 const g = groups.find((g) => g.id === msg.group_id);
                 notifyUser(`# ${g?.name || msg.group_id}`, msg.content);
-                toast(
-                    `# ${g?.name || msg.group_id}: ${msg.content.slice(0, 50)}`,
-                    'ok',
-                );
+                toast(`# ${g?.name || msg.group_id}: ${msg.content.slice(0, 50)}`, 'ok');
             }
         }
 
@@ -107,25 +98,15 @@ async function connectWS() {
             updateMessageReactions(msg.message_id, msg.reactions);
         }
         if (msg.type === 'message_deleted') {
-            document
-                .querySelector(`[data-msg-id="${msg.message_id}"]`)
-                ?.remove();
+            document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
         }
         if (msg.type === 'group_message_deleted') {
-            if (
-                currentChat?.type === 'group' &&
-                currentChat?.id === msg.group_id
-            ) {
-                document
-                    .querySelector(`[data-msg-id="${msg.message_id}"]`)
-                    ?.remove();
+            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
+                document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
             }
         }
         if (msg.type === 'group_reaction_update') {
-            if (
-                currentChat?.type === 'group' &&
-                currentChat?.id === msg.group_id
-            ) {
+            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
                 updateMessageReactions(msg.message_id, msg.reactions);
             }
         }

@@ -7,9 +7,7 @@ function switchAuthTab(tab) {
     el('form-register').style.display = tab === 'register' ? 'block' : 'none';
     document
         .querySelectorAll('.auth-tab')
-        .forEach((b, i) =>
-            b.classList.toggle('active', (i === 0) === (tab === 'login')),
-        );
+        .forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'login')));
     el('login-err').style.display = el('reg-err').style.display = 'none';
 }
 
@@ -36,8 +34,7 @@ async function doRegister() {
     const username = v('r-user'),
         password = v('r-pass'),
         invite_code = v('r-invite');
-    if (!username || !password || !invite_code)
-        return showErr(el('reg-err'), 'Заполни все поля');
+    if (!username || !password || !invite_code) return showErr(el('reg-err'), 'Заполни все поля');
     const btn = el('reg-btn'),
         err = el('reg-err');
     err.style.display = 'none';

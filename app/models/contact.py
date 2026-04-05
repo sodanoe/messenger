@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Boolean, Enum, ForeignKey
+from sqlalchemy import Boolean, Enum, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -27,4 +27,9 @@ class Contact(Base):
         Enum(ContactStatus, name="contact_status"),
         default=ContactStatus.pending,
         nullable=False,
+    )
+
+    # FIX: без этого два одновременных запроса могут создать дубль (race condition)
+    __table_args__ = (
+        UniqueConstraint("user_id", "contact_user_id", name="uq_contact_pair"),
     )

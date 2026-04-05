@@ -39,6 +39,9 @@ class GroupMember(Base):
         Enum(GroupRole, name="group_role"), default=GroupRole.member, nullable=False
     )
 
+    # FIX: без этого два одновременных invite могут добавить юзера дважды
+    __table_args__ = (UniqueConstraint("group_id", "user_id", name="uq_group_member"),)
+
 
 class GroupMessage(Base):
     __tablename__ = "group_messages"

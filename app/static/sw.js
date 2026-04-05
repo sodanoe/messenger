@@ -17,14 +17,10 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('notificationclick', (e) => {
     e.notification.close();
     e.waitUntil(
-        clients
-            .matchAll({ type: 'window', includeUncontrolled: true })
-            .then((list) => {
-                const existing = list.find(
-                    (c) => c.url && c.url.includes(self.location.origin),
-                );
-                if (existing) return existing.focus();
-                return clients.openWindow('/');
-            }),
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+            const existing = list.find((c) => c.url && c.url.includes(self.location.origin));
+            if (existing) return existing.focus();
+            return clients.openWindow('/');
+        }),
     );
 });

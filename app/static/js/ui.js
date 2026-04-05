@@ -51,19 +51,13 @@ function showErr(errEl, msg) {
     errEl.style.display = 'block';
 }
 function isActiveDM(uid) {
-    return currentChat?.type === 'dm' && currentChat?.id === uid
-        ? 'active'
-        : '';
+    return currentChat?.type === 'dm' && currentChat?.id === uid ? 'active' : '';
 }
 function isActiveGroup(gid) {
-    return currentChat?.type === 'group' && currentChat?.id === gid
-        ? 'active'
-        : '';
+    return currentChat?.type === 'group' && currentChat?.id === gid ? 'active' : '';
 }
 function getUsername(uid) {
-    return (
-        contacts.find((c) => c.contact_user_id === uid)?.username || `#${uid}`
-    );
+    return contacts.find((c) => c.contact_user_id === uid)?.username || `#${uid}`;
 }
 function initials(name) {
     return name ? name[0].toUpperCase() : '?';
@@ -159,10 +153,7 @@ async function saveMediaSettings() {
 }
 
 function setVh() {
-    document.documentElement.style.setProperty(
-        '--vh',
-        window.innerHeight * 0.01 + 'px',
-    );
+    document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px');
 }
 setVh();
 window.addEventListener('resize', setVh);

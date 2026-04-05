@@ -16,25 +16,13 @@
                 test client — <span id="api-host-label">localhost:8000</span>
             </div>
             <div class="auth-tabs">
-                <button
-                    class="auth-tab active"
-                    onclick="switchAuthTab('login')"
-                >
-                    Вход
-                </button>
-                <button class="auth-tab" onclick="switchAuthTab('register')">
-                    Регистрация
-                </button>
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
             </div>
             <div id="form-login">
                 <div class="field">
                     <label>Username</label>
-                    <input
-                        id="l-user"
-                        type="text"
-                        autocomplete="username"
-                        placeholder="admin"
-                    />
+                    <input id="l-user" type="text" autocomplete="username" placeholder="admin" />
                 </div>
                 <div class="field">
                     <label>Password</label>
@@ -45,20 +33,13 @@
                         placeholder="••••••••"
                     />
                 </div>
-                <button class="btn" id="login-btn" onclick="doLogin()">
-                    Войти
-                </button>
+                <button class="btn" id="login-btn" onclick="doLogin()">Войти</button>
                 <div class="auth-error" id="login-err"></div>
             </div>
             <div id="form-register" style="display: none">
                 <div class="field">
                     <label>Username</label>
-                    <input
-                        id="r-user"
-                        type="text"
-                        autocomplete="username"
-                        placeholder="username"
-                    />
+                    <input id="r-user" type="text" autocomplete="username" placeholder="username" />
                 </div>
                 <div class="field">
                     <label>Password</label>
@@ -78,9 +59,7 @@
                         autocomplete="off"
                     />
                 </div>
-                <button class="btn" id="reg-btn" onclick="doRegister()">
-                    Зарегистрироваться
-                </button>
+                <button class="btn" id="reg-btn" onclick="doRegister()">Зарегистрироваться</button>
                 <div class="auth-error" id="reg-err"></div>
             </div>
         </div>
@@ -90,20 +69,9 @@
                 <div class="sidebar-header">
                     <div class="sidebar-logo">// msg</div>
                     <div class="me-badge" id="me-username"></div>
-                    <span
-                        class="admin-badge"
-                        id="admin-badge"
-                        style="display: none"
-                        >ADMIN</span
-                    >
+                    <span class="admin-badge" id="admin-badge" style="display: none">ADMIN</span>
                     <div id="ws-status" title="WebSocket"></div>
-                    <button
-                        class="icon-btn danger"
-                        onclick="doLogout()"
-                        title="Выйти"
-                    >
-                        ⏻
-                    </button>
+                    <button class="icon-btn danger" onclick="doLogout()" title="Выйти">⏻</button>
                 </div>
 
                 <div class="search-wrap">
@@ -114,29 +82,17 @@
                         oninput="onSearchInput(this.value)"
                         autocomplete="off"
                     />
-                    <button
-                        class="search-clear"
-                        id="search-clear"
-                        onclick="clearSearch()"
-                    >
+                    <button class="search-clear" id="search-clear" onclick="clearSearch()">
                         ✕
                     </button>
                 </div>
                 <div id="search-results"></div>
 
                 <div class="sidebar-tabs" id="sidebar-tabs">
-                    <button
-                        class="tab-btn active"
-                        id="tab-dm"
-                        onclick="switchTab('dm')"
-                    >
+                    <button class="tab-btn active" id="tab-dm" onclick="switchTab('dm')">
                         DMs
                     </button>
-                    <button
-                        class="tab-btn"
-                        id="tab-groups"
-                        onclick="switchTab('groups')"
-                    >
+                    <button class="tab-btn" id="tab-groups" onclick="switchTab('groups')">
                         Groups
                     </button>
                 </div>
@@ -153,9 +109,7 @@
                         >
                             нет кода
                         </div>
-                        <button class="small-btn" onclick="genInvite()">
-                            + Создать
-                        </button>
+                        <button class="small-btn" onclick="genInvite()">+ Создать</button>
                     </div>
                     <div class="invite-hint" id="invite-hint">
                         Создай код и отправь новому пользователю
@@ -198,10 +152,7 @@
                             />
                             <span class="setting-hint">палитра</span>
                         </div>
-                        <button
-                            class="save-settings-btn"
-                            onclick="saveMediaSettings()"
-                        >
+                        <button class="save-settings-btn" onclick="saveMediaSettings()">
                             Сохранить
                         </button>
                     </div>
@@ -238,9 +189,7 @@
                         <div class="avatar" id="chat-avatar">?</div>
                         <div style="flex: 1; min-width: 0">
                             <div class="chat-header-name" id="chat-name">—</div>
-                            <div class="chat-status" id="chat-status">
-                                offline
-                            </div>
+                            <div class="chat-status" id="chat-status">offline</div>
                         </div>
                         <button
                             id="chat-members-btn"
@@ -265,16 +214,11 @@
                         </button>
                     </div>
                     <div class="messages-wrap" id="messages"></div>
-                    <div
-                        id="media-preview-container"
-                        style="display: none"
-                    ></div>
+                    <div id="media-preview-container" style="display: none"></div>
                     <div id="reply-preview">
                         <span id="reply-preview-icon">↩</span>
                         <span id="reply-preview-text"></span>
-                        <button class="reply-close-btn" onclick="clearReply()">
-                            ✕
-                        </button>
+                        <button class="reply-close-btn" onclick="clearReply()">✕</button>
                     </div>
                     <div
                         class="chat-input-area"
@@ -286,9 +230,7 @@
                         <button
                             class="attach-btn"
                             id="attach-btn"
-                            onclick="
-                                document.getElementById('media-input').click()
-                            "
+                            onclick="document.getElementById('media-input').click()"
                         >
                             📎
                         </button>
@@ -306,9 +248,7 @@
                             onkeydown="handleKey(event)"
                             oninput="autoGrow(this)"
                         ></textarea>
-                        <button class="send-btn" onclick="sendMessage()">
-                            ➤
-                        </button>
+                        <button class="send-btn" onclick="sendMessage()">➤</button>
                     </div>
                 </div>
             </div>
@@ -344,17 +284,8 @@
                     overflow-y: auto;
                 "
             >
-                <div
-                    style="
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                    "
-                >
-                    <span
-                        id="group-modal-title"
-                        style="font-weight: 600; font-size: 15px"
-                    ></span>
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                    <span id="group-modal-title" style="font-weight: 600; font-size: 15px"></span>
                     <button
                         onclick="closeGroupModal()"
                         style="
@@ -500,12 +431,7 @@
 
         <div id="lightbox" onclick="closeLightbox(event)">
             <button id="lightbox-close" onclick="closeLightbox()">✕</button>
-            <img
-                id="lightbox-img"
-                src=""
-                alt=""
-                onclick="event.stopPropagation()"
-            />
+            <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
         </div>
 
         <!-- JS: порядок важен — state первым, ui последним -->
