@@ -225,9 +225,9 @@ async def test_6_heartbeat(client):
             (c for c in contacts if c["contact_user_id"] == state["uid_a"]), None
         )
         assert alice_contact is not None
-        assert (
-            alice_contact.get("is_online") is True
-        ), f"Expected is_online=True while WS open, got {alice_contact}"
+        assert alice_contact.get("is_online") is True, (
+            f"Expected is_online=True while WS open, got {alice_contact}"
+        )
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -308,9 +308,9 @@ async def test_8_sender_excluded_from_fanout(client):
         with pytest.raises(asyncio.TimeoutError):
             msg = await recv_with_timeout(ws_alice, timeout=1.5)
             # Если что-то пришло — убеждаемся что это НЕ group_message
-            assert (
-                msg.get("type") != "group_message"
-            ), f"Sender should not receive own group_message, got {msg}"
+            assert msg.get("type") != "group_message", (
+                f"Sender should not receive own group_message, got {msg}"
+            )
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -355,9 +355,9 @@ async def test_10_contacts_is_online_live(client):
         (c for c in contacts_before if c["contact_user_id"] == state["uid_a"]), None
     )
     assert alice_before is not None
-    assert (
-        alice_before.get("is_online") is False
-    ), f"Expected is_online=False before connect, got {alice_before}"
+    assert alice_before.get("is_online") is False, (
+        f"Expected is_online=False before connect, got {alice_before}"
+    )
 
     # Alice подключается
     async with websockets.connect(ws_url(state["token_a"])):
@@ -369,6 +369,6 @@ async def test_10_contacts_is_online_live(client):
             (c for c in contacts_after if c["contact_user_id"] == state["uid_a"]), None
         )
         assert alice_after is not None
-        assert (
-            alice_after.get("is_online") is True
-        ), f"Expected is_online=True after connect, got {alice_after}"
+        assert alice_after.get("is_online") is True, (
+            f"Expected is_online=True after connect, got {alice_after}"
+        )

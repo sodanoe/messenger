@@ -92,9 +92,9 @@ def test_2_reaction_visible_in_history(client):
     msg = next((m for m in msgs if m["id"] == state["msg1_id"]), None)
     assert msg is not None, "Сообщение не найдено в истории"
     assert "reactions" in msg, "Поле reactions отсутствует"
-    assert any(
-        rx["emoji"] == "❤️" for rx in msg["reactions"]
-    ), f"Реакция ❤️ не найдена в {msg['reactions']}"
+    assert any(rx["emoji"] == "❤️" for rx in msg["reactions"]), (
+        f"Реакция ❤️ не найдена в {msg['reactions']}"
+    )
 
 
 def test_3_toggle_removes_reaction(client):
@@ -184,9 +184,9 @@ def test_7_reply_visible_in_history(client):
     assert reply is not None, "Ответное сообщение не найдено"
     assert reply["reply_to"] is not None
     assert reply["reply_to"]["id"] == state["msg1_id"]
-    assert (
-        reply["reply_to"]["content"] == "Привет!"
-    ), f"Неверный текст цитаты: {reply['reply_to']['content']}"
+    assert reply["reply_to"]["content"] == "Привет!", (
+        f"Неверный текст цитаты: {reply['reply_to']['content']}"
+    )
 
 
 def test_8_invalid_reply_to_ignored(client):
@@ -197,9 +197,9 @@ def test_8_invalid_reply_to_ignored(client):
         headers=auth(state["token_a"]),
     )
     assert r.status_code == 201
-    assert (
-        r.json()["reply_to"] is None
-    ), "Невалидный reply_to должен быть проигнорирован"
+    assert r.json()["reply_to"] is None, (
+        "Невалидный reply_to должен быть проигнорирован"
+    )
 
 
 def test_9_multiple_reactions_different_users(client):

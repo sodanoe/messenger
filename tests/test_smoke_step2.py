@@ -175,9 +175,9 @@ def test_6_contacts_has_unread_true(client):
         (c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None
     )
     assert alice_contact is not None, "Alice not found in Bob's contacts"
-    assert (
-        alice_contact["has_unread"] is True
-    ), f"Expected has_unread=True, got {alice_contact}"
+    assert alice_contact["has_unread"] is True, (
+        f"Expected has_unread=True, got {alice_contact}"
+    )
 
 
 # ════════════════════════════════════════════════════════════
@@ -206,9 +206,9 @@ def test_8_contacts_has_unread_false(client):
         (c for c in contacts if c["contact_user_id"] == state["user_id_a"]), None
     )
     assert alice_contact is not None
-    assert (
-        alice_contact["has_unread"] is False
-    ), f"Expected has_unread=False, got {alice_contact}"
+    assert alice_contact["has_unread"] is False, (
+        f"Expected has_unread=False, got {alice_contact}"
+    )
 
 
 # ════════════════════════════════════════════════════════════
@@ -248,6 +248,6 @@ def test_bonus_block(client):
         json={"content": "можно?"},
         headers=auth_headers(state["token_b"]),
     )
-    assert (
-        resp2.status_code == 403
-    ), f"Expected 403 after block, got {resp2.status_code}"
+    assert resp2.status_code == 403, (
+        f"Expected 403 after block, got {resp2.status_code}"
+    )

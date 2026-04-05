@@ -107,9 +107,9 @@ def test_3_non_member_gets_403(client):
         f"/groups/{state['group_id']}/messages",
         headers=auth_headers(state["token_b"]),
     )
-    assert (
-        resp.status_code == 403
-    ), f"Expected 403 for non-member, got {resp.status_code}"
+    assert resp.status_code == 403, (
+        f"Expected 403 for non-member, got {resp.status_code}"
+    )
 
     resp2 = client.get(
         f"/groups/{state['group_id']}/members",

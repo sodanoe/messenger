@@ -140,9 +140,9 @@ def test_3_blocked_user_cannot_message(client):
         json={"content": "unblock me"},
         headers=auth_headers(state["token_b"]),
     )
-    assert (
-        resp2.status_code == 403
-    ), f"Expected 403 after block, got {resp2.status_code}"
+    assert resp2.status_code == 403, (
+        f"Expected 403 after block, got {resp2.status_code}"
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -194,7 +194,7 @@ def test_6_no_token_rejected(client):
         ("GET", "/contacts"),
         ("GET", "/groups"),
         ("GET", f"/messages/{state['uid_b']}"),
-        ("GET", f"/users/search?q=test"),
+        ("GET", "/users/search?q=test"),
     ]
     for method, path in endpoints:
         resp = client.request(method, path)
@@ -247,7 +247,6 @@ def test_8_delete_account(client):
             "invite_code": code2,
         },
     )
-    friend_token = reg2.json()["access_token"]
     client.post(
         "/contacts",
         json={"username": f"s5_friend_{RUN}"},
@@ -321,9 +320,9 @@ def test_9_cascade_wipe(client):
         "/contacts", headers=auth_headers(state["token_b"])
     ).json()
     after_ids = [c["contact_user_id"] for c in contacts_after]
-    assert (
-        carol2_id not in after_ids
-    ), f"Carol2 (id={carol2_id}) всё ещё в контактах Bob после удаления"
+    assert carol2_id not in after_ids, (
+        f"Carol2 (id={carol2_id}) всё ещё в контактах Bob после удаления"
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -350,9 +349,9 @@ def test_10_deleted_user_not_in_search(client):
     search_before = client.get(
         f"/users/search?q={ghost_name}", headers=auth_headers(state["token_a"])
     ).json()
-    assert any(
-        u["username"] == ghost_name for u in search_before
-    ), "Ghost должен находиться до удаления"
+    assert any(u["username"] == ghost_name for u in search_before), (
+        "Ghost должен находиться до удаления"
+    )
 
     # Удаляем
     client.delete("/users/me", headers=auth_headers(ghost_token))
@@ -361,6 +360,6 @@ def test_10_deleted_user_not_in_search(client):
     search_after = client.get(
         f"/users/search?q={ghost_name}", headers=auth_headers(state["token_a"])
     ).json()
-    assert not any(
-        u["username"] == ghost_name for u in search_after
-    ), f"Ghost всё ещё в поиске после удаления: {search_after}"
+    assert not any(u["username"] == ghost_name for u in search_after), (
+        f"Ghost всё ещё в поиске после удаления: {search_after}"
+    )
