@@ -1,23 +1,21 @@
 """
-WebSocket endpoint  –  GET /ws?token=<jwt>
+WebSocket endpoint  –  GET /ws?ticket=<one-time-ticket>
 
 Жизненный цикл:
-  1. Валидируем JWT из query-param ?token=
+  1. Валидируем одноразовый тикет из Redis
   2. manager.connect(user_id, ws)
   3. Redis SET user:online:{id} EX 30
   4. Рассылаем контактам {type: user_online}
-  5. Receive-loop: любое сообщение от клиента -> redis.expire (heartbeat)
+  5. Receive-loop: heartbeat + обновление contact_ids каждые 10 пингов
   6. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
 """
 
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-from jose import JWTError
 
 from app.core.connection_manager import manager
 from app.core.database import AsyncSessionLocal
-from app.core.jwt import decode_access_token
 from app.core.redis_client import get_redis
 from app.models.contact import ContactStatus
 from app.repositories.contact_repo import ContactRepository
@@ -40,16 +38,16 @@ async def _get_accepted_contact_ids(user_id: int) -> list[int]:
 @router.websocket("/ws")
 async def websocket_endpoint(
     ws: WebSocket,
-    token: str = Query(..., description="JWT access token"),
+    ticket: str = Query(..., description="One-time WS ticket from /auth/ws/ticket"),
 ) -> None:
     # ── 1. Auth ────────────────────────────────────────────────────────────
-    try:
-        user_id = decode_access_token(token)
-    except (JWTError, ValueError, Exception):
+    redis = get_redis()
+    user_id_str = await redis.getdel(f"ws:ticket:{ticket}")
+    if not user_id_str:
         await ws.close(code=1008)
         return
+    user_id = int(user_id_str)
 
-    redis = get_redis()
     contact_ids = await _get_accepted_contact_ids(user_id)
 
     # ── 2. Connect + presence ──────────────────────────────────────────────
@@ -64,9 +62,15 @@ async def websocket_endpoint(
 
     # ── 3. Receive loop (heartbeat) ────────────────────────────────────────
     try:
+        heartbeat_count = 0
         while True:
             await ws.receive_text()
             await redis.expire(f"user:online:{user_id}", 30)
+            heartbeat_count += 1
+            # Обновляем список контактов каждые 10 пингов (~3 минуты)
+            if heartbeat_count % 10 == 0:
+                contact_ids = await _get_accepted_contact_ids(user_id)
+                logger.debug("WS refreshed contacts user_id=%s", user_id)
 
     except WebSocketDisconnect:
         logger.info("WS close user_id=%s (clean disconnect)", user_id)
@@ -77,8 +81,10 @@ async def websocket_endpoint(
     finally:
         manager.disconnect(user_id)
         await redis.delete(f"user:online:{user_id}")
+        # Свежий список — мог измениться за время сессии
+        fresh_contact_ids = await _get_accepted_contact_ids(user_id)
         await manager.send_to_many(
-            contact_ids,
+            fresh_contact_ids,
             {"type": "user_offline", "user_id": user_id},
         )
         logger.info("WS cleaned user_id=%s", user_id)

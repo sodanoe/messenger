@@ -36,6 +36,10 @@ class Message(Base):
         nullable=False,
     )
 
+    read_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     __table_args__ = (
         Index("ix_messages_sender_receiver", "sender_id", "receiver_id"),
         Index("ix_messages_created_at", "created_at"),

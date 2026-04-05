@@ -1,6 +1,6 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta
+from datetime import datetime
 from app.models.media_file import MediaFile
 
 
@@ -29,15 +29,12 @@ class MediaRepository:
         return result.scalar_one_or_none()
 
     async def assign_to_message(self, media_id: int, message_id: int) -> None:
-        await self.db.execute(select(MediaFile).where(MediaFile.id == media_id))
         media = await self.get_by_id(media_id)
         if media:
             media.message_id = message_id
             await self.db.flush()
 
-    async def delete_old_files(self, days: int) -> list[MediaFile]:
-        """Находит файлы старше N дней, не привязанные к сообщениям"""
-        cutoff = datetime.now() - timedelta(days=days)
+    async def delete_old_files(self, cutoff: datetime) -> list[MediaFile]:
         result = await self.db.execute(
             select(MediaFile).where(
                 MediaFile.created_at < cutoff, MediaFile.message_id.is_(None)

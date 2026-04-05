@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # ищет .env в текущей директории
 
-from app.models import Base  # noqa: F401
+from app.models import Base  # noqa: E402
 
 config = context.config
 fileConfig(config.config_file_name)  # type: ignore

@@ -50,9 +50,13 @@ class GroupService:
             {
                 "user_id": m.user_id,
                 "role": m.role,
-                "username": users[m.user_id].username,
+                # .get() вместо [] — защита от удалённого юзера без CASCADE
+                "username": users.get(m.user_id)
+                and users[m.user_id].username
+                or f"#{m.user_id}",
             }
             for m in members
+            if m.user_id in users  # пропускаем записи-призраки
         ]
 
     async def invite_member(self, user_id: int, group_id: int, username: str) -> dict:
@@ -111,7 +115,7 @@ class GroupService:
             msg_data: dict = {
                 "id": m.id,
                 "sender_id": m.sender_id,
-                "content": self.crypto.decrypt(m.content_encrypted),
+                "content": self.crypto.decrypt(str(m.content_encrypted)),
                 "created_at": m.created_at,
                 "reactions": reactions_by_msg.get(m.id, []),
                 "reply_to": None,
@@ -123,7 +127,7 @@ class GroupService:
                 reply_obj = {
                     "id": orig.id,
                     "sender_id": orig.sender_id,
-                    "content": self.crypto.decrypt(orig.content_encrypted)[:120],
+                    "content": self.crypto.decrypt(str(orig.content_encrypted))[:120],
                 }
                 if orig.media_id:
                     media = await self.media.get_by_id(orig.media_id)
@@ -150,14 +154,14 @@ class GroupService:
     ) -> dict:
         await self._require_member(group_id, user_id)
 
+        msg_media = None
         if media_id:
-            media = await self.media.get_by_id(media_id)
-            if not media or media.uploader_id != user_id:
+            msg_media = await self.media.get_by_id(media_id)
+            if not msg_media or msg_media.uploader_id != user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file"
                 )
 
-        # Валидируем reply_to_id: сообщение должно быть из этой группы
         reply_info: dict | None = None
         if reply_to_id:
             reply_msg = await self.repo.get_message_by_id(reply_to_id)
@@ -165,12 +169,14 @@ class GroupService:
                 reply_info = {
                     "id": reply_msg.id,
                     "sender_id": reply_msg.sender_id,
-                    "content": self.crypto.decrypt(reply_msg.content_encrypted)[:120],
+                    "content": self.crypto.decrypt(str(reply_msg.content_encrypted))[
+                        :120
+                    ],
                 }
                 if reply_msg.media_id:
-                    media = await self.media.get_by_id(reply_msg.media_id)
-                    if media:
-                        reply_info["media_url"] = media.path
+                    reply_media = await self.media.get_by_id(reply_msg.media_id)
+                    if reply_media:
+                        reply_info["media_url"] = reply_media.path
             else:
                 reply_to_id = None
 
@@ -184,9 +190,12 @@ class GroupService:
 
         await self.db.commit()
 
+        sender = await self.users.get_by_id(user_id)
+        sender_username = sender.username if sender else f"#{user_id}"
+
         response: dict = {
             "id": msg.id,
-            "sender_username": (await self.users.get_by_id(user_id)).username,
+            "sender_username": sender_username,
             "group_id": group_id,
             "sender_id": user_id,
             "content": content,
@@ -194,27 +203,25 @@ class GroupService:
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id:
-            response["media_url"] = media.path
+        if media_id and msg_media:
+            response["media_url"] = msg_media.path
 
-        # WS-пуш всем участникам группы
         member_ids = await self.repo.get_member_ids(group_id)
         ws_payload: dict = {
             "type": "new_group_message",
             "group_id": group_id,
             "id": msg.id,
-            "sender_username": (await self.users.get_by_id(user_id)).username,
+            "sender_username": sender_username,
             "from": user_id,
             "content": content,
             "created_at": msg.created_at.isoformat(),
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id:
-            ws_payload["media_url"] = media.path
+        if media_id and msg_media:
+            ws_payload["media_url"] = msg_media.path
 
-        for member_id in member_ids:
-            await manager.send_to(member_id, ws_payload)
+        await manager.send_to_many(member_ids, ws_payload)
 
         return response
 
@@ -234,15 +241,14 @@ class GroupService:
         await self.repo.delete_message(msg)
         await self.db.commit()
         member_ids = await self.repo.get_member_ids(group_id)
-        for member_id in member_ids:
-            await manager.send_to(
-                member_id,
-                {
-                    "type": "group_message_deleted",
-                    "group_id": group_id,
-                    "message_id": message_id,
-                },
-            )
+        await manager.send_to_many(
+            member_ids,
+            {
+                "type": "group_message_deleted",
+                "group_id": group_id,
+                "message_id": message_id,
+            },
+        )
 
     # ── Reactions ─────────────────────────────────────────────
 
@@ -266,7 +272,6 @@ class GroupService:
 
         serialized = [{"emoji": r.emoji, "user_id": r.user_id} for r in updated]
 
-        # WS-пуш всем участникам
         member_ids = await self.repo.get_member_ids(group_id)
         ws_payload = {
             "type": "group_reaction_update",
@@ -274,8 +279,7 @@ class GroupService:
             "message_id": message_id,
             "reactions": serialized,
         }
-        for member_id in member_ids:
-            await manager.send_to(member_id, ws_payload)
+        await manager.send_to_many(member_ids, ws_payload)
 
         return serialized
 

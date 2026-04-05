@@ -4,11 +4,9 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.core.database import engine
-from app.models import Base
 from app.routers import (
     auth,
     contacts,
@@ -66,6 +64,11 @@ app.include_router(admin.router)
 
 # ── Static frontend ────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def serve_sw():
+    return FileResponse("app/static/sw.js")
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

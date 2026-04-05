@@ -67,5 +67,19 @@ class MessageRepository:
         await self.db.refresh(msg)
         return msg
 
+    async def mark_read_by_sender(self, sender_id: int, receiver_id: int) -> None:
+        from sqlalchemy import update
+        from datetime import datetime, timezone
+
+        await self.db.execute(
+            update(Message)
+            .where(
+                Message.sender_id == sender_id,
+                Message.receiver_id == receiver_id,
+                Message.read_at.is_(None),
+            )
+            .values(read_at=datetime.now(timezone.utc))
+        )
+
     async def delete(self, message: Message) -> None:
         await self.db.delete(message)

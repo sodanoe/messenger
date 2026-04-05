@@ -19,17 +19,18 @@ class ContactService:
 
     async def list_contacts(self, me: int, redis) -> list[dict]:
         rows = await self.contacts.list_for_user(me)
+        if not rows:
+            return []
+
+        # Батч — один запрос вместо N
+        contact_ids = [c.contact_user_id for c in rows]
+        users = {u.id: u for u in await self.users.get_by_ids(contact_ids)}
+
         result = []
         for c in rows:
-            # online status from Redis
-            online_key = f"user:online:{c.contact_user_id}"
-            is_online = await redis.exists(online_key) == 1
-
-            # last message
+            is_online = await redis.exists(f"user:online:{c.contact_user_id}") == 1
             last_msg = await self.messages.get_last_between(me, c.contact_user_id)
-
-            # contact username
-            user = await self.users.get_by_id(c.contact_user_id)
+            user = users.get(c.contact_user_id)  # из словаря, без запроса в БД
 
             result.append(
                 {
@@ -51,7 +52,6 @@ class ContactService:
                 }
             )
 
-        # sort by last message desc (nulls last)
         result.sort(
             key=lambda x: (
                 x["last_message"]["created_at"]
@@ -103,13 +103,21 @@ class ContactService:
 
     async def search_users(self, me: int, q: str) -> list[dict]:
         # Get blocked contact_user_ids (users who blocked me OR I blocked)
-        result = await self.db.execute(
+        result_i_blocked = await self.db.execute(
             select(Contact.contact_user_id).where(
                 Contact.user_id == me,
                 Contact.status == ContactStatus.blocked,
             )
         )
-        blocked_ids = {row for row in result.scalars().all()}
+        result_blocked_me = await self.db.execute(
+            select(Contact.user_id).where(
+                Contact.contact_user_id == me,
+                Contact.status == ContactStatus.blocked,
+            )
+        )
+        blocked_ids = {row for row in result_i_blocked.scalars().all()} | {
+            row for row in result_blocked_me.scalars().all()
+        }
 
         result = await self.db.execute(
             select(User).where(

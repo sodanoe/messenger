@@ -22,8 +22,6 @@ class AESCrypto(BaseCrypto):
         cipher = Cipher(
             algorithms.AES(self._key), modes.CBC(iv), backend=default_backend()
         )
-        ct = cipher.encryptor().update(padded) + cipher.encryptor().finalize()
-        # Store as  base64(iv + ciphertext)
         encryptor = cipher.encryptor()
         ct = encryptor.update(padded) + encryptor.finalize()
         return base64.b64encode(iv + ct).decode()

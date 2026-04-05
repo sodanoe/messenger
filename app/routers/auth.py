@@ -49,3 +49,17 @@ async def create_invite(
     db: AsyncSession = Depends(get_db),
 ):
     return await AuthService(db).generate_invite(admin.id)
+
+
+@router.post("/ws/ticket")
+async def get_ws_ticket(
+    current_user: User = Depends(get_current_user),
+):
+    """Выдаёт одноразовый короткоживущий токен для WS-подключения."""
+    from app.core.redis_client import get_redis
+    import secrets
+
+    redis = get_redis()
+    ticket = secrets.token_hex(16)
+    await redis.set(f"ws:ticket:{ticket}", str(current_user.id), ex=30)
+    return {"ticket": ticket}

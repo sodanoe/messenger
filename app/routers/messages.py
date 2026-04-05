@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 
 
 class SendMessageRequest(BaseModel):
-    content: str
+    content: str = Field(max_length=4096)
     media_id: int | None = None
     reply_to_id: int | None = None
 

@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.connection_manager import manager
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -39,12 +42,29 @@ async def delete_account(
     CASCADE автоматически удаляет:
       contacts (оба направления), messages, group_members,
       group_messages, invite_codes (used_by).
+    Медиафайлы удаляются с диска до удаления записей из БД.
     WS-соединение закрывается немедленно.
     """
+    # media_repo = MediaRepository(db)
+    media_dir = Path(settings.MEDIA_DIR)
+
+    # Удаляем физические файлы пользователя с диска
+    from sqlalchemy import select
+    from app.models.media_file import MediaFile
+
+    result = await db.execute(
+        select(MediaFile).where(MediaFile.uploader_id == current_user.id)
+    )
+    user_files = result.scalars().all()
+    for mf in user_files:
+        file_path = media_dir / mf.path[len("/media/") :]
+        if file_path.exists():
+            file_path.unlink()
+
     # Отключаем WS если подключён
     manager.disconnect(current_user.id)
 
-    # Удаляем пользователя — CASCADE делает всё остальное
+    # Удаляем пользователя — CASCADE делает всё остальное в БД
     repo = UserRepository(db)
     user = await repo.get_by_id(current_user.id)
     if user:

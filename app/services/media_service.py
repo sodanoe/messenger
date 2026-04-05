@@ -1,8 +1,9 @@
-import os
-import uuid
 import asyncio
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+
+import aiofiles
 from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from PIL import Image
@@ -34,7 +35,6 @@ class MediaService:
 
     async def upload(self, user_id: int, file: UploadFile) -> dict:
         """Загрузка и обработка медиафайла"""
-        # Проверка размера
         content = await file.read()
         if len(content) > settings.MEDIA_MAX_UPLOAD_MB * 1024 * 1024:
             raise HTTPException(
@@ -42,7 +42,6 @@ class MediaService:
                 detail=f"File too large. Max {settings.MEDIA_MAX_UPLOAD_MB}MB",
             )
 
-        # Проверка MIME типа
         mime_type = file.content_type or self._guess_mime(content[:1024])
         if mime_type not in self.ALLOWED_MIMES:
             raise HTTPException(
@@ -50,16 +49,29 @@ class MediaService:
                 detail="Only images (JPEG, PNG, GIF, WebP) are allowed",
             )
 
-        # Обработка изображения
+        # Получаем настройки до входа в executor (они async)
+        max_size = await self._get_setting("max_size", settings.MEDIA_MAX_SIZE)
+        colors = await self._get_setting("colors", settings.MEDIA_COLORS)
+        quality = await self._get_setting("quality", settings.MEDIA_QUALITY)
+
+        # CPU-heavy Pillow — запускаем в threadpool, не блокируем event loop
         try:
-            processed_content, ext = await self._process_image(content, mime_type)
+            loop = asyncio.get_event_loop()
+            processed_content, ext = await loop.run_in_executor(
+                None,
+                self._process_image_sync,
+                content,
+                mime_type,
+                max_size,
+                colors,
+                quality,
+            )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid image: {str(e)}",
             )
 
-        # Сохранение файла
         date_path = datetime.now().strftime("%Y/%m/%d")
         target_dir = self.media_dir / date_path
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -68,10 +80,9 @@ class MediaService:
         file_path = target_dir / filename
         relative_path = f"/media/{date_path}/{filename}"
 
-        with open(file_path, "wb") as f:
-            f.write(processed_content)
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(processed_content)
 
-        # Сохранение в БД
         media = await self.repo.create(
             uploader_id=user_id,
             path=relative_path,
@@ -87,20 +98,23 @@ class MediaService:
             "size": media.size,
         }
 
-    async def _process_image(self, content: bytes, mime_type: str) -> tuple[bytes, str]:
-        """Обработка изображения: сжатие, ресайз, оптимизация"""
+    @staticmethod
+    def _process_image_sync(
+        content: bytes,
+        mime_type: str,
+        max_size: int,
+        colors: int,
+        quality: int,
+    ) -> tuple[bytes, str]:
+        """Синхронная обработка — вызывается через run_in_executor."""
         img = Image.open(io.BytesIO(content))
 
-        # Для GIF сохраняем анимацию
         if mime_type == "image/gif":
-            # Просто сохраняем с оптимизацией
             output = io.BytesIO()
             img.save(output, format="GIF", save_all=True, optimize=True)
             return output.getvalue(), ".gif"
 
-        # Конвертация в RGB если нужно
         if img.mode in ("RGBA", "LA", "P"):
-            # Создаем белый фон для прозрачности
             background = Image.new("RGB", img.size, (255, 255, 255))
             if img.mode == "P":
                 img = img.convert("RGBA")
@@ -109,27 +123,18 @@ class MediaService:
         elif img.mode != "RGB":
             img = img.convert("RGB")
 
-        # Ресайз с сохранением пропорций
-        max_size = await self._get_setting("max_size", settings.MEDIA_MAX_SIZE)
         if max_size and max(img.size) > max_size:
             ratio = max_size / max(img.size)
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
             img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-        # Квантование цветов
-        colors = await self._get_setting("colors", settings.MEDIA_COLORS)
         if colors:
             img = img.quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
             img = img.convert("RGB")
 
-        # Сохранение с качеством
         output = io.BytesIO()
         img.save(
-            output,
-            format="JPEG",
-            quality=await self._get_setting("quality", settings.MEDIA_QUALITY),
-            optimize=True,
-            progressive=True,
+            output, format="JPEG", quality=quality, optimize=True, progressive=True
         )
         return output.getvalue(), ".jpg"
 
@@ -147,8 +152,6 @@ class MediaService:
 
     async def cleanup_old_files(self) -> int:
         """Фоновая очистка старых файлов"""
-        # old_files = await self.repo.delete_old_files(settings.MEDIA_TTL_DAYS)
-        # Фикс: используем timezone-aware datetime
         from datetime import timedelta
 
         cutoff = datetime.now(timezone.utc) - timedelta(days=settings.MEDIA_TTL_DAYS)
@@ -156,12 +159,9 @@ class MediaService:
         deleted = 0
 
         for media in old_files:
-            # Удаляем физический файл
             file_path = self.media_dir / media.path[len("/media/") :]
             if file_path.exists():
                 file_path.unlink()
-
-            # Удаляем запись из БД
             await self.repo.delete_media(media.id)
             deleted += 1
 

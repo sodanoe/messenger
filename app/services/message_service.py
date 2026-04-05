@@ -51,6 +51,7 @@ class MessageService:
                 "created_at": m.created_at,
                 "reactions": reactions_by_msg.get(m.id, []),
                 "reply_to": None,
+                "read_at": m.read_at,
             }
 
             if m.reply_to_id and m.reply_to_id in reply_map:
@@ -181,6 +182,7 @@ class MessageService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts"
             )
+        await self.messages.mark_read_by_sender(other_id, me)
         await self.contacts.set_unread(me, other_id, False)
         await self.db.commit()
 
