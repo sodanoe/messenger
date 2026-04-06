@@ -1,6 +1,6 @@
 import secrets
 
-from fastapi import APIRouter, Depends, Response, Cookie, HTTPException, status
+from fastapi import APIRouter, Depends, Request, Response, Cookie, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,10 +64,25 @@ async def register(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     body: LoginRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     redis = get_redis()
+
+    # Rate limit: 5 попыток / 60 сек / IP
+    ip = request.client.host if request.client else "unknown"
+    rate_key = f"login:attempts:{ip}"
+    attempts = await redis.incr(rate_key)
+    if attempts == 1:
+        await redis.expire(rate_key, 60)
+    if attempts > 5:
+        ttl = await redis.ttl(rate_key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Слишком много попыток. Повторите через {ttl} сек.",
+        )
+
     access, refresh = await AuthService(db).login(body.username, body.password, redis)
     _set_refresh_cookie(response, refresh)
     return {"access_token": access, "token_type": "bearer"}

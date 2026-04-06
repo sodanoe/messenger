@@ -1,13 +1,12 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crypto.factory import get_crypto
+from app.crypto.service import decrypt_text, encrypt_text
 from app.models.contact import ContactStatus
 from app.repositories.contact_repo import ContactRepository
 from app.repositories.message_repo import MessageRepository
 from app.repositories.media_repo import MediaRepository
 from app.repositories.reaction_repo import ReactionRepository
-from app.core.connection_manager import manager
 
 
 class MessageService:
@@ -17,7 +16,6 @@ class MessageService:
         self.contacts = ContactRepository(db)
         self.media = MediaRepository(db)
         self.reactions = ReactionRepository(db)
-        self.crypto = get_crypto()
 
     async def get_history(self, me: int, other_id: int, cursor: int | None) -> dict:
         contact = await self.contacts.get(me, other_id)
@@ -29,7 +27,6 @@ class MessageService:
         msgs = await self.messages.get_history(me, other_id, cursor)
         next_cursor = msgs[-1].id if len(msgs) == 50 else None
 
-        # Батч-запрос реакций — один запрос вместо N
         msg_ids = [m.id for m in msgs]
         all_reactions = await self.reactions.get_for_messages(msg_ids)
         reactions_by_msg: dict[int, list[dict]] = {}
@@ -38,7 +35,6 @@ class MessageService:
                 {"emoji": r.emoji, "user_id": r.user_id}
             )
 
-        # Батч-запрос цитируемых сообщений — один запрос вместо N
         reply_ids = [m.reply_to_id for m in msgs if m.reply_to_id]
         reply_map = {m.id: m for m in await self.messages.get_by_ids(reply_ids)}
 
@@ -47,7 +43,7 @@ class MessageService:
             msg_data: dict = {
                 "id": m.id,
                 "sender_id": m.sender_id,
-                "content": self.crypto.decrypt(m.content_encrypted),
+                "content": decrypt_text(m.content_encrypted),
                 "created_at": m.created_at,
                 "reactions": reactions_by_msg.get(m.id, []),
                 "reply_to": None,
@@ -59,10 +55,9 @@ class MessageService:
                 reply_obj = {
                     "id": orig.id,
                     "sender_id": orig.sender_id,
-                    "content": self.crypto.decrypt(orig.content_encrypted)[:120],
+                    "content": decrypt_text(orig.content_encrypted)[:120],
                 }
                 if orig.media_id:
-                    # FIX: было `media` — затирало переменную сообщения
                     reply_media = await self.media.get_by_id(orig.media_id)
                     if reply_media:
                         reply_obj["media_url"] = reply_media.path
@@ -75,10 +70,7 @@ class MessageService:
 
             messages.append(msg_data)
 
-        return {
-            "messages": messages,
-            "next_cursor": next_cursor,
-        }
+        return {"messages": messages, "next_cursor": next_cursor}
 
     async def send_message(
         self,
@@ -105,7 +97,6 @@ class MessageService:
                 detail="You are blocked by this user",
             )
 
-        # FIX: переименовано в msg_media — изолируем от reply_media ниже
         msg_media = None
         if media_id:
             msg_media = await self.media.get_by_id(media_id)
@@ -114,7 +105,6 @@ class MessageService:
                     status_code=status.HTTP_403_FORBIDDEN, detail="Invalid media file"
                 )
 
-        # Валидируем reply_to_id: сообщение должно принадлежать этой переписке
         reply_info: dict | None = None
         if reply_to_id:
             reply_msg = await self.messages.get_by_id(reply_to_id)
@@ -127,17 +117,16 @@ class MessageService:
                 reply_info = {
                     "id": reply_msg.id,
                     "sender_id": reply_msg.sender_id,
-                    "content": self.crypto.decrypt(reply_msg.content_encrypted)[:120],
+                    "content": decrypt_text(reply_msg.content_encrypted)[:120],
                 }
                 if reply_msg.media_id:
-                    # FIX: было `media` — затирало msg_media выше и роняло AttributeError
                     reply_media = await self.media.get_by_id(reply_msg.media_id)
                     if reply_media:
                         reply_info["media_url"] = reply_media.path
             else:
-                reply_to_id = None  # игнорируем невалидный reply
+                reply_to_id = None
 
-        encrypted = self.crypto.encrypt(content)
+        encrypted = encrypt_text(content)
         msg = await self.messages.create(
             me, receiver_id, encrypted, media_id, reply_to_id
         )
@@ -157,7 +146,7 @@ class MessageService:
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id and msg_media:  # FIX: guard + правильная переменная
+        if media_id and msg_media:
             response["media_url"] = msg_media.path
 
         ws_payload: dict = {
@@ -169,10 +158,11 @@ class MessageService:
             "reply_to": reply_info,
             "reactions": [],
         }
-        if media_id and msg_media:  # FIX
+        if media_id and msg_media:
             ws_payload["media_url"] = msg_media.path
 
-        await manager.send_to(receiver_id, ws_payload)
+        from app.ws.pubsub import publish
+        await publish(receiver_id, ws_payload)
 
         return response
 
@@ -199,7 +189,10 @@ class MessageService:
             )
         await self.messages.delete(msg)
         await self.db.commit()
-        await manager.send_to(
-            msg.receiver_id, {"type": "message_deleted", "message_id": message_id}
+
+        from app.ws.pubsub import publish
+        await publish(
+            msg.receiver_id,
+            {"type": "message_deleted", "message_id": message_id},
         )
-        await manager.send_to(me, {"type": "message_deleted", "message_id": message_id})
+        await publish(me, {"type": "message_deleted", "message_id": message_id})

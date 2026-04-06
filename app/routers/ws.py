@@ -10,11 +10,12 @@ WebSocket endpoint  –  GET /ws?ticket=<one-time-ticket>
   6. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from app.core.connection_manager import manager
+from app.ws.manager import manager
 from app.core.database import AsyncSessionLocal
 from app.core.redis_client import get_redis
 from app.models.contact import ContactStatus
@@ -64,7 +65,12 @@ async def websocket_endpoint(
     try:
         heartbeat_count = 0
         while True:
-            await ws.receive_text()
+            try:
+                await asyncio.wait_for(ws.receive_text(), timeout=35.0)
+            except asyncio.TimeoutError:
+                # Клиент не прислал ping за 35 сек — считаем соединение мёртвым
+                logger.info("WS heartbeat timeout user_id=%s", user_id)
+                break
             await redis.expire(f"user:online:{user_id}", 30)
             heartbeat_count += 1
             # Обновляем список контактов каждые 10 пингов (~3 минуты)
@@ -79,7 +85,7 @@ async def websocket_endpoint(
 
     # ── 4. Cleanup ─────────────────────────────────────────────────────────
     finally:
-        manager.disconnect(user_id)
+        manager.disconnect(user_id, ws)
         await redis.delete(f"user:online:{user_id}")
         # Свежий список — мог измениться за время сессии
         fresh_contact_ids = await _get_accepted_contact_ids(user_id)

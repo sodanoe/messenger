@@ -1,8 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.connection_manager import manager
-from app.crypto.factory import get_crypto
+from app.crypto.service import decrypt_text, encrypt_text
 from app.repositories.group_repo import GroupRepository
 from app.repositories.media_repo import MediaRepository
 from app.repositories.user_repo import UserRepository
@@ -17,7 +16,6 @@ class GroupService:
         self.repo = GroupRepository(db)
         self.media = MediaRepository(db)
         self.users = UserRepository(db)
-        self.crypto = get_crypto()
 
     # ── Groups ───────────────────────────────────────────────
 
@@ -115,7 +113,7 @@ class GroupService:
             msg_data: dict = {
                 "id": m.id,
                 "sender_id": m.sender_id,
-                "content": self.crypto.decrypt(str(m.content_encrypted)),
+                "content": decrypt_text(str(m.content_encrypted)),
                 "created_at": m.created_at,
                 "reactions": reactions_by_msg.get(m.id, []),
                 "reply_to": None,
@@ -127,7 +125,7 @@ class GroupService:
                 reply_obj = {
                     "id": orig.id,
                     "sender_id": orig.sender_id,
-                    "content": self.crypto.decrypt(str(orig.content_encrypted))[:120],
+                    "content": decrypt_text(str(orig.content_encrypted))[:120],
                 }
                 if orig.media_id:
                     media = await self.media.get_by_id(orig.media_id)
@@ -169,7 +167,7 @@ class GroupService:
                 reply_info = {
                     "id": reply_msg.id,
                     "sender_id": reply_msg.sender_id,
-                    "content": self.crypto.decrypt(str(reply_msg.content_encrypted))[
+                    "content": decrypt_text(str(reply_msg.content_encrypted))[
                         :120
                     ],
                 }
@@ -180,7 +178,7 @@ class GroupService:
             else:
                 reply_to_id = None
 
-        encrypted = self.crypto.encrypt(content)
+        encrypted = encrypt_text(content)
         msg = await self.repo.create_message(
             group_id, user_id, encrypted, media_id, reply_to_id
         )
