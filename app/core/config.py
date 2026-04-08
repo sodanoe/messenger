@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 60
 
     # Crypto
-    CRYPTO_BACKEND: str = "aes"  # "aes" | future: "e2e"
     CRYPTO_KEY: str  # 32-byte hex or base64 secret
 
     # Admin

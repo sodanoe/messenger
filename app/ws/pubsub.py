@@ -11,6 +11,7 @@ Redis Pub/Sub bridge для multi-worker WebSocket доставки.
 Таким образом сообщение доходит до нужного worker'а независимо от того,
 к какому worker'у подключён клиент.
 """
+
 import asyncio
 import json
 import logging
@@ -55,3 +56,9 @@ async def start_listener() -> None:
         await pubsub.unsubscribe(_CHANNEL)
         logger.info("WS pubsub listener stopped")
         raise
+
+
+async def publish_to_many(user_ids: list[int], payload: dict) -> None:
+    """Publish a websocket event to multiple users via Redis Pub/Sub."""
+    for user_id in user_ids:
+        await publish(user_id, payload)

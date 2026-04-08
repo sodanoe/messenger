@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crypto.service import decrypt_text, encrypt_text
+from app.ws.pubsub import publish_to_many
 from app.repositories.group_repo import GroupRepository
 from app.repositories.media_repo import MediaRepository
 from app.repositories.user_repo import UserRepository
@@ -167,9 +168,7 @@ class GroupService:
                 reply_info = {
                     "id": reply_msg.id,
                     "sender_id": reply_msg.sender_id,
-                    "content": decrypt_text(str(reply_msg.content_encrypted))[
-                        :120
-                    ],
+                    "content": decrypt_text(str(reply_msg.content_encrypted))[:120],
                 }
                 if reply_msg.media_id:
                     reply_media = await self.media.get_by_id(reply_msg.media_id)
@@ -219,7 +218,7 @@ class GroupService:
         if media_id and msg_media:
             ws_payload["media_url"] = msg_media.path
 
-        await manager.send_to_many(member_ids, ws_payload)
+        await publish_to_many(member_ids, ws_payload)
 
         return response
 
@@ -239,7 +238,7 @@ class GroupService:
         await self.repo.delete_message(msg)
         await self.db.commit()
         member_ids = await self.repo.get_member_ids(group_id)
-        await manager.send_to_many(
+        await publish_to_many(
             member_ids,
             {
                 "type": "group_message_deleted",
@@ -277,7 +276,7 @@ class GroupService:
             "message_id": message_id,
             "reactions": serialized,
         }
-        await manager.send_to_many(member_ids, ws_payload)
+        await publish_to_many(member_ids, ws_payload)
 
         return serialized
 

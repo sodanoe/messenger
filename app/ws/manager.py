@@ -7,6 +7,7 @@ Singleton `manager` импортируется в роутере /ws и в pubsu
 Прямые send_to из сервисов заменены на pubsub.publish — это позволяет
 корректно работать при uvicorn --workers N.
 """
+
 import asyncio
 import logging
 from typing import Dict

@@ -22,6 +22,6 @@ async def upload_media(
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Недопустимый тип файла: {file.content_type}. "
-                   f"Разрешены: jpeg, png, webp, gif, mp4.",
+            f"Разрешены: jpeg, png, webp, gif, mp4.",
         )
     return await MediaService(db).upload(current_user.id, file)

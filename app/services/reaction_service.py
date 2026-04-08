@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.connection_manager import manager
+from app.ws.pubsub import publish
+
 from app.repositories.message_repo import MessageRepository
 from app.repositories.reaction_repo import ReactionRepository
 
@@ -48,8 +49,8 @@ class ReactionService:
             "message_id": message_id,
             "reactions": serialized,
         }
-        await manager.send_to(msg.sender_id, ws_payload)
+        await publish(msg.sender_id, ws_payload)
         if msg.receiver_id != msg.sender_id:
-            await manager.send_to(msg.receiver_id, ws_payload)
+            await publish(msg.receiver_id, ws_payload)
 
         return serialized

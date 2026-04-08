@@ -8,6 +8,7 @@ One-time migration: re-encrypt all messages AES-256-CBC → AES-256-GCM.
 Вызывается автоматически из lifespan при каждом старте.
 Как только все строки будут смигрированы — превращается в no-op (~1ms).
 """
+
 import base64
 import logging
 import os
@@ -30,9 +31,7 @@ _TABLES = [
 def _cbc_decrypt(key: bytes, ciphertext: str) -> str:
     raw = base64.b64decode(ciphertext)
     iv, ct = raw[:16], raw[16:]
-    cipher = Cipher(
-        algorithms.AES(key), modes.CBC(iv), backend=default_backend()
-    )
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
     dec = cipher.decryptor()
     padded = dec.update(ct) + dec.finalize()
     pad_len = padded[-1]
@@ -84,7 +83,9 @@ async def run_migration(session_factory) -> None:
             except Exception as exc:
                 logger.error(
                     "migrate_to_gcm: cannot decrypt %s id=%s: %s",
-                    table, row_id, exc,
+                    table,
+                    row_id,
+                    exc,
                 )
                 errors += 1
                 continue
@@ -102,5 +103,8 @@ async def run_migration(session_factory) -> None:
 
         logger.info(
             "migrate_to_gcm [%s]: migrated=%s  skipped=%s  errors=%s",
-            table, migrated, skipped, errors,
+            table,
+            migrated,
+            skipped,
+            errors,
         )

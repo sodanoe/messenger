@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crypto.service import decrypt_text, encrypt_text
+from app.ws.pubsub import publish
 from app.models.contact import ContactStatus
 from app.repositories.contact_repo import ContactRepository
 from app.repositories.message_repo import MessageRepository
@@ -161,7 +162,6 @@ class MessageService:
         if media_id and msg_media:
             ws_payload["media_url"] = msg_media.path
 
-        from app.ws.pubsub import publish
         await publish(receiver_id, ws_payload)
 
         return response
@@ -175,6 +175,9 @@ class MessageService:
         await self.messages.mark_read_by_sender(other_id, me)
         await self.contacts.set_unread(me, other_id, False)
         await self.db.commit()
+
+        # Уведомить отправителя что его сообщения прочитаны
+        await publish(other_id, {"type": "messages_read", "by_user_id": me})
 
     async def delete_message(self, me: int, message_id: int) -> None:
         msg = await self.messages.get_by_id(message_id)
@@ -190,7 +193,6 @@ class MessageService:
         await self.messages.delete(msg)
         await self.db.commit()
 
-        from app.ws.pubsub import publish
         await publish(
             msg.receiver_id,
             {"type": "message_deleted", "message_id": message_id},

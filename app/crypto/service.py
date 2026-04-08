@@ -7,6 +7,7 @@ Public API:
 
 Storage format: base64(nonce[12] + ciphertext + tag[16])
 """
+
 import base64
 import os
 from functools import lru_cache

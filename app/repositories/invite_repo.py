@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,8 +26,6 @@ class InviteRepository:
         return invite
 
     async def mark_used(self, invite: InviteCode, user_id: int) -> None:
-        from datetime import datetime, timezone
-
         invite.used_by = user_id
         invite.used_at = datetime.now(timezone.utc)
         await self.db.flush()

@@ -22,9 +22,11 @@ class MediaSettings(BaseModel):
 async def get_media_settings(_=Depends(get_admin_user)):
     """Текущие настройки сжатия (Redis override или defaults из config)."""
     redis = get_redis()
-    q = await redis.get("admin:media:quality")
-    s = await redis.get("admin:media:max_size")
-    c = await redis.get("admin:media:colors")
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.get("admin:media:quality")
+        pipe.get("admin:media:max_size")
+        pipe.get("admin:media:colors")
+        q, s, c = await pipe.execute()
     return {
         "quality": int(q) if q else settings.MEDIA_QUALITY,
         "max_size": int(s) if s else settings.MEDIA_MAX_SIZE,
@@ -38,9 +40,11 @@ async def get_media_settings(_=Depends(get_admin_user)):
 async def update_media_settings(body: MediaSettings, _=Depends(get_admin_user)):
     """Обновить настройки сжатия (сохраняются в Redis без перезапуска)."""
     redis = get_redis()
-    if body.quality is not None:
-        await redis.set("admin:media:quality", body.quality)
-    if body.max_size is not None:
-        await redis.set("admin:media:max_size", body.max_size)
-    if body.colors is not None:
-        await redis.set("admin:media:colors", body.colors)
+    async with redis.pipeline(transaction=False) as pipe:
+        if body.quality is not None:
+            pipe.set("admin:media:quality", body.quality)
+        if body.max_size is not None:
+            pipe.set("admin:media:max_size", body.max_size)
+        if body.colors is not None:
+            pipe.set("admin:media:colors", body.colors)
+        await pipe.execute()

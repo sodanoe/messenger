@@ -44,10 +44,12 @@ async def lifespan(app: FastAPI):
     # 1. Миграция данных: AES-CBC → AES-GCM (no-op если уже мигрировано)
     from app.core.database import AsyncSessionLocal
     from app.scripts.migrate_to_gcm import run_migration
+
     await run_migration(AsyncSessionLocal)
 
     # 2. Pub/Sub listener для WebSocket multi-worker доставки
     from app.ws.pubsub import start_listener
+
     pubsub_task = asyncio.create_task(start_listener())
 
     # 3. Media cleanup loop

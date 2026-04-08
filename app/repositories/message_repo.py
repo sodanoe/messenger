@@ -1,4 +1,6 @@
-from sqlalchemy import and_, or_, select
+from datetime import datetime, timezone
+
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.message import Message
@@ -68,9 +70,6 @@ class MessageRepository:
         return msg
 
     async def mark_read_by_sender(self, sender_id: int, receiver_id: int) -> None:
-        from sqlalchemy import update
-        from datetime import datetime, timezone
-
         await self.db.execute(
             update(Message)
             .where(
