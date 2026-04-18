@@ -36,9 +36,7 @@ class MediaRepository:
 
     async def delete_old_files(self, cutoff: datetime) -> list[MediaFile]:
         result = await self.db.execute(
-            select(MediaFile).where(
-                MediaFile.created_at < cutoff, MediaFile.message_id.is_(None)
-            )
+            select(MediaFile).where(MediaFile.created_at < cutoff)
         )
         return list(result.scalars().all())
 

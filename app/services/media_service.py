@@ -129,9 +129,9 @@ class MediaService:
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
             img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-        if colors:
-            img = img.quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
-            img = img.convert("RGB")
+        # if colors:
+        #     img = img.quantize(colors=colors, method=Image.Quantize.MEDIANCUT)
+        #     img = img.convert("RGB")
 
         output = io.BytesIO()
         img.save(
