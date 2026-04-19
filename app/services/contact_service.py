@@ -1,12 +1,10 @@
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timezone
 
 from app.models.contact import Contact, ContactStatus
 from app.models.user import User
 from app.repositories.contact_repo import ContactRepository
-from app.repositories.message_repo import MessageRepository
 from app.repositories.user_repo import UserRepository
 
 
@@ -14,7 +12,6 @@ class ContactService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.contacts = ContactRepository(db)
-        self.messages = MessageRepository(db)
         self.users = UserRepository(db)
 
     async def list_contacts(self, me: int, redis) -> list[dict]:
@@ -22,15 +19,13 @@ class ContactService:
         if not rows:
             return []
 
-        # Батч — один запрос вместо N
         contact_ids = [c.contact_user_id for c in rows]
         users = {u.id: u for u in await self.users.get_by_ids(contact_ids)}
 
         result = []
         for c in rows:
             is_online = await redis.exists(f"user:online:{c.contact_user_id}") == 1
-            last_msg = await self.messages.get_last_between(me, c.contact_user_id)
-            user = users.get(c.contact_user_id)  # из словаря, без запроса в БД
+            user = users.get(c.contact_user_id)
 
             result.append(
                 {
@@ -40,26 +35,10 @@ class ContactService:
                     "status": c.status,
                     "has_unread": c.has_unread,
                     "is_online": is_online,
-                    "last_message": (
-                        {
-                            "id": last_msg.id,
-                            "sender_id": last_msg.sender_id,
-                            "created_at": last_msg.created_at,
-                        }
-                        if last_msg
-                        else None
-                    ),
+                    "last_message": None,
                 }
             )
 
-        result.sort(
-            key=lambda x: (
-                x["last_message"]["created_at"]
-                if x["last_message"]
-                else datetime.min.replace(tzinfo=timezone.utc)
-            ),
-            reverse=True,
-        )
         return result
 
     async def add_contact(self, me: int, username: str) -> dict:
@@ -102,7 +81,6 @@ class ContactService:
         await self.db.commit()
 
     async def search_users(self, me: int, q: str) -> list[dict]:
-        # Get blocked contact_user_ids (users who blocked me OR I blocked)
         result_i_blocked = await self.db.execute(
             select(Contact.contact_user_id).where(
                 Contact.user_id == me,

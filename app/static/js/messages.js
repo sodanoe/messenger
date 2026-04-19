@@ -2,39 +2,74 @@
 //  Open chat
 // ─────────────────────────────────────────────────────────
 
+let isLoadingHistory = false;
+let historyCursor = null;
+let hasMoreHistory = true;
+
 async function openDM(userId, username, isOnline) {
+    let chat;
+    hideReactionPicker();
+
+    // Сбрасываем пагинацию
+    historyCursor = null;
+    hasMoreHistory = true;
+    isLoadingHistory = false;
+
+    try {
+        chat = await api('/chats/direct', 'POST', { user_id: userId });
+    } catch (e) {
+        toast(e.message, 'err');
+        return;
+    }
+
     currentChat = {
-        type: 'dm',
-        id: userId,
+        type: 'direct',
+        id: chat.id,
         name: username,
-        is_online: isOnline,
+        other_user_id: userId,
     };
+
     el('app').classList.add('chat-open');
     showChat(true);
     el('chat-members-btn').style.display = 'none';
     el('chat-name').textContent = username;
     el('chat-avatar').textContent = initials(username);
     el('chat-avatar').style.color = 'var(--accent)';
+
+    const s = el('chat-status');
+    s.textContent = isOnline ? 'online' : 'offline';
+    s.className = 'chat-status' + (isOnline ? ' online' : '');
+
     el('messages').innerHTML = '';
     Object.keys(msgStore).forEach((k) => delete msgStore[k]);
     clearReply();
     removePendingMedia();
     updateOnlineStatus(userId, isOnline);
     renderContacts();
+
+    const wrap = el('messages');
+    wrap.removeEventListener('scroll', onMessagesScroll);
+    wrap.addEventListener('scroll', onMessagesScroll);
+
     try {
-        const data = await api(`/messages/${userId}`);
+        const data = await api(`/chats/${chat.id}/messages`);
+        historyCursor = data.next_cursor;
+        hasMoreHistory = data.next_cursor !== null;
         renderMessages(data.messages.reverse());
-        api(`/messages/${userId}/read`, 'POST').catch(() => {});
-        loadContacts().then(() => {
-            if (!searchActive) renderContacts();
-        });
     } catch (e) {
         toast(e.message, 'err');
     }
 }
 
-async function openGroup(groupId, groupName) {
-    currentChat = { type: 'group', id: groupId, name: groupName };
+async function openGroup(chatId, groupName) {
+    currentChat = { type: 'group', id: chatId, name: groupName };
+    hideReactionPicker();
+
+    // Сбрасываем пагинацию
+    historyCursor = null;
+    hasMoreHistory = true;
+    isLoadingHistory = false;
+
     el('app').classList.add('chat-open');
     showChat(true);
     el('chat-members-btn').style.display = 'block';
@@ -48,8 +83,15 @@ async function openGroup(groupId, groupName) {
     clearReply();
     removePendingMedia();
     renderGroups();
+
+    const wrap = el('messages');
+    wrap.removeEventListener('scroll', onMessagesScroll);
+    wrap.addEventListener('scroll', onMessagesScroll);
+
     try {
-        const data = await api(`/groups/${groupId}/messages`);
+        const data = await api(`/chats/${chatId}/messages`);
+        historyCursor = data.next_cursor;
+        hasMoreHistory = data.next_cursor !== null;
         renderMessages(data.messages.reverse());
     } catch (e) {
         toast(e.message, 'err');
@@ -66,55 +108,20 @@ function showChat(visible) {
 //  Message rendering
 // ─────────────────────────────────────────────────────────
 
-function renderMessages(msgs) {
-    const wrap = el('messages');
-    let lastDay = null;
-    msgs.forEach((m) => {
-        const isMe = m.sender_id === me.id;
-        const day = fmtDay(m.created_at);
-        if (day !== lastDay) {
-            const d = document.createElement('div');
-            d.className = 'day-divider';
-            d.textContent = day;
-            wrap.appendChild(d);
-            lastDay = day;
-        }
-        appendMessage(
-            {
-                id: m.id,
-                content: m.content,
-                isMe,
-                createdAt: m.created_at,
-                readAt: m.read_at || null,
-                mediaUrl: m.media_url || null,
-                replyTo: m.reply_to || null,
-                reactions: m.reactions || [],
-                senderUsername: m.sender_username || null,
-            },
-            false,
-        );
-    });
-    scrollBottom();
-}
-
-function appendMessage(
-    {
-        id = null,
-        content,
-        isMe,
-        createdAt,
-        readAt = null,
-        mediaUrl = null,
-        replyTo = null,
-        reactions = [],
-        senderUsername = null,
-    },
-    animate = true,
-) {
-    const wrap = el('messages');
+function createMessageRow({
+    id = null,
+    content,
+    isMe,
+    createdAt,
+    mediaUrl = null,
+    replyTo = null,
+    reactions = [],
+    senderUsername = null,
+}) {
     const row = document.createElement('div');
     row.className = `msg-row ${isMe ? 'me' : 'other'}`;
-    if (!animate) row.style.animation = 'none';
+    row.style.animation = 'none';
+
     if (id) {
         row.dataset.msgId = id;
         msgStore[id] = {
@@ -122,16 +129,15 @@ function appendMessage(
             senderName: isMe ? 'Вы' : senderUsername || currentChat?.name || `#${id}`,
             content: content || '',
             mediaUrl: mediaUrl || null,
+            reactions: reactions || [],
         };
     }
 
-    // Подпись отправителя — только в группах для чужих сообщений
     const senderLabel =
         !isMe && currentChat?.type === 'group'
             ? `<div class="msg-sender-name">${esc(senderUsername || '?')}</div>`
             : '';
 
-    // Reply quote
     let replyHtml = '';
     if (replyTo) {
         const author =
@@ -156,46 +162,216 @@ function appendMessage(
     </div>`;
     }
 
-    // Media
     let mediaHtml = '';
     if (mediaUrl) {
         const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : API_BASE() + mediaUrl;
         mediaHtml = `<div class="msg-media"><img src="${fullUrl}" onclick="openLightbox('${fullUrl}')" alt="photo" loading="lazy"></div>`;
     }
 
-    // Bubble
-    const bubbleHtml = content ? `<div class="msg-bubble">${esc(content)}</div>` : '';
+    const trimmed = content?.trim() || '';
+    const isSingleCustomEmoji = /^:[a-zA-Z0-9_]+:$/.test(trimmed);
+    const isSingleUnicodeEmoji = /^\p{Emoji}$/u.test(trimmed);
+    const isSingleEmoji = isSingleCustomEmoji || isSingleUnicodeEmoji;
 
-    // Reactions
+    const safeContent = esc(content || '');
+    const bubbleHtml = content
+        ? `<div class="msg-bubble${isSingleEmoji ? ' single-emoji' : ''}">${parseCustomEmojis(safeContent)}</div>`
+        : '';
+
     const reactionsHtml = `<div class="msg-reactions">${renderReactionPills(id, reactions)}</div>`;
 
-    // Actions
     const actionsHtml = id
         ? `<div class="msg-actions">
     <button class="msg-action-btn" onclick="replyToMsg(${id})" title="Ответить">↩</button>
     <button class="msg-action-btn" onclick="showReactionPicker(${id}, this)" title="Реакция">😊</button>
-    ${isMe ? `<button class="msg-action-btn danger" onclick="deleteMsg(${id})" title="Удалить">🗑</button>` : ''}
-  </div>`
+    ${
+        isMe
+            ? `
+        <button class="msg-action-btn" onclick="editMsg(${id})" title="Редактировать">✏️</button>
+        <button class="msg-action-btn danger" onclick="deleteMsg(${id})" title="Удалить">🗑</button>
+    `
+            : ''
+    }
+    </div>`
         : '';
 
-    // Статус прочтения — только для своих сообщений в личке
-    const statusHtml =
-        isMe && currentChat?.type === 'dm'
-            ? `<span class="msg-status" style="${readAt ? 'color:var(--accent)' : ''}">${readAt ? '✓✓' : '✓'}</span>`
-            : '';
+    row.innerHTML = `<div>${actionsHtml}${senderLabel}${replyHtml}${mediaHtml}${bubbleHtml}${reactionsHtml}<div class="msg-meta"><span class="msg-time">${fmtTime(createdAt)}</span></div></div>`;
 
-    row.innerHTML = `<div>${actionsHtml}${senderLabel}${replyHtml}${mediaHtml}${bubbleHtml}${reactionsHtml}<div class="msg-meta"><span class="msg-time">${fmtTime(createdAt)}</span>${statusHtml}</div></div>`;
+    return row;
+}
+
+function appendMessage(data, animate = true) {
+    const wrap = el('messages');
+    const row = createMessageRow(data);
+    if (animate) row.style.animation = '';
     wrap.appendChild(row);
-    if (animate) scrollBottom(true);
+
+    if (animate) {
+        scrollBottom(true);
+
+        if (data.mediaUrl) {
+            const img = row.querySelector('.msg-media img');
+            if (img && !img.complete) {
+                img.addEventListener('load', () => scrollBottom(true), { once: true });
+                img.addEventListener('error', () => scrollBottom(true), { once: true });
+            }
+        }
+    }
+}
+
+function renderMessages(msgs) {
+    const wrap = el('messages');
+    let lastDay = null;
+
+    msgs.forEach((m) => {
+        const isMe = m.sender_id === me.id;
+        const day = fmtDay(m.created_at);
+        if (day !== lastDay) {
+            const d = document.createElement('div');
+            d.className = 'day-divider';
+            d.textContent = day;
+            wrap.appendChild(d);
+            lastDay = day;
+        }
+        const row = createMessageRow({
+            id: m.id,
+            content: m.content,
+            isMe,
+            createdAt: m.created_at,
+            mediaUrl: m.media_url || null,
+            replyTo: m.reply_to || null,
+            reactions: m.reactions || [],
+            senderUsername: m.sender_username || null,
+        });
+        wrap.appendChild(row);
+    });
+
+    wrap.scrollTop = wrap.scrollHeight;
+
+    requestAnimationFrame(() => {
+        wrap.scrollTop = wrap.scrollHeight;
+        setTimeout(() => (wrap.scrollTop = wrap.scrollHeight), 50);
+        setTimeout(() => (wrap.scrollTop = wrap.scrollHeight), 150);
+    });
+
+    const images = wrap.querySelectorAll('img');
+    if (images.length > 0) {
+        let loadedCount = 0;
+        const totalImages = images.length;
+
+        const onImageLoad = () => {
+            loadedCount++;
+            if (loadedCount === totalImages) {
+                wrap.scrollTop = wrap.scrollHeight;
+            }
+        };
+
+        images.forEach((img) => {
+            if (img.complete) {
+                onImageLoad();
+            } else {
+                img.addEventListener('load', onImageLoad, { once: true });
+                img.addEventListener('error', onImageLoad, { once: true });
+            }
+        });
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Pagination
+// ─────────────────────────────────────────────────────────
+
+function onMessagesScroll() {
+    const wrap = el('messages');
+    if (!currentChat || isLoadingHistory || !hasMoreHistory) return;
+
+    if (wrap.scrollTop < 50) {
+        loadMoreMessages();
+    }
+}
+
+async function loadMoreMessages() {
+    if (!currentChat || isLoadingHistory || !hasMoreHistory) return;
+
+    isLoadingHistory = true;
+    const wrap = el('messages');
+    const oldScrollHeight = wrap.scrollHeight;
+    const oldScrollTop = wrap.scrollTop;
+
+    try {
+        const url = `/chats/${currentChat.id}/messages${historyCursor ? `?cursor=${historyCursor}` : ''}`;
+        const data = await api(url);
+
+        if (data.messages && data.messages.length > 0) {
+            const oldMessages = data.messages.reverse();
+
+            const fragment = document.createDocumentFragment();
+            let lastDay = null;
+
+            oldMessages.forEach((m) => {
+                const isMe = m.sender_id === me.id;
+                const day = fmtDay(m.created_at);
+                if (day !== lastDay) {
+                    const d = document.createElement('div');
+                    d.className = 'day-divider';
+                    d.textContent = day;
+                    fragment.appendChild(d);
+                    lastDay = day;
+                }
+
+                const row = createMessageRow({
+                    id: m.id,
+                    content: m.content,
+                    isMe,
+                    createdAt: m.created_at,
+                    mediaUrl: m.media_url || null,
+                    replyTo: m.reply_to || null,
+                    reactions: m.reactions || [],
+                    senderUsername: m.sender_username || null,
+                });
+                fragment.appendChild(row);
+            });
+
+            wrap.insertBefore(fragment, wrap.firstChild);
+
+            const newScrollHeight = wrap.scrollHeight;
+            wrap.scrollTop = newScrollHeight - oldScrollHeight + oldScrollTop;
+
+            historyCursor = data.next_cursor;
+            hasMoreHistory = data.next_cursor !== null;
+        } else {
+            hasMoreHistory = false;
+        }
+    } catch (e) {
+        toast('Ошибка загрузки истории', 'err');
+    } finally {
+        isLoadingHistory = false;
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+//  Utils
+// ─────────────────────────────────────────────────────────
+
+const emojiCache = {};
+
+function parseCustomEmojis(text) {
+    if (!text) return text;
+
+    return text.replace(/:([a-zA-Z0-9_]+):/g, (match, shortcode) => {
+        const emoji = customEmojis?.find((e) => e.shortcode === shortcode);
+        if (emoji) {
+            const url = `/emojis/${shortcode}.png`;
+            return `<img src="${url}" class="inline-emoji" alt=":${shortcode}:" title=":${shortcode}:">`;
+        }
+        return match;
+    });
 }
 
 function scrollBottom(smooth = false) {
     const w = el('messages');
     requestAnimationFrame(() =>
-        w.scrollTo({
-            top: w.scrollHeight,
-            behavior: smooth ? 'smooth' : 'instant',
-        }),
+        w.scrollTo({ top: w.scrollHeight, behavior: smooth ? 'smooth' : 'instant' }),
     );
 }
 

@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────
 
 function goBack() {
+    hideReactionPicker();
     el('app').classList.remove('chat-open');
     currentChat = null;
     showChat(false);
@@ -10,12 +11,15 @@ function goBack() {
     clearReply();
 }
 function updateOnlineStatus(userId, isOnline) {
-    if (currentChat?.type === 'dm' && currentChat?.id === userId) {
+    // Приводим к числу для сравнения
+    const numericUserId = parseInt(userId, 10);
+
+    if (currentChat?.type === 'dm' && currentChat?.other_user_id === numericUserId) {
         const s = el('chat-status');
         s.textContent = isOnline ? 'online' : 'offline';
         s.className = 'chat-status' + (isOnline ? ' online' : '');
     }
-    const c = contacts.find((c) => c.contact_user_id === userId);
+    const c = contacts.find((c) => c.contact_user_id === numericUserId);
     if (c) c.is_online = isOnline;
 }
 
@@ -51,7 +55,8 @@ function showErr(errEl, msg) {
     errEl.style.display = 'block';
 }
 function isActiveDM(uid) {
-    return currentChat?.type === 'dm' && currentChat?.id === uid ? 'active' : '';
+    const numericUid = parseInt(uid, 10);
+    return currentChat?.type === 'dm' && currentChat?.other_user_id === numericUid ? 'active' : '';
 }
 function isActiveGroup(gid) {
     return currentChat?.type === 'group' && currentChat?.id === gid ? 'active' : '';
@@ -158,6 +163,24 @@ function setVh() {
 setVh();
 window.addEventListener('resize', setVh);
 
+// В ui.js добавить:
+function fixIOSKeyboard() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (!isIOS) return;
+
+    const input = el('msg-input');
+    if (!input) return;
+
+    input.addEventListener('focus', () => {
+        setTimeout(() => {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    });
+}
+
+// Вызвать при загрузке
+fixIOSKeyboard();
+
 // Auto-login
 (async () => {
     const saved = localStorage.getItem('msng_token');
@@ -167,12 +190,14 @@ window.addEventListener('resize', setVh);
         const profile = await api('/users/me');
         me = { id: profile.id, username: profile.username };
         isAdmin = await checkAdmin();
+        hideReactionPicker();
         el('me-username').textContent = me.username;
         el('admin-badge').style.display = isAdmin ? 'inline' : 'none';
         el('admin-panel').style.display = isAdmin ? 'block' : 'none';
         el('api-host-label').textContent = new URL(API_BASE()).host;
         await loadContacts();
         await loadGroups();
+        await loadCustomEmojis();
         el('auth-screen').style.display = 'none';
         el('app').style.display = 'flex';
         connectWS();

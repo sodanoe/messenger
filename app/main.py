@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import asyncio
 import logging
@@ -10,13 +11,12 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import (
     auth,
     contacts,
-    groups,
-    messages,
     users,
     ws,
     media,
     admin,
-    reactions,
+    chat,
+    emojis,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,6 @@ async def _media_cleanup_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Миграция данных: AES-CBC → AES-GCM (no-op если уже мигрировано)
-    from app.core.database import AsyncSessionLocal
-    from app.scripts.migrate_to_gcm import run_migration
-
-    await run_migration(AsyncSessionLocal)
 
     # 2. Pub/Sub listener для WebSocket multi-worker доставки
     from app.ws.pubsub import start_listener
@@ -69,16 +64,18 @@ app = FastAPI(title="Messenger API", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(contacts.router)
-app.include_router(messages.router)
-app.include_router(reactions.router)
 app.include_router(users.router)
-app.include_router(groups.router)
 app.include_router(ws.router)
 app.include_router(media.router)
 app.include_router(admin.router)
+app.include_router(chat.router)
+app.include_router(emojis.router)
 
 # ── Static frontend ────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+os.makedirs("/app/media/emojis", exist_ok=True)
+app.mount("/media/emojis", StaticFiles(directory="/app/media/emojis"), name="emojis")
 
 
 @app.get("/sw.js", include_in_schema=False)

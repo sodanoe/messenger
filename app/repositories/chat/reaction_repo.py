@@ -42,3 +42,15 @@ class ReactionRepo:
             )
         )
         return list(result.scalars().all())
+
+    async def get_by_messages(
+        self, message_ids: list[int]
+    ) -> list[ChatMessageReaction]:
+        if not message_ids:
+            return []
+        result = await self.db.execute(
+            select(ChatMessageReaction).where(
+                ChatMessageReaction.message_id.in_(message_ids)
+            )
+        )
+        return list(result.scalars().all())

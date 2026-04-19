@@ -6,15 +6,18 @@ function renderReactionPills(msgId, reactions) {
     if (!reactions || !reactions.length) return '';
     const grouped = {};
     reactions.forEach((r) => {
-        if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, mine: false };
-        grouped[r.emoji].count++;
-        if (r.user_id === me?.id) grouped[r.emoji].mine = true;
+        const key = r.emoji;
+        if (!grouped[key]) grouped[key] = { count: 0, mine: false, url: r.custom_emoji_url };
+        grouped[key].count++;
+        if (r.user_id === me?.id) grouped[key].mine = true;
     });
     return Object.entries(grouped)
-        .map(
-            ([emoji, { count, mine }]) =>
-                `<span class="reaction-pill${mine ? ' mine' : ''}" onclick="reactToMessage(${msgId}, '${emoji}')">${emoji}${count > 1 ? `<span class="r-count">${count}</span>` : ''}</span>`,
-        )
+        .map(([emoji, { count, mine, url }]) => {
+            const emojiHtml = url
+                ? `<img src="${url}" class="reaction-emoji-img" alt="${emoji}">`
+                : emoji;
+            return `<span class="reaction-pill${mine ? ' mine' : ''}" onclick="reactToMessage(${msgId}, '${emoji.replace(/'/g, "\\'")}')">${emojiHtml}${count > 1 ? `<span class="r-count">${count}</span>` : ''}</span>`;
+        })
         .join('');
 }
 
@@ -22,17 +25,33 @@ function updateMessageReactions(msgId, reactions) {
     const row = document.querySelector(`[data-msg-id="${msgId}"]`);
     if (!row) return;
     const container = row.querySelector('.msg-reactions');
-    if (container) container.innerHTML = renderReactionPills(msgId, reactions);
+    if (container) {
+        container.innerHTML = renderReactionPills(msgId, reactions);
+    }
 }
 
-// FIX: выбираем эндпоинт в зависимости от типа чата
 async function reactToMessage(msgId, emoji) {
+    if (!currentChat) return;
+
+    const msgData = msgStore[msgId];
+    if (!msgData) return;
+
+    const existingReaction = (msgData.reactions || []).find(
+        (r) => r.emoji === emoji && r.user_id === me?.id,
+    );
+
     try {
-        if (currentChat?.type === 'group') {
-            await api(`/groups/${currentChat.id}/messages/${msgId}/react`, 'POST', { emoji });
+        if (existingReaction) {
+            // Если реакция уже есть - удаляем
+            await api(
+                `/chats/${currentChat.id}/messages/${msgId}/reactions/${encodeURIComponent(emoji)}`,
+                'DELETE',
+            );
         } else {
-            await api(`/messages/${msgId}/react`, 'POST', { emoji });
+            // Если нет - добавляем
+            await api(`/chats/${currentChat.id}/messages/${msgId}/reactions`, 'POST', { emoji });
         }
+        // UI обновится через WebSocket
     } catch (e) {
         toast(e.message, 'err');
     }
@@ -43,9 +62,28 @@ function showReactionPicker(msgId, anchor) {
     const picker = el('reaction-picker');
     const rect = anchor.getBoundingClientRect();
     picker.style.display = 'flex';
-    const left = Math.min(rect.left, window.innerWidth - 290);
-    const top = rect.top - 54;
-    picker.style.left = Math.max(6, left) + 'px';
+
+    const pickerWidth = picker.offsetWidth || 290;
+    const pickerHeight = picker.offsetHeight || 54;
+
+    // По умолчанию — слева от кнопки и сверху
+    let left = rect.left;
+    let top = rect.top - pickerHeight - 6;
+
+    // Если не хватает места сверху — показываем снизу
+    if (top < 6) {
+        top = rect.bottom + 6;
+    }
+
+    // Если уходит за правый край — выравниваем по правому краю кнопки
+    if (left + pickerWidth > window.innerWidth - 6) {
+        left = rect.right - pickerWidth;
+    }
+
+    // Не даём уйти за левый край
+    left = Math.max(6, left);
+
+    picker.style.left = left + 'px';
     picker.style.top = Math.max(6, top) + 'px';
 }
 
@@ -58,7 +96,27 @@ async function doReact(emoji) {
     if (!pickerMsgId) return;
     const id = pickerMsgId;
     hideReactionPicker();
-    await reactToMessage(id, emoji);
+
+    const msgData = msgStore[id];
+    if (!msgData) return;
+
+    const existingReaction = (msgData.reactions || []).find(
+        (r) => r.emoji === emoji && r.user_id === me?.id,
+    );
+
+    try {
+        if (existingReaction) {
+            await api(
+                `/chats/${currentChat.id}/messages/${id}/reactions/${encodeURIComponent(emoji)}`,
+                'DELETE',
+            );
+        } else {
+            await api(`/chats/${currentChat.id}/messages/${id}/reactions`, 'POST', { emoji });
+        }
+        // UI обновится через WebSocket
+    } catch (e) {
+        toast(e.message, 'err');
+    }
 }
 
 document.addEventListener('click', (e) => {

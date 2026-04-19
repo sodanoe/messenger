@@ -76,6 +76,7 @@ async function onAuthSuccess(accessToken) {
 
     await loadContacts();
     await loadGroups();
+    await loadCustomEmojis();
 
     el('auth-screen').style.display = 'none';
     el('app').style.display = 'flex';

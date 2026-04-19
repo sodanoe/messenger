@@ -1,11 +1,9 @@
 // ─────────────────────────────────────────────────────────
-//  Group UI — создание, управление участниками
+//  Group UI — управление участниками
 // ─────────────────────────────────────────────────────────
 
 let _modalGroupId = null;
 let _modalMembers = [];
-
-// ── Открыть модалку для текущей группы ───────────────────
 
 async function openGroupInfo() {
     if (!currentChat || currentChat.type !== 'group') return;
@@ -23,14 +21,12 @@ function closeGroupModal(e) {
     el('group-modal').style.display = 'none';
 }
 
-// ── Загрузить и отрисовать список участников ─────────────
-
 async function refreshGroupMembers() {
     if (!_modalGroupId) return;
     try {
-        _modalMembers = await api(`/groups/${_modalGroupId}/members`);
+        _modalMembers = await api(`/chats/${_modalGroupId}/members`);
         renderGroupMembers(_modalMembers);
-        renderContactPicker(); // обновляем пикер — вдруг кто уже в группе
+        renderContactPicker();
     } catch (e) {
         toast(e.message, 'err');
     }
@@ -72,8 +68,6 @@ function renderGroupMembers(members) {
         .join('');
 }
 
-// ── Пикер контактов ───────────────────────────────────────
-
 function renderContactPicker() {
     const wrap = el('contact-picker-list');
     if (!wrap) return;
@@ -90,7 +84,7 @@ function renderContactPicker() {
     wrap.innerHTML = available
         .map(
             (c) =>
-                `<button onclick="doInviteContact(${c.contact_user_id}, '${esc(c.username)}')"
+                `<button onclick="doInviteContact(${c.contact_user_id})"
        style="display:flex;align-items:center;gap:6px;width:100%;background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text);font-size:13px;transition:background .15s"
        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
       <div class="avatar" style="width:22px;height:22px;font-size:10px;flex-shrink:0">${initials(c.username)}</div>
@@ -101,33 +95,16 @@ function renderContactPicker() {
         .join('');
 }
 
-async function doInviteContact(userId, username) {
+async function doInviteContact(userId) {
     if (!_modalGroupId) return;
     try {
-        await api(`/groups/${_modalGroupId}/invite`, 'POST', { username });
-        toast(`${username} добавлен`, 'ok');
+        await api(`/chats/${_modalGroupId}/members`, 'POST', { user_id: userId });
+        toast('Участник добавлен', 'ok');
         await refreshGroupMembers();
     } catch (e) {
         toast(e.message, 'err');
     }
 }
-
-// ── Пригласить участника вручную (поле ввода) ─────────────
-
-async function doInviteMember() {
-    const username = el('invite-username-input').value.trim();
-    if (!username || !_modalGroupId) return;
-    try {
-        await api(`/groups/${_modalGroupId}/invite`, 'POST', { username });
-        el('invite-username-input').value = '';
-        toast(`${username} добавлен`, 'ok');
-        await refreshGroupMembers();
-    } catch (e) {
-        toast(e.message, 'err');
-    }
-}
-
-// ── Удалить участника (кик) ───────────────────────────────
 
 async function doRemoveMember(userId) {
     if (!_modalGroupId) return;
@@ -135,7 +112,7 @@ async function doRemoveMember(userId) {
     const name = member?.username || `#${userId}`;
     if (!confirm(`Удалить ${name} из группы?`)) return;
     try {
-        await api(`/groups/${_modalGroupId}/members/${userId}`, 'DELETE');
+        await api(`/chats/${_modalGroupId}/members/${userId}`, 'DELETE');
         toast(`${name} удалён`, 'ok');
         await refreshGroupMembers();
     } catch (e) {
@@ -143,14 +120,11 @@ async function doRemoveMember(userId) {
     }
 }
 
-// ── Покинуть группу ───────────────────────────────────────
-
 async function doLeaveGroup() {
     if (!_modalGroupId || !me) return;
     if (!confirm(`Покинуть группу «${currentChat?.name}»?`)) return;
     try {
-        // FIX: используем новый эндпоинт /leave вместо DELETE /members/{id}
-        await api(`/groups/${_modalGroupId}/leave`, 'POST');
+        await api(`/chats/${_modalGroupId}/members/${me.id}`, 'DELETE');
         closeGroupModal();
         el('app').classList.remove('chat-open');
         currentChat = null;
@@ -162,27 +136,6 @@ async function doLeaveGroup() {
         toast(e.message, 'err');
     }
 }
-
-// ── Удалить группу (только для админа) ───────────────────
-
-async function doDeleteGroup() {
-    if (!_modalGroupId) return;
-    if (!confirm(`Удалить группу «${currentChat?.name}»? Это действие необратимо.`)) return;
-    try {
-        await api(`/groups/${_modalGroupId}`, 'DELETE');
-        closeGroupModal();
-        el('app').classList.remove('chat-open');
-        currentChat = null;
-        showChat(false);
-        await loadGroups();
-        if (activeTab === 'groups') renderGroups();
-        toast('Группа удалена', 'ok');
-    } catch (e) {
-        toast(e.message, 'err');
-    }
-}
-
-// ── Закрытие по Escape ────────────────────────────────────
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && el('group-modal').style.display === 'flex') {

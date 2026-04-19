@@ -129,7 +129,7 @@ class ChatMessageReaction(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    emoji: Mapped[str] = mapped_column(String(10), nullable=False)
+    emoji: Mapped[str] = mapped_column(String(32), nullable=False)
     custom_emoji_id: Mapped[int | None] = mapped_column(
         ForeignKey("custom_emojis.id", ondelete="SET NULL"), nullable=True
     )

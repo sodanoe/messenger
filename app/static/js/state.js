@@ -8,7 +8,7 @@ let token = null,
     ws = null;
 let currentChat = null,
     contacts = [],
-    groups = [];
+    chats = []; // все чаты юзера (DM + группы)
 let heartbeatTimer = null,
     activeTab = 'dm',
     lastInvite = null;
@@ -18,13 +18,13 @@ let pendingMediaId = null,
     pendingMediaUrl = null;
 
 // ── Reply state ───────────────────────────────────────────
-let replyTo = null; // { id, senderName, content }
+let replyTo = null;
 
 // ── Reaction picker state ─────────────────────────────────
 let pickerMsgId = null;
 
 // ── Per-message data store (for action handlers) ──────────
-const msgStore = {}; // msgId → { id, senderName, content }
+const msgStore = {};
 
 // ── Notifications ─────────────────────────────────────────
 let notifGranted = false;

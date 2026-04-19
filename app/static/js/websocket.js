@@ -25,6 +25,7 @@ async function connectWS() {
     const wsBase = API_BASE().replace(/^http/, 'ws');
     ws = new WebSocket(`${wsBase}/ws?ticket=${ticket}`);
     const indicator = el('ws-status');
+
     ws.onopen = () => {
         indicator.className = 'connected';
         reconnectDelay = 3000;
@@ -32,6 +33,7 @@ async function connectWS() {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping');
         }, 20000);
     };
+
     ws.onmessage = ({ data }) => {
         let msg;
         try {
@@ -40,38 +42,23 @@ async function connectWS() {
             return;
         }
 
-        if (msg.type === 'new_message') {
-            if (currentChat?.type === 'dm' && currentChat?.id === msg.from) {
-                appendMessage(
-                    {
-                        id: msg.id,
-                        content: msg.content,
-                        isMe: false,
-                        createdAt: msg.created_at,
-                        mediaUrl: msg.media_url || null,
-                        replyTo: msg.reply_to || null,
-                        reactions: [],
-                    },
-                    true,
-                );
-                api(`/messages/${msg.from}/read`, 'POST').catch(() => {});
-            } else {
-                const c = contacts.find((c) => c.contact_user_id === msg.from);
-                if (c) {
-                    c.has_unread = true;
-                    if (!searchActive) renderContacts();
-                }
-                notifyUser(getUsername(msg.from), msg.content);
-                toast(`💬 ${getUsername(msg.from)}: ${msg.content.slice(0, 50)}`, 'ok');
-            }
-            loadContacts().then(() => {
-                if (!searchActive) renderContacts();
-            });
-        }
+        console.log('[WS] received:', msg.type, msg);
 
-        if (msg.type === 'new_group_message') {
-            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
-                const isMe = msg.from === me?.id;
+        // Единое событие для DM и групп
+        if (msg.type === 'new_message') {
+            const isCurrentChat = currentChat?.id === msg.chat_id;
+            const isMe = msg.sender_id === me?.id;
+
+            // Обновляем последнее сообщение в контактах
+            updateContactLastMessage(msg.chat_id, {
+                id: msg.id,
+                content: msg.content,
+                created_at: msg.created_at,
+                sender_id: msg.sender_id,
+                media_url: msg.media_url,
+            });
+
+            if (isCurrentChat) {
                 if (!isMe) {
                     appendMessage(
                         {
@@ -82,31 +69,71 @@ async function connectWS() {
                             mediaUrl: msg.media_url || null,
                             replyTo: msg.reply_to || null,
                             reactions: [],
-                            senderUsername: msg.sender_username || null,
+                            senderUsername: msg.sender_username || `#${msg.sender_id}`,
                         },
                         true,
                     );
                 }
-            } else {
-                const g = groups.find((g) => g.id === msg.group_id);
-                notifyUser(`# ${g?.name || msg.group_id}`, msg.content);
-                toast(`# ${g?.name || msg.group_id}: ${msg.content.slice(0, 50)}`, 'ok');
+            } else if (!isMe) {
+                notifyUser(msg.sender_username || '?', msg.content);
+                toast(`💬 ${msg.sender_username || '?'}: ${msg.content.slice(0, 50)}`, 'ok');
+            }
+
+            // Перерисовываем список контактов
+            if (activeTab === 'dm' && !searchActive) {
+                renderContacts();
+            }
+        }
+
+        if (msg.type === 'message_deleted') {
+            console.log('[WS] message_deleted:', msg);
+
+            // Удаляем из DOM если это текущий чат
+            if (currentChat?.id === msg.chat_id) {
+                const row = document.querySelector(`[data-msg-id="${msg.message_id}"]`);
+                if (row) {
+                    row.remove();
+                }
+            }
+
+            // Удаляем из msgStore
+            delete msgStore[msg.message_id];
+
+            // Обновляем последнее сообщение в контактах
+            updateContactAfterDelete(msg.chat_id);
+
+            // Перерисовываем список контактов
+            if (activeTab === 'dm' && !searchActive) {
+                renderContacts();
+            }
+        }
+
+        if (msg.type === 'message_edited') {
+            console.log('[WS] message_edited:', msg.message_id);
+            if (currentChat?.id === msg.chat_id) {
+                const row = document.querySelector(`[data-msg-id="${msg.message_id}"]`);
+                if (row) {
+                    const bubble = row.querySelector('.msg-bubble');
+                    if (bubble && msg.new_content) {
+                        const safeContent = esc(msg.new_content);
+                        bubble.innerHTML = parseCustomEmojis(safeContent);
+                    }
+                    if (msgStore[msg.message_id]) {
+                        msgStore[msg.message_id].content = msg.new_content;
+                    }
+                }
             }
         }
 
         if (msg.type === 'reaction_update') {
-            updateMessageReactions(msg.message_id, msg.reactions);
-        }
-        if (msg.type === 'message_deleted') {
-            document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
-        }
-        if (msg.type === 'group_message_deleted') {
-            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
-                document.querySelector(`[data-msg-id="${msg.message_id}"]`)?.remove();
+            console.log('[WS] reaction_update received:', msg);
+
+            // Обновляем msgStore
+            if (msgStore[msg.message_id]) {
+                msgStore[msg.message_id].reactions = msg.reactions;
             }
-        }
-        if (msg.type === 'group_reaction_update') {
-            if (currentChat?.type === 'group' && currentChat?.id === msg.group_id) {
+
+            if (currentChat?.id === msg.chat_id) {
                 updateMessageReactions(msg.message_id, msg.reactions);
             }
         }
@@ -117,6 +144,7 @@ async function connectWS() {
                 if (!searchActive) renderContacts();
             });
         }
+
         if (msg.type === 'user_offline') {
             updateOnlineStatus(msg.user_id, false);
             loadContacts().then(() => {
@@ -124,10 +152,14 @@ async function connectWS() {
             });
         }
     };
-    ws.onerror = () => {
+
+    ws.onerror = (e) => {
+        console.error('[WS] error:', e);
         indicator.className = 'error';
     };
-    ws.onclose = () => {
+
+    ws.onclose = (e) => {
+        console.log('[WS] closed:', e.code, e.reason);
         indicator.className = '';
         clearInterval(heartbeatTimer);
         if (token) {

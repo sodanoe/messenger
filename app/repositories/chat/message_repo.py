@@ -38,10 +38,22 @@ class MessageRepo:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, message_ids: list[int]) -> list[ChatMessage]:
+        if not message_ids:
+            return []
+        result = await self.db.execute(
+            select(ChatMessage).where(
+                ChatMessage.id.in_(message_ids), ChatMessage.is_deleted.is_(False)
+            )
+        )
+        return list(result.scalars().all())
+
     async def get_history(
         self, chat_id: int, cursor: int | None, limit: int = 50
     ) -> list[ChatMessage]:
-        q = select(ChatMessage).where(ChatMessage.chat_id == chat_id)
+        q = select(ChatMessage).where(
+            ChatMessage.chat_id == chat_id, ChatMessage.is_deleted.is_(False)
+        )
         if cursor is not None:
             q = q.where(ChatMessage.id < cursor)
         q = q.order_by(ChatMessage.id.desc()).limit(limit)

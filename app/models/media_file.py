@@ -12,7 +12,8 @@ class MediaFile(Base):
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     message_id: Mapped[int | None] = mapped_column(
-        ForeignKey("messages.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("chat_messages.id", ondelete="SET NULL"),
+        nullable=True,  # ← ИСПРАВИТЬ
     )
     path: Mapped[str] = mapped_column(String(512), nullable=False)
     original_name: Mapped[str] = mapped_column(String(256), nullable=False)

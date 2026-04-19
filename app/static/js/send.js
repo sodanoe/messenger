@@ -13,51 +13,53 @@ async function sendMessage() {
 
     const sentReplyTo = replyTo ? { ...replyTo } : null;
     const sentMediaId = pendingMediaId;
-    const sentMediaUrl = pendingMediaUrl;
     clearReply();
-
-    appendMessage(
-        {
-            id: null,
-            content: content || '',
-            isMe: true,
-            createdAt: new Date().toISOString(),
-            mediaUrl: sentMediaUrl,
-            replyTo: sentReplyTo
-                ? {
-                      id: sentReplyTo.id,
-                      sender_id: me.id,
-                      content: sentReplyTo.content,
-                      media_url: sentReplyTo.mediaUrl || null,
-                  }
-                : null,
-            reactions: [],
-        },
-        true,
-    );
     removePendingMedia();
 
+    // Ищем кнопку по классу
+    const sendBtn = document.querySelector('.send-btn');
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.textContent = '⏳';
+    }
+
     try {
-        if (currentChat.type === 'dm') {
-            await api(`/messages/${currentChat.id}`, 'POST', {
-                content: content || '',
-                media_id: sentMediaId,
-                reply_to_id: sentReplyTo?.id || null,
+        const response = await api(`/chats/${currentChat.id}/messages`, 'POST', {
+            content: content || '',
+            media_id: sentMediaId,
+            reply_to_id: sentReplyTo?.id || null,
+        });
+
+        if (response && response.id) {
+            appendMessage(
+                {
+                    id: response.id,
+                    content: response.content,
+                    isMe: true,
+                    createdAt: response.created_at,
+                    mediaUrl: response.media_url || null,
+                    replyTo: response.reply_to || null,
+                    reactions: [],
+                    senderUsername: 'Вы',
+                },
+                true,
+            );
+
+            // Обновляем последнее сообщение в контактах
+            updateContactLastMessage(currentChat.id, {
+                id: response.id,
+                content: response.content,
+                created_at: response.created_at,
+                sender_id: me.id,
+                media_url: response.media_url,
             });
-        } else {
-            // FIX: передаём media_id и reply_to_id для групп
-            await api(`/groups/${currentChat.id}/messages`, 'POST', {
-                content: content || '',
-                media_id: sentMediaId,
-                reply_to_id: sentReplyTo?.id || null,
-            });
+
+            // Перерисовываем список контактов
+            if (activeTab === 'dm' && !searchActive) {
+                renderContacts();
+            }
         }
     } catch (e) {
-        const wrap = el('messages');
-        const ghost = [...wrap.querySelectorAll('.msg-row')]
-            .reverse()
-            .find((r) => !r.dataset.msgId);
-        if (ghost) ghost.remove();
         toast(e.message + ' (сообщение не доставлено)', 'err');
         input.value = content;
         if (sentReplyTo) {
@@ -66,6 +68,35 @@ async function sendMessage() {
                 `${sentReplyTo.senderName}: ${sentReplyTo.content ? sentReplyTo.content.slice(0, 60) : '📷 Фото'}`;
             el('reply-preview').style.display = 'flex';
         }
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = '➤';
+        }
+    }
+}
+
+async function editMsg(msgId) {
+    const current = msgStore[msgId]?.content || '';
+    const newContent = prompt('Редактировать сообщение:', current);
+    if (newContent === null || newContent.trim() === current) return;
+    if (!newContent.trim()) {
+        toast('Сообщение не может быть пустым', 'err');
+        return;
+    }
+    try {
+        await api(`/chats/${currentChat.id}/messages/${msgId}`, 'PUT', {
+            new_content: newContent.trim(),
+        });
+        // UI обновится через WebSocket — но добавим локально для отзывчивости
+        const row = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (row) {
+            const bubble = row.querySelector('.msg-bubble');
+            if (bubble) bubble.textContent = newContent.trim();
+        }
+        if (msgStore[msgId]) msgStore[msgId].content = newContent.trim();
+    } catch (e) {
+        toast(e.message, 'err');
     }
 }
 
@@ -75,6 +106,7 @@ function handleKey(e) {
         sendMessage();
     }
 }
+
 function autoGrow(el) {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -83,12 +115,19 @@ function autoGrow(el) {
 async function deleteMsg(msgId) {
     if (!confirm('Удалить сообщение?')) return;
     try {
-        if (currentChat.type === 'dm') {
-            await api(`/messages/${msgId}`, 'DELETE');
-        } else {
-            await api(`/groups/${currentChat.id}/messages/${msgId}`, 'DELETE');
-        }
+        await api(`/chats/${currentChat.id}/messages/${msgId}`, 'DELETE');
+
+        // Удаляем из DOM
         document.querySelector(`[data-msg-id="${msgId}"]`)?.remove();
+        delete msgStore[msgId];
+
+        // Обновляем контакт
+        await updateContactAfterDelete(currentChat.id);
+
+        // Перерисовываем
+        if (activeTab === 'dm' && !searchActive) {
+            renderContacts();
+        }
     } catch (e) {
         toast(e.message, 'err');
     }
