@@ -58,8 +58,11 @@ async def get_user_chats(
     result = []
     for c in user_chats:
         other_user_id = None
+        other_username = None
         if c.type == ChatType.direct:
             other_user_id = await service.get_other_member_id(c.id, current_user.id)
+            # ChatService.get_username_by_id(user_id) -> str | None
+            other_username = await service.get_username_by_id(other_user_id)
         result.append(
             {
                 "id": c.id,
@@ -67,6 +70,7 @@ async def get_user_chats(
                 "name": c.name,
                 "created_at": c.created_at,
                 "other_user_id": other_user_id,
+                "other_username": other_username,
             }
         )
     return {"chats": result}
@@ -116,6 +120,20 @@ async def edit_message(
 ):
     await service.edit_message(current_user.id, message_id, body.new_content)
     return {"ok": True}
+
+
+@router.get("/{chat_id}/members", status_code=status.HTTP_200_OK)
+async def get_members(
+    chat_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ChatService = Depends(get_chat_service),
+):
+    """
+    Список участников чата (прежде всего для групп).
+    ChatService.get_members(chat_id, requester_id) -> list[{"id": int, "username": str}]
+    Должен проверять что current_user является участником чата, иначе 403.
+    """
+    return await service.get_members(chat_id, current_user.id)
 
 
 @router.post("/{chat_id}/members", status_code=status.HTTP_201_CREATED)

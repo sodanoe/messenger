@@ -14,9 +14,9 @@ export async function createGroup(name, memberIds = []) {
   return api('/chats/group', 'POST', { name, member_ids: memberIds })
 }
 
-// Удалить группу (если эндпоинт есть)
+// Удалить группу
 export async function deleteGroup(groupId) {
-  return api(`/groups/${groupId}`, 'DELETE')
+  return api(`/chats/${groupId}`, 'DELETE')  // было /groups/${groupId}
 }
 
 // Получить сообщения группы
@@ -38,9 +38,9 @@ export async function deleteGroupMessage(groupId, msgId) {
   return api(`/chats/${groupId}/messages/${msgId}`, 'DELETE')
 }
 
-// Участники группы (если эндпоинт есть)
+// Участники группы
 export async function getGroupMembers(groupId) {
-  return api(`/groups/${groupId}/members`)
+  return api(`/chats/${groupId}/members`)  // было /groups/${groupId}/members
 }
 
 // Добавить участника

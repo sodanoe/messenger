@@ -1,6 +1,6 @@
 import { api } from './api'
 
-// Поиск пользователей (остался на старом эндпоинте)
+// Поиск пользователей
 export async function searchUsers(q) {
   return api(`/users/search?q=${encodeURIComponent(q)}`)
 }
@@ -8,13 +8,12 @@ export async function searchUsers(q) {
 // Получить список DM-контактов через /chats/
 export async function getContacts() {
   const data = await api('/chats/')
-  // Фильтруем только direct чаты
   const chats = data.chats || []
   return chats
     .filter(c => c.type === 'direct')
     .map(c => ({
       contact_user_id: c.other_user_id,
-      username: c.name,
+      username: c.other_username,  // было c.name — неверно
       chat_id: c.id,
       is_online: false,
       has_unread: false,

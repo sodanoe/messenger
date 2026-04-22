@@ -117,6 +117,7 @@ function createMessageRow({
     replyTo = null,
     reactions = [],
     senderUsername = null,
+    senderId = null,
 }) {
     const row = document.createElement('div');
     row.className = `msg-row ${isMe ? 'me' : 'other'}`;
@@ -126,6 +127,7 @@ function createMessageRow({
         row.dataset.msgId = id;
         msgStore[id] = {
             id,
+            senderId: senderId || (isMe ? me?.id : null),
             senderName: isMe ? 'Вы' : senderUsername || currentChat?.name || `#${id}`,
             content: content || '',
             mediaUrl: mediaUrl || null,
@@ -242,6 +244,7 @@ function renderMessages(msgs) {
             replyTo: m.reply_to || null,
             reactions: m.reactions || [],
             senderUsername: m.sender_username || null,
+            senderId: m.sender_id,
         });
         wrap.appendChild(row);
     });
@@ -328,6 +331,7 @@ async function loadMoreMessages() {
                     replyTo: m.reply_to || null,
                     reactions: m.reactions || [],
                     senderUsername: m.sender_username || null,
+                    senderId: m.sender_id,
                 });
                 fragment.appendChild(row);
             });

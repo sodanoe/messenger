@@ -70,6 +70,7 @@ async function connectWS() {
                             replyTo: msg.reply_to || null,
                             reactions: [],
                             senderUsername: msg.sender_username || `#${msg.sender_id}`,
+                            senderId: msg.sender_id,
                         },
                         true,
                     );

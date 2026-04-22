@@ -376,5 +376,27 @@ class ChatService:
             data.append(item)
         return data
 
+    async def get_username_by_id(self, user_id: int) -> str | None:
+        user = await self.db.get(User, user_id)
+        return user.username if user else None
+
+    async def get_members(self, chat_id: int, requester_id: int) -> dict:
+        if not await self.members.is_member(chat_id, requester_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
+            )
+        members = await self.members.get_members(chat_id)
+        user_ids = [m.user_id for m in members]
+        users = await self.db.execute(
+            select(User.id, User.username).where(User.id.in_(user_ids))
+        )
+        username_map = {u.id: u.username for u in users.all()}
+        return {
+            "members": [
+                {"id": m.user_id, "username": username_map.get(m.user_id), "role": m.role}
+                for m in members
+            ]
+        }
+
     async def get_user_chats(self, user_id: int) -> list[Chat]:
         return await self.chats.get_user_chats(user_id)

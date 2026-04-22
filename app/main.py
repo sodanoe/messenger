@@ -72,7 +72,7 @@ app.include_router(chat.router)
 app.include_router(emojis.router)
 
 # ── Static frontend ────────────────────────────────────────────────────
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 os.makedirs("/app/media/emojis", exist_ok=True)
 app.mount("/media/emojis", StaticFiles(directory="/app/media/emojis"), name="emojis")
@@ -83,6 +83,6 @@ async def serve_sw():
     return FileResponse("app/static/sw.js")
 
 
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-async def serve_index():
-    return Path("app/static/index.html").read_text()
+# @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+# async def serve_index():
+#     return Path("app/static/index.html").read_text()

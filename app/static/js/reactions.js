@@ -59,32 +59,56 @@ async function reactToMessage(msgId, emoji) {
 
 function showReactionPicker(msgId, anchor) {
     pickerMsgId = msgId;
+
     const picker = el('reaction-picker');
+    picker.style.display = 'grid';
+
     const rect = anchor.getBoundingClientRect();
-    picker.style.display = 'flex';
+    const pickerRect = picker.getBoundingClientRect();
 
-    const pickerWidth = picker.offsetWidth || 290;
-    const pickerHeight = picker.offsetHeight || 54;
+    const pickerWidth = pickerRect.width;
+    const pickerHeight = pickerRect.height;
 
-    // По умолчанию — слева от кнопки и сверху
-    let left = rect.left;
-    let top = rect.top - pickerHeight - 6;
+    const margin = 8;
 
-    // Если не хватает места сверху — показываем снизу
-    if (top < 6) {
-        top = rect.bottom + 6;
+    let left;
+    let top;
+
+    const spaceTop = rect.top;
+    const spaceBottom = window.innerHeight - rect.bottom;
+    const spaceLeft = rect.left;
+    const spaceRight = window.innerWidth - rect.right;
+
+    // ── Vertical positioning ──
+    if (spaceTop > pickerHeight + margin) {
+        // сверху
+        top = rect.top - pickerHeight - margin;
+    } else if (spaceBottom > pickerHeight + margin) {
+        // снизу
+        top = rect.bottom + margin;
+    } else {
+        // центрируем если мало места
+        top = Math.max(margin, window.innerHeight / 2 - pickerHeight / 2);
     }
 
-    // Если уходит за правый край — выравниваем по правому краю кнопки
-    if (left + pickerWidth > window.innerWidth - 6) {
+    // ── Horizontal positioning ──
+    if (spaceRight > pickerWidth) {
+        // слева от кнопки
+        left = rect.left;
+    } else if (spaceLeft > pickerWidth) {
+        // справа
         left = rect.right - pickerWidth;
+    } else {
+        // центрируем
+        left = Math.max(margin, window.innerWidth / 2 - pickerWidth / 2);
     }
 
-    // Не даём уйти за левый край
-    left = Math.max(6, left);
+    // защита от выхода за экран
+    left = Math.max(margin, Math.min(left, window.innerWidth - pickerWidth - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - pickerHeight - margin));
 
     picker.style.left = left + 'px';
-    picker.style.top = Math.max(6, top) + 'px';
+    picker.style.top = top + 'px';
 }
 
 function hideReactionPicker() {

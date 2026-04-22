@@ -919,27 +919,27 @@ button {
 
 /* ── Reaction picker (global floating) ──────────────────── */
 #reaction-picker {
-    display: none;
     position: fixed;
-    background: var(--bg-secondary, #2d2d2d);
-    border: 1px solid var(--border, #444);
+    display: grid;
+
+    background: var(--bg3);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 8px;
     gap: 6px;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-    /* Новые свойства для сетки и скролла */
-    display: grid;
-    grid-template-columns: repeat(8, 1fr); /* 8 колонок */
-    max-width: 400px;
-    max-height: 200px; /* примерно 3 ряда */
+    grid-template-columns: repeat(auto-fill, 36px);
+    justify-content: center;
+
+    width: 270px;
+    max-width: 90vw;
+    max-height: 300px;
+
     overflow-y: auto;
     overflow-x: hidden;
 
-    /* Стилизация скроллбара */
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent) var(--bg);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 #reaction-picker::-webkit-scrollbar {
