@@ -1,0 +1,22 @@
+.app {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Mobile: sidebar visible by default, chat hidden */
+@media (max-width: 767px) {
+  .app :global(.sidebar) {
+    display: flex;
+  }
+  .app :global(.chat-area) {
+    display: none;
+  }
+  .app.chatOpen :global(.sidebar) {
+    display: none;
+  }
+  .app.chatOpen :global(.chat-area) {
+    display: flex;
+  }
+}
