@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import useAppStore from "../../store/useAppStore";
 import { getContacts } from "../../services/contacts";
 import { getGroups } from "../../services/groups";
@@ -9,7 +8,6 @@ import ChatList from "./ChatList/ChatList";
 import styles from "./Sidebar.module.css";
 
 export default function Sidebar() {
-  const navigate = useNavigate();
   const {
     me,
     isAdmin,
@@ -39,7 +37,6 @@ export default function Sidebar() {
 
   function doLogout() {
     logout();
-    navigate("/login");
   }
 
   async function genInvite() {
