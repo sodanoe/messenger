@@ -23,7 +23,7 @@ import { create } from "zustand";
  * @property {Object} msgStore
  */
 
-const useAppStore = create((set) => ({
+const useAppStore = create((set, get) => ({
   // ── Auth ──────────────────────────────────────────────
   token: localStorage.getItem("msng_token"),
   me: null,
@@ -66,7 +66,9 @@ const useAppStore = create((set) => ({
   setCurrentChat: (chat) => {
     if (chat) localStorage.setItem("msng_chat", JSON.stringify(chat));
     else localStorage.removeItem("msng_chat");
-    set({ currentChat: chat, messages: [], msgStore: {} });
+    const prev = get().currentChat;
+    const isSame = prev?.type === chat?.type && prev?.id === chat?.id;
+    set({ currentChat: chat, ...(!isSame && { messages: [], msgStore: {} }) });
   },
 
   clearCurrentChat: () => {

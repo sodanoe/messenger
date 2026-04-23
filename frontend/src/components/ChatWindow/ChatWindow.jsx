@@ -1,148 +1,105 @@
-import { create } from "zustand";
+import { useEffect, useRef, useState } from "react";
+import useAppStore from "../../store/useAppStore";
+import { getMessages, markRead } from "../../services/contacts";
+import { getGroupMessages } from "../../services/groups";
+import { initials } from "../../utils/format";
+import MessageList from "./MessageList/MessageList";
+import MessageInput from "./MessageInput/MessageInput";
+import GroupInfoModal from "../RightPanel/GroupInfoModal/GroupInfoModal";
+import styles from "./ChatWindow.module.css";
 
-/**
- * @typedef {Object} CurrentChat
- * @property {'dm'|'group'} type
- * @property {number} id
- * @property {string} name
- * @property {boolean} [is_online]
- */
+export default function ChatWindow() {
+  const { currentChat, clearCurrentChat, setMessages, me } = useAppStore();
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const loadedChatId = useRef(null);
 
-/**
- * @typedef {Object} AppStore
- * @property {string|null} token
- * @property {{id:number, username:string}|null} me
- * @property {boolean} isAdmin
- * @property {CurrentChat|null} currentChat
- * @property {Array} contacts
- * @property {Array} groups
- * @property {Array} messages
- * @property {'dm'|'groups'} activeTab
- * @property {string|null} lastInvite
- * @property {Object|null} replyTo
- * @property {Object} msgStore
- */
+  function goBack() {
+    clearCurrentChat();
+  }
 
-const useAppStore = create((set, get) => ({
-  // ── Auth ──────────────────────────────────────────────
-  token: localStorage.getItem("msng_token"),
-  me: null,
-  isAdmin: false,
+  // Сброс при смене чата
+  useEffect(() => {
+    loadedChatId.current = null;
+  }, [currentChat?.type, currentChat?.id]);
 
-  setToken: (token) => {
-    localStorage.setItem("msng_token", token);
-    set({ token });
-  },
+  // Загрузка сообщений
+  useEffect(() => {
+    if (!currentChat) return;
+    if (!me) return;
+    if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`)
+      return;
 
-  setMe: (me) => set({ me }),
-  setIsAdmin: (isAdmin) => set({ isAdmin }),
+    loadedChatId.current = `${currentChat.type}-${currentChat.id}`;
 
-  logout: () => {
-    localStorage.removeItem("msng_token");
-    localStorage.removeItem("msng_chat");
-    set({
-      token: null,
-      me: null,
-      isAdmin: false,
-      currentChat: null,
-      contacts: [],
-      groups: [],
-      messages: [],
-      lastInvite: null,
-      replyTo: null,
-      msgStore: {},
-    });
-  },
-
-  // ── Chat ──────────────────────────────────────────────
-  currentChat: (() => {
-    try {
-      return JSON.parse(localStorage.getItem("msng_chat"));
-    } catch {
-      return null;
+    async function loadMessages() {
+      try {
+        if (currentChat.type === "dm") {
+          const data = await getMessages(currentChat.id);
+          setMessages([...data.messages].reverse());
+          markRead(currentChat.id).catch(() => {});
+        } else {
+          const data = await getGroupMessages(currentChat.id);
+          setMessages([...data.messages].reverse());
+        }
+      } catch {
+        // silent
+      }
     }
-  })(),
+    loadMessages();
+  }, [currentChat?.type, currentChat?.id, me?.id]);
 
-  setCurrentChat: (chat) => {
-    if (chat) localStorage.setItem("msng_chat", JSON.stringify(chat));
-    else localStorage.removeItem("msng_chat");
-    const prev = get().currentChat;
-    const isSame = prev?.type === chat?.type && prev?.id === chat?.id;
-    set({ currentChat: chat, ...(!isSame && { messages: [], msgStore: {} }) });
-  },
+  if (!currentChat) {
+    return (
+      <div className={`${styles.area} chat-area`}>
+        <div className={styles.placeholder}>
+          <div className={styles.placeholderIcon}>💬</div>
+          <div>Выбери контакт или найди пользователя</div>
+        </div>
+      </div>
+    );
+  }
 
-  clearCurrentChat: () => {
-    localStorage.removeItem("msng_chat");
-    set({ currentChat: null, messages: [], msgStore: {} });
-  },
+  return (
+    <div className={`${styles.area} chat-area`}>
+      <div className={styles.header}>
+        <button className={styles.backBtn} onClick={goBack}>
+          ‹
+        </button>
+        <div
+          className={`${styles.avatar} ${currentChat.type === "group" ? styles.groupAvatar : ""}`}
+        >
+          {currentChat.type === "group" ? "#" : initials(currentChat.name)}
+        </div>
+        <div className={styles.headerInfo}>
+          <div className={styles.chatName}>{currentChat.name}</div>
+          {currentChat.type === "dm" && (
+            <div
+              className={`${styles.status} ${currentChat.is_online ? styles.online : ""}`}
+            >
+              {currentChat.is_online ? "online" : "offline"}
+            </div>
+          )}
+          {currentChat.type === "group" && (
+            <div className={styles.status}>group chat</div>
+          )}
+        </div>
+        {currentChat.type === "group" && (
+          <button
+            className={styles.membersBtn}
+            onClick={() => setShowGroupInfo(true)}
+            title="Участники"
+          >
+            👥
+          </button>
+        )}
+      </div>
 
-  // ── Contacts ──────────────────────────────────────────
-  contacts: [],
-  setContacts: (contacts) => set({ contacts }),
-  updateContactOnline: (userId, isOnline) =>
-    set((state) => ({
-      contacts: state.contacts.map((c) =>
-        c.contact_user_id === userId ? { ...c, is_online: isOnline } : c,
-      ),
-    })),
-  markContactRead: (userId) =>
-    set((state) => ({
-      contacts: state.contacts.map((c) =>
-        c.contact_user_id === userId ? { ...c, has_unread: false } : c,
-      ),
-    })),
-  markContactUnread: (userId) =>
-    set((state) => ({
-      contacts: state.contacts.map((c) =>
-        c.contact_user_id === userId ? { ...c, has_unread: true } : c,
-      ),
-    })),
-  updateContactLastMessage: (userId, content) =>
-    set((state) => ({
-      contacts: state.contacts.map((c) =>
-        c.contact_user_id === userId ? { ...c, last_message: content } : c,
-      ),
-    })),
+      <MessageList />
+      <MessageInput />
 
-  // ── Groups ────────────────────────────────────────────
-  groups: [],
-  setGroups: (groups) => set({ groups }),
-
-  // ── Messages ──────────────────────────────────────────
-  messages: [],
-  setMessages: (messages) => set({ messages }),
-  addMessage: (msg) =>
-    set((state) => {
-      if (msg.id && state.messages.some((m) => m.id === msg.id)) return state;
-      return { messages: [...state.messages, msg] };
-    }),
-  removeMessage: (msgId) =>
-    set((state) => ({
-      messages: state.messages.filter((m) => m.id !== msgId),
-    })),
-  updateMessageReactions: (msgId, reactions) =>
-    set((state) => ({
-      messages: state.messages.map((m) =>
-        m.id === msgId ? { ...m, reactions } : m,
-      ),
-    })),
-
-  // ── msgStore — данные для reply/actions ───────────────
-  msgStore: {},
-  addToMsgStore: (id, data) =>
-    set((state) => ({ msgStore: { ...state.msgStore, [id]: data } })),
-
-  // ── UI ────────────────────────────────────────────────
-  activeTab: "dm",
-  setActiveTab: (activeTab) => set({ activeTab }),
-
-  lastInvite: null,
-  setLastInvite: (lastInvite) => set({ lastInvite }),
-
-  // ── Reply ─────────────────────────────────────────────
-  replyTo: null,
-  setReplyTo: (replyTo) => set({ replyTo }),
-  clearReplyTo: () => set({ replyTo: null }),
-}));
-
-export default useAppStore;
+      {showGroupInfo && (
+        <GroupInfoModal onClose={() => setShowGroupInfo(false)} />
+      )}
+    </div>
+  );
+}
