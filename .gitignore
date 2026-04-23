@@ -25,3 +25,4 @@ app/media/
 .venv/
 .idea/
 pre_for_github.py
+.DS_Store
