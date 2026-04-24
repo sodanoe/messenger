@@ -8,108 +8,141 @@ import {
   deleteGroup,
   getGroups,
 } from '../../../services/groups';
+import { getContacts } from '../../../services/contacts';
 import { initials } from '../../../utils/format';
 import toast from 'react-hot-toast';
 import styles from './GroupInfoModal.module.css';
 
 export default function GroupInfoModal({ onClose }) {
-  const { currentChat, me, contacts, setGroups, clearCurrentChat } =
-    useAppStore();
+  const {
+    currentChat,
+    me,
+    contacts,
+    setContacts,
+    chats,
+    setGroups,
+    clearCurrentChat,
+  } = useAppStore();
   const [members, setMembers] = useState([]);
   const [inviteInput, setInviteInput] = useState('');
 
   const groupId = currentChat?.id;
 
   useEffect(() => {
-    loadMembers();
-  }, []);
+    if (groupId) {
+      loadMembers();
+      if (!contacts || contacts.length === 0) {
+        getContacts()
+          .then((data) => setContacts(data))
+          .catch((e) => console.error('Ошибка загрузки контактов:', e));
+      }
+    }
+  }, [groupId]);
 
   useEffect(() => {
-    function onKey(e) {
-      if (e.key === 'Escape') onClose();
-    }
+    const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [onClose]);
 
   async function loadMembers() {
     try {
       const data = await getGroupMembers(groupId);
-      setMembers(data);
+      const list = data?.members || (Array.isArray(data) ? data : []);
+      setMembers(list);
     } catch (e) {
+      setMembers([]);
       toast.error(e.message);
     }
   }
 
+  // УНИВЕРСАЛЬНЫЙ ПОИСК ИМЕНИ
+  const getName = (obj) => {
+    // 1. Если имя есть в самом объекте
+    if (obj?.username && obj.username !== 'Неизвестный') return obj.username;
+
+    // 2. Если нет, ищем в списке чатов (Sidebar) по ID
+    const userId = obj?.contact_user_id || obj?.user_id || obj?.id;
+    const foundInChats = (chats || []).find((c) => c.other_user_id === userId);
+    if (foundInChats?.name) return foundInChats.name;
+
+    // 3. Крайний случай
+    return userId ? `Юзер #${userId}` : 'Неизвестный';
+  };
+
+  const getUserId = (obj) => obj?.contact_user_id || obj?.user_id || obj?.id;
+
   async function doInvite(contact) {
-    // contact может быть объектом контакта или строкой username
-    const userId = contact?.contact_user_id || null;
-    const username = contact?.username || contact;
-    if (!username && !userId) return;
+    const userId = getUserId(contact);
+    const username = getName(contact);
+
+    if (!userId && !inviteInput) return;
+
     try {
       if (userId) {
         await inviteMember(groupId, userId);
       } else {
-        // fallback: ищем по username в contacts
-        const found = contacts.find((c) => c.username === username.trim());
+        const found = (contacts || []).find(
+          (c) => getName(c).toLowerCase() === inviteInput.trim().toLowerCase(),
+        );
         if (found) {
-          await inviteMember(groupId, found.contact_user_id);
+          await inviteMember(groupId, getUserId(found));
         } else {
-          toast.error('Пользователь не найден в контактах');
+          toast.error('Пользователь не найден');
           return;
         }
       }
       setInviteInput('');
-      toast.success(`${username} добавлен`);
-      loadMembers();
+      toast.success(`Добавлен`);
+      await loadMembers();
     } catch (e) {
       toast.error(e.message);
     }
   }
 
-  async function doRemove(userId, username) {
-    if (!confirm(`Удалить ${username} из группы?`)) return;
+  async function doRemove(uId, uName) {
+    if (!confirm(`Удалить ${uName} из группы?`)) return;
     try {
-      await removeMember(groupId, userId);
-      toast.success(`${username} удалён`);
-      loadMembers();
+      await removeMember(groupId, uId);
+      toast.success(`${uName} удалён`);
+      await loadMembers();
     } catch (e) {
       toast.error(e.message);
     }
   }
 
   async function doLeave() {
-    if (!confirm(`Покинуть группу «${currentChat?.name}»?`)) return;
+    if (!confirm(`Покинуть группу?`)) return;
     try {
       await leaveGroup(groupId, me?.id);
       const updated = await getGroups();
       setGroups(updated);
       clearCurrentChat();
       onClose();
-      toast.success('Вы покинули группу');
     } catch (e) {
       toast.error(e.message);
     }
   }
 
   async function doDelete() {
-    if (!confirm(`Удалить группу «${currentChat?.name}»? Необратимо.`)) return;
+    if (!confirm(`Удалить группу необратимо?`)) return;
     try {
       await deleteGroup(groupId);
       const updated = await getGroups();
       setGroups(updated);
       clearCurrentChat();
       onClose();
-      toast.success('Группа удалена');
     } catch (e) {
       toast.error(e.message);
     }
   }
 
-  const myRole = members.find((m) => m.user_id === me?.id)?.role;
-  const isAdmin = myRole === 'admin';
-  const memberIds = new Set(members.map((m) => m.user_id));
-  const available = contacts.filter((c) => !memberIds.has(c.contact_user_id));
+  const safeMembers = Array.isArray(members) ? members : [];
+  const safeContacts = Array.isArray(contacts) ? contacts : [];
+  const myMember = safeMembers.find((m) => getUserId(m) === me?.id);
+  const isAdmin = myMember?.role === 'admin';
+  const memberIds = new Set(safeMembers.map((m) => getUserId(m)));
+  const available = safeContacts.filter((c) => !memberIds.has(getUserId(c)));
 
   return (
     <div
@@ -118,82 +151,77 @@ export default function GroupInfoModal({ onClose }) {
     >
       <div className={styles.modal}>
         <div className={styles.header}>
-          <span className={styles.title}>{currentChat?.name}</span>
+          <span className={styles.title}>{currentChat?.name || 'Группа'}</span>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
           </button>
         </div>
 
-        <div className={styles.sectionTitle}>Участники</div>
+        <div className={styles.sectionTitle}>
+          Участники ({safeMembers.length})
+        </div>
         <div className={styles.memberList}>
-          {members.map((m) => (
-            <div key={m.user_id} className={styles.member}>
-              <div className={styles.avatar}>{initials(m.username)}</div>
-              <span className={styles.memberName}>
-                {m.username}
-                {m.role === 'admin' && (
-                  <span className={styles.adminBadge}>admin</span>
+          {safeMembers.map((m) => {
+            const uId = getUserId(m);
+            const uName = getName(m);
+            return (
+              <div key={uId} className={styles.member}>
+                <div className={styles.avatar}>{initials(uName)}</div>
+                <span className={styles.memberName}>
+                  {uName}
+                  {m.role === 'admin' && (
+                    <span className={styles.adminBadge}>admin</span>
+                  )}
+                </span>
+                {uId === me?.id ? (
+                  <span className={styles.youLabel}>вы</span>
+                ) : (
+                  isAdmin && (
+                    <button
+                      className={styles.removeBtn}
+                      onClick={() => doRemove(uId, uName)}
+                    >
+                      ✕
+                    </button>
+                  )
                 )}
-              </span>
-              {m.user_id === me?.id ? (
-                <span className={styles.youLabel}>вы</span>
-              ) : (
-                isAdmin && (
-                  <button
-                    className={styles.removeBtn}
-                    onClick={() => doRemove(m.user_id, m.username)}
-                  >
-                    ✕
-                  </button>
-                )
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
         {available.length > 0 && (
           <>
             <div className={styles.sectionTitle}>Добавить из контактов</div>
             <div className={styles.pickerList}>
-              {available.map((c) => (
-                <button
-                  key={c.contact_user_id}
-                  className={styles.pickerItem}
-                  onClick={() => doInvite(c)}
-                >
-                  <div className={styles.avatar}>{initials(c.username)}</div>
-                  <span className={styles.pickerName}>{c.username}</span>
-                  <span className={styles.addLabel}>+ добавить</span>
-                </button>
-              ))}
+              {available.map((c) => {
+                const uName = getName(c);
+                return (
+                  <button
+                    key={getUserId(c)}
+                    className={styles.pickerItem}
+                    onClick={() => doInvite(c)}
+                  >
+                    <div className={styles.avatar}>{initials(uName)}</div>
+                    <span className={styles.pickerName}>{uName}</span>
+                    <span className={styles.addLabel}>+ добавить</span>
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
 
-        <div className={styles.inviteRow}>
-          <input
-            className={styles.inviteInput}
-            value={inviteInput}
-            onChange={(e) => setInviteInput(e.target.value)}
-            placeholder="Или введи username"
-            onKeyDown={(e) => e.key === 'Enter' && doInvite(inviteInput)}
-          />
-          <button
-            className={styles.inviteBtn}
-            onClick={() => doInvite(inviteInput)}
-          >
-            + Добавить
+        <div className={styles.footerActions}>
+          <button className={styles.leaveBtn} onClick={doLeave}>
+            Покинуть группу
           </button>
+          {isAdmin && (
+            <button className={styles.deleteBtn} onClick={doDelete}>
+              🗑 Удалить
+            </button>
+          )}
         </div>
-
-        <button className={styles.leaveBtn} onClick={doLeave}>
-          Покинуть группу
-        </button>
-        {isAdmin && (
-          <button className={styles.deleteBtn} onClick={doDelete}>
-            🗑 Удалить группу
-          </button>
-        )}
       </div>
     </div>
   );

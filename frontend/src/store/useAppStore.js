@@ -9,18 +9,6 @@ import { create } from 'zustand';
  * @property {number} [other_user_id]
  */
 
-/**
- * @typedef {Object} AppStore
- * @property {string|null} token
- * @property {{id:number, username:string}|null} me
- * @property {boolean} isAdmin
- * @property {CurrentChat|null} currentChat
- * @property {Array} chats
- * @property {Array} messages
- * @property {string} activeTab
- * @property {Object} msgStore
- */
-
 const useAppStore = create((set, get) => ({
   // ── Auth ──────────────────────────────────────────────
   token: localStorage.getItem('msng_token'),
@@ -44,6 +32,7 @@ const useAppStore = create((set, get) => ({
       isAdmin: false,
       currentChat: null,
       chats: [],
+      contacts: [], // Очищаем при выходе
       messages: [],
       lastInvite: null,
       replyTo: null,
@@ -54,7 +43,8 @@ const useAppStore = create((set, get) => ({
   // ── Current Active Chat ───────────────────────────────
   currentChat: (() => {
     try {
-      return JSON.parse(localStorage.getItem('msng_chat'));
+      const saved = localStorage.getItem('msng_chat');
+      return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
@@ -79,7 +69,7 @@ const useAppStore = create((set, get) => ({
 
   updateChatOnline: (userId, isOnline) =>
     set((state) => ({
-      chats: state.chats.map((c) =>
+      chats: (state.chats || []).map((c) =>
         c.other_user_id === userId ? { ...c, is_online: isOnline } : c,
       ),
     })),
@@ -90,7 +80,7 @@ const useAppStore = create((set, get) => ({
     updatedAt = new Date().toISOString(),
   ) =>
     set((state) => ({
-      chats: state.chats
+      chats: (state.chats || [])
         .map((c) =>
           c.id === chatId
             ? { ...c, last_message: content, updated_at: updatedAt }
@@ -98,6 +88,11 @@ const useAppStore = create((set, get) => ({
         )
         .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
     })),
+
+  // ── Contacts ──────────────────────────────────────────
+  // Добавили отсутствующую секцию
+  contacts: [],
+  setContacts: (contacts) => set({ contacts }),
 
   // ── Messages ──────────────────────────────────────────
   messages: [],
