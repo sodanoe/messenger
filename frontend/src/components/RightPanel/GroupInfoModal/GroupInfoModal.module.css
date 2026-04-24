@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -28,7 +28,10 @@
   align-items: center;
   justify-content: space-between;
 }
-.title { font-weight: 600; font-size: 15px; }
+.title {
+  font-weight: 600;
+  font-size: 15px;
+}
 .closeBtn {
   background: none;
   border: none;
@@ -47,7 +50,11 @@
   letter-spacing: 0.05em;
 }
 
-.memberList { display: flex; flex-direction: column; gap: 4px; }
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .member {
   display: flex;
@@ -58,7 +65,8 @@
 }
 
 .avatar {
-  width: 28px; height: 28px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
@@ -84,12 +92,16 @@
 .adminBadge {
   font-size: 10px;
   color: var(--accent);
-  background: rgba(99,102,241,.15);
+  background: rgba(99, 102, 241, 0.15);
   padding: 1px 5px;
   border-radius: 4px;
 }
 
-.youLabel { font-size: 11px; color: var(--text2); padding: 0 4px; }
+.youLabel {
+  font-size: 11px;
+  color: var(--text2);
+  padding: 0 4px;
+}
 
 .removeBtn {
   background: none;
@@ -101,7 +113,9 @@
   border-radius: 4px;
   transition: color 0.15s;
 }
-.removeBtn:hover { color: var(--danger, #e55); }
+.removeBtn:hover {
+  color: var(--danger, #e55);
+}
 
 /* Picker */
 .pickerList {
@@ -127,12 +141,26 @@
   transition: background 0.15s;
   text-align: left;
 }
-.pickerItem:hover { background: var(--bg); }
-.pickerName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.addLabel { color: var(--accent); font-size: 12px; white-space: nowrap; }
+.pickerItem:hover {
+  background: var(--bg);
+}
+.pickerName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addLabel {
+  color: var(--accent);
+  font-size: 12px;
+  white-space: nowrap;
+}
 
 /* Invite row */
-.inviteRow { display: flex; gap: 8px; }
+.inviteRow {
+  display: flex;
+  gap: 8px;
+}
 .inviteInput {
   flex: 1;
   padding: 7px 10px;
@@ -143,7 +171,9 @@
   font-size: 13px;
   outline: none;
 }
-.inviteInput:focus { border-color: var(--accent); }
+.inviteInput:focus {
+  border-color: var(--accent);
+}
 .inviteBtn {
   padding: 7px 12px;
   border-radius: 7px;
@@ -155,10 +185,13 @@
   white-space: nowrap;
   transition: opacity 0.15s;
 }
-.inviteBtn:hover { opacity: 0.85; }
+.inviteBtn:hover {
+  opacity: 0.85;
+}
 
 /* Leave / Delete */
-.leaveBtn, .deleteBtn {
+.leaveBtn,
+.deleteBtn {
   padding: 8px;
   border-radius: 7px;
   background: none;
@@ -171,9 +204,13 @@
   border: 1px solid var(--border);
   color: var(--text2);
 }
-.leaveBtn:hover { background: var(--bg); }
+.leaveBtn:hover {
+  background: var(--bg);
+}
 .deleteBtn {
   border: 1px solid var(--danger, #e55);
   color: var(--danger, #e55);
 }
-.deleteBtn:hover { background: rgba(229,85,85,.1); }
+.deleteBtn:hover {
+  background: rgba(229, 85, 85, 0.1);
+}

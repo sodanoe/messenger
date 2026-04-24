@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { login, register, fetchMe, checkAdmin } from "../../services/auth";
-import { getContacts } from "../../services/contacts";
-import { getGroups } from "../../services/groups";
-import useAppStore from "../../store/useAppStore";
-import { useNotifications } from "../../hooks/useNotifications";
-import styles from "./LoginPage.module.css";
+import { useState } from 'react';
+import { login, register, fetchMe, checkAdmin } from '../../services/auth';
+import { getContacts } from '../../services/contacts';
+import { getGroups } from '../../services/groups';
+import useAppStore from '../../store/useAppStore';
+import { useNotifications } from '../../hooks/useNotifications';
+import styles from './LoginPage.module.css';
 
 export default function LoginPage() {
-  const [tab, setTab] = useState("login");
+  const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const [lUser, setLUser] = useState("");
-  const [lPass, setLPass] = useState("");
+  const [lUser, setLUser] = useState('');
+  const [lPass, setLPass] = useState('');
 
-  const [rUser, setRUser] = useState("");
-  const [rPass, setRPass] = useState("");
-  const [rInvite, setRInvite] = useState("");
+  const [rUser, setRUser] = useState('');
+  const [rPass, setRPass] = useState('');
+  const [rInvite, setRInvite] = useState('');
 
   const { setToken, setMe, setIsAdmin, setContacts, setGroups } = useAppStore();
   const { requestPermission } = useNotifications();
@@ -35,8 +35,8 @@ export default function LoginPage() {
   }
 
   async function doLogin() {
-    if (!lUser || !lPass) return setError("Заполни все поля");
-    setError("");
+    if (!lUser || !lPass) return setError('Заполни все поля');
+    setError('');
     setLoading(true);
     try {
       const r = await login(lUser, lPass);
@@ -49,8 +49,8 @@ export default function LoginPage() {
   }
 
   async function doRegister() {
-    if (!rUser || !rPass || !rInvite) return setError("Заполни все поля");
-    setError("");
+    if (!rUser || !rPass || !rInvite) return setError('Заполни все поля');
+    setError('');
     setLoading(true);
     try {
       const r = await register(rUser, rPass, rInvite);
@@ -68,20 +68,26 @@ export default function LoginPage() {
 
       <div className={styles.tabs}>
         <button
-          className={`${styles.tab} ${tab === "login" ? styles.active : ""}`}
-          onClick={() => { setTab("login"); setError(""); }}
+          className={`${styles.tab} ${tab === 'login' ? styles.active : ''}`}
+          onClick={() => {
+            setTab('login');
+            setError('');
+          }}
         >
           Вход
         </button>
         <button
-          className={`${styles.tab} ${tab === "register" ? styles.active : ""}`}
-          onClick={() => { setTab("register"); setError(""); }}
+          className={`${styles.tab} ${tab === 'register' ? styles.active : ''}`}
+          onClick={() => {
+            setTab('register');
+            setError('');
+          }}
         >
           Регистрация
         </button>
       </div>
 
-      {tab === "login" && (
+      {tab === 'login' && (
         <div className={styles.form}>
           <div className={styles.field}>
             <label>Username</label>
@@ -100,16 +106,16 @@ export default function LoginPage() {
               onChange={(e) => setLPass(e.target.value)}
               placeholder="••••••••"
               autoComplete="current-password"
-              onKeyDown={(e) => e.key === "Enter" && doLogin()}
+              onKeyDown={(e) => e.key === 'Enter' && doLogin()}
             />
           </div>
           <button className={styles.btn} onClick={doLogin} disabled={loading}>
-            {loading ? "…" : "Войти"}
+            {loading ? '…' : 'Войти'}
           </button>
         </div>
       )}
 
-      {tab === "register" && (
+      {tab === 'register' && (
         <div className={styles.form}>
           <div className={styles.field}>
             <label>Username</label>
@@ -137,11 +143,15 @@ export default function LoginPage() {
               onChange={(e) => setRInvite(e.target.value)}
               placeholder="Код от администратора"
               autoComplete="off"
-              onKeyDown={(e) => e.key === "Enter" && doRegister()}
+              onKeyDown={(e) => e.key === 'Enter' && doRegister()}
             />
           </div>
-          <button className={styles.btn} onClick={doRegister} disabled={loading}>
-            {loading ? "…" : "Зарегистрироваться"}
+          <button
+            className={styles.btn}
+            onClick={doRegister}
+            disabled={loading}
+          >
+            {loading ? '…' : 'Зарегистрироваться'}
           </button>
         </div>
       )}

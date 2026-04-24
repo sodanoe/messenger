@@ -1,11 +1,10 @@
 import os
-from pathlib import Path
 import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routers import (

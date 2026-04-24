@@ -1,55 +1,43 @@
-import useAppStore from '../../../store/useAppStore'
-import ChatListItem from './ChatListItem/ChatListItem'
-import { createGroup, getGroups } from '../../../services/groups'
-import toast from 'react-hot-toast'
-import styles from './ChatList.module.css'
+import useAppStore from '../../../store/useAppStore';
+import ChatListItem from './ChatListItem/ChatListItem';
+import { createGroup } from '../../../services/groups';
+import { api } from '../../../services/api';
+import toast from 'react-hot-toast';
+import styles from './ChatList.module.css';
 
-export default function ChatList() {
-  const { activeTab, contacts, groups, setGroups, setCurrentChat, currentChat } = useAppStore()
+export default function ChatList({ chats }) {
+  const { setCurrentChat, currentChat, setChats } = useAppStore();
+
+  const items = Array.isArray(chats) ? chats : [];
 
   async function promptCreateGroup() {
-    const name = prompt('Название группы:')
-    if (!name?.trim()) return
+    const name = prompt('Название группы:');
+    if (!name?.trim()) return;
     try {
-      await createGroup(name.trim())
-      const updated = await getGroups()
-      setGroups(updated)
-      toast.success('Группа создана')
+      await createGroup(name.trim());
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) {
+        setChats(data.chats);
+      }
+      toast.success('Группа создана');
     } catch (e) {
-      toast.error(e.message)
+      toast.error(e.message);
     }
   }
 
-  if (activeTab === 'dm') {
-    if (!contacts.length) {
-      return (
-        <div className={styles.empty}>
-          Нет контактов.<br />Найди пользователя через поиск.
-        </div>
-      )
-    }
+  if (items.length === 0) {
     return (
       <div className={styles.list}>
-        {contacts.map((c) => (
-          <ChatListItem
-            key={c.contact_user_id}
-            type="dm"
-            id={c.chat_id || c.contact_user_id}
-            name={c.username || String(c.contact_user_id)}
-            isOnline={c.is_online}
-            lastMessage={c.last_message}
-            hasUnread={c.has_unread}
-            isActive={currentChat?.type === 'dm' && currentChat?.id === (c.chat_id || c.contact_user_id)}
-            onClick={() => setCurrentChat({
-              type: 'dm',
-              id: c.chat_id || c.contact_user_id,
-              name: c.username,
-              is_online: c.is_online,
-            })}
-          />
-        ))}
+        <button className={styles.createBtn} onClick={promptCreateGroup}>
+          ＋ Создать группу
+        </button>
+        <div className={styles.empty}>
+          Чатов пока нет.
+          <br />
+          Найди кого-нибудь через поиск.
+        </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -57,17 +45,37 @@ export default function ChatList() {
       <button className={styles.createBtn} onClick={promptCreateGroup}>
         ＋ Создать группу
       </button>
-      {!groups.length && <div className={styles.empty}>Нет групп.</div>}
-      {groups.map((g) => (
+
+      {items.map((chat) => (
         <ChatListItem
-          key={g.id}
-          type="group"
-          id={g.id}
-          name={g.name}
-          isActive={currentChat?.type === 'group' && currentChat?.id === g.id}
-          onClick={() => setCurrentChat({ type: 'group', id: g.id, name: g.name })}
+          key={`${chat.type}-${chat.id}`}
+          type={chat.type}
+          id={chat.id}
+          name={
+            chat.name ||
+            (chat.type === 'group' ? 'Безымянная группа' : 'Пользователь')
+          }
+          isOnline={chat.is_online}
+          lastMessage={chat.last_message}
+          // ПЕРЕДАЕМ ID МЕДИА: чтобы компонент знал, что там картинка
+          mediaId={chat.last_msg_media_id}
+          isActive={current_chat_is_active(currentChat, chat)}
+          onClick={() =>
+            setCurrentChat({
+              type: chat.type,
+              id: chat.id,
+              name: chat.name,
+              is_online: chat.is_online,
+              other_user_id: chat.other_user_id,
+            })
+          }
         />
       ))}
     </div>
-  )
+  );
+}
+
+// Вспомогательная функция для чистоты кода
+function current_chat_is_active(current, chat) {
+  return current?.id === chat.id && current?.type === chat.type;
 }

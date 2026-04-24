@@ -18,7 +18,9 @@
   font-size: 14px;
 }
 
-.placeholderIcon { font-size: 40px; }
+.placeholderIcon {
+  font-size: 40px;
+}
 
 /* Header */
 .header {
@@ -43,10 +45,14 @@
   flex-shrink: 0;
   transition: color 0.15s;
 }
-.backBtn:hover { color: var(--text); }
+.backBtn:hover {
+  color: var(--text);
+}
 
 @media (max-width: 767px) {
-  .backBtn { display: block; }
+  .backBtn {
+    display: block;
+  }
 }
 
 .avatar {
@@ -86,7 +92,9 @@
   font-size: 12px;
   color: var(--text2);
 }
-.status.online { color: var(--green, #22c55e); }
+.status.online {
+  color: var(--green, #22c55e);
+}
 
 .membersBtn {
   background: none;
@@ -99,4 +107,6 @@
   transition: color 0.15s;
   flex-shrink: 0;
 }
-.membersBtn:hover { color: var(--text); }
+.membersBtn:hover {
+  color: var(--text);
+}

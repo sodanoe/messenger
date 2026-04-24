@@ -1,3 +1,3 @@
 export default function GroupsPage() {
-  return <div>GroupsPage</div>
+  return <div>GroupsPage</div>;
 }

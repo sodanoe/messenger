@@ -13,8 +13,16 @@
   font-size: 13px;
   color: var(--text2);
 }
-.replyIcon { color: var(--accent); flex-shrink: 0; }
-.replyText { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.replyIcon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.replyText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .replyClose {
   background: none;
   border: none;
@@ -38,8 +46,10 @@
 }
 .removeMedia {
   position: absolute;
-  top: -6px; right: -6px;
-  width: 20px; height: 20px;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--danger, #e55);
   border: none;
@@ -58,7 +68,9 @@
   padding: 10px 12px;
   transition: background 0.15s;
 }
-.inputArea.dragOver { background: rgba(99,102,241,0.08); }
+.inputArea.dragOver {
+  background: rgba(99, 102, 241, 0.08);
+}
 
 .attachBtn {
   font-size: 18px;
@@ -72,7 +84,9 @@
   align-self: flex-end;
   margin-bottom: 2px;
 }
-.attachBtn:hover { color: var(--text); }
+.attachBtn:hover {
+  color: var(--text);
+}
 
 .textarea {
   flex: 1;
@@ -90,7 +104,9 @@
   transition: border-color 0.15s;
   font-family: inherit;
 }
-.textarea:focus { border-color: var(--accent); }
+.textarea:focus {
+  border-color: var(--accent);
+}
 
 .sendBtn {
   padding: 8px 14px;
@@ -105,4 +121,6 @@
   transition: opacity 0.15s;
   line-height: 1;
 }
-.sendBtn:hover { opacity: 0.85; }
+.sendBtn:hover {
+  opacity: 0.85;
+}

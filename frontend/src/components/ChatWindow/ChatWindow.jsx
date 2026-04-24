@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import useAppStore from "../../store/useAppStore";
-import { getMessages, markRead } from "../../services/contacts";
-import { getGroupMessages } from "../../services/groups";
-import { initials } from "../../utils/format";
-import MessageList from "./MessageList/MessageList";
-import MessageInput from "./MessageInput/MessageInput";
-import GroupInfoModal from "../RightPanel/GroupInfoModal/GroupInfoModal";
-import styles from "./ChatWindow.module.css";
+import { useEffect, useRef, useState } from 'react';
+import useAppStore from '../../store/useAppStore';
+import { getMessages, markRead } from '../../services/contacts';
+import { getGroupMessages } from '../../services/groups';
+import { initials } from '../../utils/format';
+import MessageList from './MessageList/MessageList';
+import MessageInput from './MessageInput/MessageInput';
+import GroupInfoModal from '../RightPanel/GroupInfoModal/GroupInfoModal';
+import styles from './ChatWindow.module.css';
 
 export default function ChatWindow() {
   const { currentChat, clearCurrentChat, setMessages, me } = useAppStore();
@@ -33,7 +33,7 @@ export default function ChatWindow() {
 
     async function loadMessages() {
       try {
-        if (currentChat.type === "dm") {
+        if (currentChat.type === 'dm') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
           markRead(currentChat.id).catch(() => {});
@@ -66,24 +66,24 @@ export default function ChatWindow() {
           ‹
         </button>
         <div
-          className={`${styles.avatar} ${currentChat.type === "group" ? styles.groupAvatar : ""}`}
+          className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}
         >
-          {currentChat.type === "group" ? "#" : initials(currentChat.name)}
+          {currentChat.type === 'group' ? '#' : initials(currentChat.name)}
         </div>
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
-          {currentChat.type === "dm" && (
+          {currentChat.type === 'dm' && (
             <div
-              className={`${styles.status} ${currentChat.is_online ? styles.online : ""}`}
+              className={`${styles.status} ${currentChat.is_online ? styles.online : ''}`}
             >
-              {currentChat.is_online ? "online" : "offline"}
+              {currentChat.is_online ? 'online' : 'offline'}
             </div>
           )}
-          {currentChat.type === "group" && (
+          {currentChat.type === 'group' && (
             <div className={styles.status}>group chat</div>
           )}
         </div>
-        {currentChat.type === "group" && (
+        {currentChat.type === 'group' && (
           <button
             className={styles.membersBtn}
             onClick={() => setShowGroupInfo(true)}

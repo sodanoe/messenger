@@ -1,39 +1,33 @@
-import { useEffect, useState } from "react";
-import useAppStore from "../../store/useAppStore";
-import { getContacts } from "../../services/contacts";
-import { getGroups } from "../../services/groups";
-import { api } from "../../services/api";
-import SearchBar from "./SearchBar/SearchBar";
-import ChatList from "./ChatList/ChatList";
-import styles from "./Sidebar.module.css";
+import { useEffect, useState } from 'react';
+import useAppStore from '../../store/useAppStore';
+import { api } from '../../services/api';
+import SearchBar from './SearchBar/SearchBar';
+import ChatList from './ChatList/ChatList';
+import styles from './Sidebar.module.css';
 
 export default function Sidebar() {
-  const {
-    me,
-    isAdmin,
-    activeTab,
-    setActiveTab,
-    contacts,
-    setContacts,
-    groups,
-    setGroups,
-    logout,
-    lastInvite,
-    setLastInvite,
-  } = useAppStore();
+  const { me, isAdmin, chats, setChats, logout, lastInvite, setLastInvite } =
+    useAppStore();
 
   const [inviteHint, setInviteHint] = useState(
-    "Создай код и отправь новому пользователю",
+    'Создай код и отправь новому пользователю',
   );
 
   useEffect(() => {
-    getContacts()
-      .then(setContacts)
-      .catch(() => {});
-    getGroups()
-      .then(setGroups)
-      .catch(() => {});
-  }, []);
+    const fetchChats = async () => {
+      try {
+        const data = await api('/chats/', 'GET');
+
+        // ЗАЩИТА: Если бэкенд прислал что-то не то, ставим пустой массив вместо undefined
+        setChats(data?.chats || []);
+      } catch (err) {
+        console.error('Ошибка загрузки чатов:', err);
+        // В случае ошибки тоже гарантируем, что chats будет массивом
+        setChats([]);
+      }
+    };
+    fetchChats();
+  }, [setChats]);
 
   function doLogout() {
     logout();
@@ -41,9 +35,9 @@ export default function Sidebar() {
 
   async function genInvite() {
     try {
-      const r = await api("/auth/invite", "POST");
+      const r = await api('/auth/invite', 'POST');
       setLastInvite(r.code);
-      setInviteHint("Нажми на код чтобы скопировать");
+      setInviteHint('Нажми на код чтобы скопировать');
     } catch {
       // silent
     }
@@ -53,8 +47,8 @@ export default function Sidebar() {
     if (!lastInvite) return;
     navigator.clipboard
       .writeText(lastInvite)
-      .then(() => setInviteHint("✓ Скопировано"))
-      .catch(() => prompt("Скопируй код:", lastInvite));
+      .then(() => setInviteHint('✓ Скопировано'))
+      .catch(() => prompt('Скопируй код:', lastInvite));
   }
 
   return (
@@ -70,33 +64,21 @@ export default function Sidebar() {
 
       <SearchBar />
 
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === "dm" ? styles.active : ""}`}
-          onClick={() => setActiveTab("dm")}
-        >
-          DMs
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === "groups" ? styles.active : ""}`}
-          onClick={() => setActiveTab("groups")}
-        >
-          Groups
-        </button>
+      <div className={styles.chatListContainer}>
+        {/* Передаем chats, который теперь гарантированно массив или пустой список */}
+        <ChatList chats={chats || []} />
       </div>
-
-      <ChatList />
 
       {isAdmin && (
         <div className={styles.adminPanel}>
           <div className={styles.adminTitle}>⚡ Инвайты</div>
           <div className={styles.inviteRow}>
             <div
-              className={`${styles.inviteCode} ${!lastInvite ? styles.empty : ""}`}
+              className={`${styles.inviteCode} ${!lastInvite ? styles.empty : ''}`}
               onClick={copyInvite}
               title="Нажми чтобы скопировать"
             >
-              {lastInvite || "нет кода"}
+              {lastInvite || 'нет кода'}
             </div>
             <button className={styles.smallBtn} onClick={genInvite}>
               + Создать

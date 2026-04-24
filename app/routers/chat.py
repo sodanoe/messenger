@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
-from app.models.chat import ChatType
 from app.models.user import User
 from app.schemas.chat import (
     CreateDirectChatRequest,
@@ -54,26 +53,11 @@ async def get_user_chats(
     current_user: User = Depends(get_current_user),
     service: ChatService = Depends(get_chat_service),
 ):
-    user_chats = await service.get_user_chats(current_user.id)
-    result = []
-    for c in user_chats:
-        other_user_id = None
-        other_username = None
-        if c.type == ChatType.direct:
-            other_user_id = await service.get_other_member_id(c.id, current_user.id)
-            # ChatService.get_username_by_id(user_id) -> str | None
-            other_username = await service.get_username_by_id(other_user_id)
-        result.append(
-            {
-                "id": c.id,
-                "type": c.type,
-                "name": c.name,
-                "created_at": c.created_at,
-                "other_user_id": other_user_id,
-                "other_username": other_username,
-            }
-        )
-    return {"chats": result}
+    # Вызываем новый метод, который мы только что написали в сервисе
+    # Он вернет сразу готовый список со всеми именами, сообщениями и статусами
+    chats = await service.get_user_chats_list(current_user.id)
+
+    return {"chats": chats}
 
 
 @router.get("/{chat_id}/messages")

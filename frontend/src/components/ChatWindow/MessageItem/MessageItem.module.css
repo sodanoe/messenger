@@ -210,6 +210,21 @@
   font-size: 11px;
 }
 
+.inlineEmoji {
+  height: 20px;
+  width: 20px;
+  vertical-align: middle;
+  object-fit: contain;
+  margin: 0 2px;
+}
+
+.pillImg {
+  height: 16px;
+  width: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 /* ── Meta ───────────────────────────────────────────────── */
 .meta {
   display: flex;

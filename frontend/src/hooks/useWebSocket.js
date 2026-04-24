@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
-import { API_BASE } from "../config";
-import { api } from "../services/api";
-import useAppStore from "../store/useAppStore";
-import { useNotifications } from "./useNotifications";
+import { useEffect, useRef } from 'react';
+import { API_BASE } from '../config';
+import { api } from '../services/api';
+import useAppStore from '../store/useAppStore';
+import { useNotifications } from './useNotifications';
 
 export function useWebSocket() {
   const wsRef = useRef(null);
@@ -28,7 +28,7 @@ export function useWebSocket() {
 
     let ticket;
     try {
-      const data = await api("/auth/ws/ticket", "POST");
+      const data = await api('/auth/ws/ticket', 'POST');
       ticket = data.ticket;
     } catch {
       if (useAppStore.getState().token) {
@@ -38,14 +38,14 @@ export function useWebSocket() {
       return;
     }
 
-    const wsBase = API_BASE().replace(/^http/, "ws");
+    const wsBase = API_BASE().replace(/^http/, 'ws');
     const ws = new WebSocket(`${wsBase}/ws?ticket=${ticket}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
       reconnectDelay.current = 3000;
       heartbeatTimer.current = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.send("ping");
+        if (ws.readyState === WebSocket.OPEN) ws.send('ping');
       }, 20000);
     };
 
@@ -61,85 +61,71 @@ export function useWebSocket() {
       const chat = store.currentChat;
       const myId = store.me?.id;
 
-      // ── DM ──────────────────────────────────────────
-      if (msg.type === "new_message") {
-        // Своё сообщение уже добавлено из ответа API
-        if (msg.from === myId) return;
+      // ── Сообщения (DM и Группы) ──────────────────────────
+      if (msg.type === 'new_message' || msg.type === 'new_group_message') {
+        const isGroup = msg.type === 'new_group_message';
+        const chatId = isGroup ? msg.group_id : msg.from;
+        const chatType = isGroup ? 'group' : 'direct';
 
-        if (chat?.type === "dm" && chat?.id === msg.from) {
-          store.addMessage({
-            id: msg.id,
-            content: msg.content || msg.content_encrypted || "",
-            content_encrypted: msg.content_encrypted || null,
-            sender_id: msg.from,
-            created_at: msg.created_at,
-            media_url: msg.media_url || null,
-            reply_to: msg.reply_to || null,
-            reactions: [],
-          });
-          api(`/messages/${msg.from}/read`, "POST").catch(() => {});
+        // 1. Если чат открыт — добавляем сообщение в окно
+        if (chat?.type === chatType && chat?.id === chatId) {
+          if (msg.from !== myId) {
+            store.addMessage({
+              id: msg.id,
+              content: msg.content || msg.content_encrypted || '',
+              content_encrypted: msg.content_encrypted || null,
+              sender_id: msg.from,
+              sender_username: msg.sender_username || null,
+              created_at: msg.created_at,
+              media_url: msg.media_url || null,
+              reply_to: msg.reply_to || null,
+              reactions: [],
+            });
+            if (!isGroup)
+              api(`/messages/${msg.from}/read`, 'POST').catch(() => {});
+          }
         } else {
-          store.markContactUnread(msg.from);
-          store.updateContactLastMessage(msg.from, msg.content || "");
-          const sender = store.contacts.find(
-            (c) => c.contact_user_id === msg.from,
+          // 2. Если чат закрыт — шлем пуш
+          const targetChat = store.chats.find(
+            (c) => c.id === chatId && c.type === chatType,
           );
-          notifyUser(sender?.username || `#${msg.from}`, msg.content || "");
+          const senderName = isGroup
+            ? `# ${targetChat?.name || 'Группа'}`
+            : targetChat?.name || `#${msg.from}`;
+
+          if (msg.from !== myId) {
+            notifyUser(senderName, msg.content || 'Новое сообщение');
+          }
         }
+
+        // 3. Обновляем список чатов (текст и позицию в списке)
+        store.updateChatLastMessage(
+          chatId,
+          msg.content || 'Файл',
+          msg.created_at,
+        );
       }
 
-      // ── Group ────────────────────────────────────────
-      if (msg.type === "new_group_message") {
-        // Своё сообщение уже добавлено из ответа API
-        if (msg.from === myId) return;
-
-        if (chat?.type === "group" && chat?.id === msg.group_id) {
-          store.addMessage({
-            id: msg.id,
-            content: msg.content || msg.content_encrypted || "",
-            content_encrypted: msg.content_encrypted || null,
-            sender_id: msg.from,
-            sender_username: msg.sender_username || null,
-            created_at: msg.created_at,
-            media_url: msg.media_url || null,
-            reply_to: msg.reply_to || null,
-            reactions: [],
-          });
-        } else {
-          const g = store.groups.find((g) => g.id === msg.group_id);
-          notifyUser(`# ${g?.name || msg.group_id}`, msg.content || "");
-        }
-      }
-
-      // ── Reactions ────────────────────────────────────
-      if (msg.type === "reaction_update") {
-        store.updateMessageReactions(msg.message_id, msg.reactions);
-      }
+      // ── Реакции ────────────────────────────────────
       if (
-        msg.type === "group_reaction_update" &&
-        chat?.type === "group" &&
-        chat?.id === msg.group_id
+        msg.type === 'reaction_update' ||
+        msg.type === 'group_reaction_update'
       ) {
         store.updateMessageReactions(msg.message_id, msg.reactions);
       }
 
-      // ── Delete ───────────────────────────────────────
-      if (msg.type === "message_deleted") {
-        store.removeMessage(msg.message_id);
-      }
+      // ── Удаление ───────────────────────────────────────
       if (
-        msg.type === "group_message_deleted" &&
-        chat?.type === "group" &&
-        chat?.id === msg.group_id
+        msg.type === 'message_deleted' ||
+        msg.type === 'group_message_deleted'
       ) {
         store.removeMessage(msg.message_id);
       }
 
-      // ── Online status ────────────────────────────────
-      if (msg.type === "user_online")
-        store.updateContactOnline(msg.user_id, true);
-      if (msg.type === "user_offline")
-        store.updateContactOnline(msg.user_id, false);
+      // ── Статус онлайн ──────────────────────────────────
+      if (msg.type === 'user_online') store.updateChatOnline(msg.user_id, true);
+      if (msg.type === 'user_offline')
+        store.updateChatOnline(msg.user_id, false);
     };
 
     ws.onerror = () => {};

@@ -26,4 +26,6 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.createBtn:hover { background: var(--bg); }
+.createBtn:hover {
+  background: var(--bg);
+}

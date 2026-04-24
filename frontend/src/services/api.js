@@ -1,16 +1,16 @@
-import { API_BASE } from "../config";
-import useAppStore from "../store/useAppStore";
+import { API_BASE } from '../config';
+import useAppStore from '../store/useAppStore';
 
 let _refreshing = null;
 
 async function _doRefresh() {
-  const r = await fetch(API_BASE() + "/auth/refresh", {
-    method: "POST",
-    credentials: "include",
+  const r = await fetch(API_BASE() + '/auth/refresh', {
+    method: 'POST',
+    credentials: 'include',
   });
   if (!r.ok) {
     useAppStore.getState().logout();
-    throw new Error("Session expired");
+    throw new Error('Session expired');
   }
   const data = await r.json();
   useAppStore.getState().setToken(data.access_token);
@@ -26,14 +26,14 @@ async function _refreshOnce() {
   return _refreshing;
 }
 
-export async function api(path, method = "GET", body = null, _retry = true) {
+export async function api(path, method = 'GET', body = null, _retry = true) {
   const token = useAppStore.getState().token;
 
   const opts = {
     method,
-    credentials: "include",
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   };
@@ -41,7 +41,7 @@ export async function api(path, method = "GET", body = null, _retry = true) {
 
   const r = await fetch(API_BASE() + path, opts);
 
-  if (r.status === 401 && _retry && path !== "/auth/refresh") {
+  if (r.status === 401 && _retry && path !== '/auth/refresh') {
     await _refreshOnce();
     return api(path, method, body, false);
   }
@@ -69,15 +69,15 @@ export async function api(path, method = "GET", body = null, _retry = true) {
 export async function uploadMedia(file) {
   const token = useAppStore.getState().token;
   const fd = new FormData();
-  fd.append("file", file);
-  const resp = await fetch(API_BASE() + "/media/upload", {
-    method: "POST",
+  fd.append('file', file);
+  const resp = await fetch(API_BASE() + '/media/upload', {
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: fd,
   });
   if (!resp.ok) {
     const err = await resp.json();
-    throw new Error(err.detail || "Upload failed");
+    throw new Error(err.detail || 'Upload failed');
   }
   return resp.json();
 }

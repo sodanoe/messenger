@@ -1,20 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useRef } from 'react';
 import {
   searchUsers,
   addContact,
   getContacts,
-} from "../../../services/contacts";
-import useAppStore from "../../../store/useAppStore";
-import { initials } from "../../../utils/format";
-import toast from "react-hot-toast";
-import styles from "./SearchBar.module.css";
+} from '../../../services/contacts';
+import useAppStore from '../../../store/useAppStore';
+import { initials } from '../../../utils/format';
+import toast from 'react-hot-toast';
+import styles from './SearchBar.module.css';
 
 export default function SearchBar() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState(null); // null = hidden
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState(null); // null = скрыто
   const timer = useRef(null);
 
-  const { contacts, setContacts, setCurrentChat } = useAppStore();
+  // Достаем данные из стора. Если contacts там нет, используем пустой массив по умолчанию
+  const { contacts = [], setContacts, setCurrentChat } = useAppStore();
 
   function onInput(val) {
     setQuery(val);
@@ -30,14 +31,14 @@ export default function SearchBar() {
   async function doSearch(q) {
     try {
       const users = await searchUsers(q);
-      setResults(users);
+      setResults(users || []);
     } catch {
       setResults([]);
     }
   }
 
   function clearSearch() {
-    setQuery("");
+    setQuery('');
     setResults(null);
     clearTimeout(timer.current);
   }
@@ -45,7 +46,7 @@ export default function SearchBar() {
   async function openDM(user) {
     clearSearch();
     setCurrentChat({
-      type: "dm",
+      type: 'dm',
       id: user.id,
       name: user.username,
       is_online: user.is_online,
@@ -56,24 +57,27 @@ export default function SearchBar() {
     try {
       await addContact(user.id);
       const updated = await getContacts();
-      setContacts(updated);
+      if (typeof setContacts === 'function') {
+        setContacts(updated);
+      }
       toast.success(`${user.username} добавлен`);
     } catch (e) {
-      if (!e.message.includes("409") && !e.message.includes("already")) {
+      if (!e.message.includes('409') && !e.message.includes('already')) {
         toast.error(e.message);
         return;
       }
     }
     clearSearch();
     setCurrentChat({
-      type: "dm",
+      type: 'dm',
       id: user.id,
       name: user.username,
       is_online: user.is_online,
     });
   }
 
-  const contactIds = new Set(contacts.map((c) => c.contact_user_id));
+  // ЗАЩИТА: Добавлен (contacts || []), чтобы .map() не вызывался у undefined
+  const contactIds = new Set((contacts || []).map((c) => c.contact_user_id));
 
   return (
     <div className={styles.wrap}>
@@ -103,20 +107,23 @@ export default function SearchBar() {
                 <div key={u.id} className={styles.item}>
                   <div
                     className={styles.avatar}
-                    style={{ position: "relative" }}
+                    style={{ position: 'relative' }}
                   >
-                    {initials(u.username)}
+                    {/* Защита на случай отсутствия username */}
+                    {initials(u.username || '?')}
                     {u.is_online && <div className={styles.onlineDot} />}
                   </div>
                   <div className={styles.info}>
-                    <div className={styles.name}>{u.username}</div>
+                    <div className={styles.name}>
+                      {u.username || 'Без имени'}
+                    </div>
                     <div
                       className={styles.status}
                       style={{
-                        color: u.is_online ? "var(--green)" : undefined,
+                        color: u.is_online ? 'var(--green)' : undefined,
                       }}
                     >
-                      {u.is_online ? "● online" : "offline"}
+                      {u.is_online ? '● online' : 'offline'}
                     </div>
                   </div>
                   <div className={styles.actions}>

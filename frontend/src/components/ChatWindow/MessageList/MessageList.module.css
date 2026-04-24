@@ -23,5 +23,9 @@
   height: 1px;
   background: var(--border);
 }
-.dayDivider::before { left: 0; }
-.dayDivider::after { right: 0; }
+.dayDivider::before {
+  left: 0;
+}
+.dayDivider::after {
+  right: 0;
+}

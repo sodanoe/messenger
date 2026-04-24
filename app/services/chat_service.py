@@ -10,7 +10,7 @@ from app.repositories.chat.chat_repo import ChatRepo
 from app.repositories.chat.member_repo import MemberRepo
 from app.repositories.chat.message_repo import MessageRepo
 from app.repositories.chat.reaction_repo import ReactionRepo
-from app.models.chat import ChatType, ChatRole, Chat, CustomEmoji
+from app.models.chat import ChatType, ChatRole, Chat, CustomEmoji, ChatMember
 from app.repositories.contact_repo import ContactRepository
 from app.repositories.media_repo import MediaRepository
 from app.ws.pubsub import publish, publish_to_many
@@ -393,10 +393,68 @@ class ChatService:
         username_map = {u.id: u.username for u in users.all()}
         return {
             "members": [
-                {"id": m.user_id, "username": username_map.get(m.user_id), "role": m.role}
+                {
+                    "id": m.user_id,
+                    "username": username_map.get(m.user_id),
+                    "role": m.role,
+                }
                 for m in members
             ]
         }
 
     async def get_user_chats(self, user_id: int) -> list[Chat]:
         return await self.chats.get_user_chats(user_id)
+
+    async def get_user_chats_list(self, current_user_id: int):
+        # 1. Получаем данные из Repo (убедись, что в Repo добавлен media_id)
+        chats_data = await self.chats.get_user_chats_with_details(current_user_id)
+
+        # 2. Поиск собеседников для DM (без изменений)
+        direct_chat_ids = [
+            row.Chat.id for row in chats_data if row.Chat.type == ChatType.direct
+        ]
+
+        members_map = {}
+        if direct_chat_ids:
+            stmt = (
+                select(ChatMember.chat_id, User.id, User.username)
+                .join(User, User.id == ChatMember.user_id)
+                .where(ChatMember.chat_id.in_(direct_chat_ids))
+                .where(ChatMember.user_id != current_user_id)
+            )
+            members_res = await self.db.execute(stmt)
+            for m in members_res.all():
+                members_map[m.chat_id] = m
+
+        result = []
+        for row in chats_data:
+            chat = row.Chat
+
+            if row.last_msg_content:
+                try:
+                    last_msg = decrypt_text(row.last_msg_content)
+                except (ValueError, TypeError, UnicodeDecodeError):
+                    last_msg = row.last_msg_content
+            else:
+                last_msg = ""
+
+            chat_info = {
+                "id": chat.id,
+                "type": chat.type,
+                "name": chat.name,
+                "last_message": last_msg,
+                "last_msg_media_id": row.last_msg_media_id,
+                "updated_at": row.last_msg_at or chat.created_at,
+                "is_online": False,
+                "other_user_id": None,
+            }
+
+            if chat.type == ChatType.direct and chat.id in members_map:
+                m = members_map[chat.id]
+                chat_info["name"] = m.username
+                chat_info["other_user_id"] = m.id
+
+            result.append(chat_info)
+
+        return result
+

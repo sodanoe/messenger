@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 const PAGE_TITLE = document.title;
 let _audioCtx = null;
 let swReg = null;
 
 function getAudioCtx() {
-  if (!_audioCtx || _audioCtx.state === "closed")
+  if (!_audioCtx || _audioCtx.state === 'closed')
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return _audioCtx;
 }
@@ -17,7 +17,7 @@ function playNotifSound() {
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.type = "sine";
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(880, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
     gain.gain.setValueAtTime(0.12, ctx.currentTime);
@@ -34,13 +34,13 @@ async function showBrowserNotif(title, body) {
     if (swReg) {
       await swReg.showNotification(title, {
         body,
-        tag: "messenger-msg",
+        tag: 'messenger-msg',
         silent: true,
       });
     } else {
       const n = new Notification(title, {
         body,
-        tag: "messenger-msg",
+        tag: 'messenger-msg',
         silent: true,
       });
       n.onclick = () => {
@@ -58,19 +58,19 @@ export function useNotifications() {
   const titleBlinkTimer = useRef(null);
 
   async function requestPermission() {
-    if (!("Notification" in window)) return;
-    if ("serviceWorker" in navigator && !swReg) {
+    if (!('Notification' in window)) return;
+    if ('serviceWorker' in navigator && !swReg) {
       swReg = await navigator.serviceWorker
-        .register("/sw.js")
+        .register('/sw.js')
         .catch(() => null);
     }
-    if (Notification.permission === "granted") {
+    if (Notification.permission === 'granted') {
       setGranted(true);
       return;
     }
-    if (Notification.permission !== "denied") {
+    if (Notification.permission !== 'denied') {
       const p = await Notification.requestPermission();
-      setGranted(p === "granted");
+      setGranted(p === 'granted');
     }
   }
 
@@ -99,13 +99,13 @@ export function useNotifications() {
 
   useEffect(() => {
     const stop = () => stopTitleBlink();
-    document.addEventListener("visibilitychange", () => {
+    document.addEventListener('visibilitychange', () => {
       if (!document.hidden) stop();
     });
-    window.addEventListener("focus", stop);
+    window.addEventListener('focus', stop);
     return () => {
-      document.removeEventListener("visibilitychange", stop);
-      window.removeEventListener("focus", stop);
+      document.removeEventListener('visibilitychange', stop);
+      window.removeEventListener('focus', stop);
       stopTitleBlink();
     };
   }, []);

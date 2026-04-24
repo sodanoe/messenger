@@ -8,10 +8,18 @@
   border-radius: 8px;
   margin: 1px 6px;
 }
-.item:hover { background: var(--bg); }
-.item.active { background: var(--accent); }
-.item.active .name { color: #fff; }
-.item.active .sub { color: rgba(255,255,255,0.7); }
+.item:hover {
+  background: var(--bg);
+}
+.item.active {
+  background: var(--accent);
+}
+.item.active .name {
+  color: #fff;
+}
+.item.active .sub {
+  color: rgba(255, 255, 255, 0.7);
+}
 
 .avatarWrap {
   position: relative;
@@ -40,8 +48,10 @@
 
 .onlineDot {
   position: absolute;
-  bottom: 1px; right: 1px;
-  width: 9px; height: 9px;
+  bottom: 1px;
+  right: 1px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--green, #22c55e);
   border: 2px solid var(--bg2);
@@ -65,10 +75,14 @@
   font-size: 11px;
   color: var(--text2);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .unreadDot {
-  width: 8px; height: 8px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;

@@ -22,7 +22,9 @@
   outline: none;
   transition: border-color 0.15s;
 }
-.input:focus { border-color: var(--accent); }
+.input:focus {
+  border-color: var(--accent);
+}
 
 .clear {
   background: none;
@@ -38,7 +40,8 @@
 .results {
   position: absolute;
   top: calc(100% - 1px);
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-top: none;
@@ -62,7 +65,9 @@
   padding: 8px 12px;
   transition: background 0.1s;
 }
-.item:hover { background: var(--bg); }
+.item:hover {
+  background: var(--bg);
+}
 
 .avatar {
   width: 32px;
@@ -80,14 +85,19 @@
 
 .onlineDot {
   position: absolute;
-  bottom: 0; right: 0;
-  width: 8px; height: 8px;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--green, #22c55e);
   border: 1.5px solid var(--bg2);
 }
 
-.info { flex: 1; min-width: 0; }
+.info {
+  flex: 1;
+  min-width: 0;
+}
 
 .name {
   font-size: 13px;
@@ -97,9 +107,16 @@
   white-space: nowrap;
 }
 
-.status { font-size: 11px; color: var(--text2); }
+.status {
+  font-size: 11px;
+  color: var(--text2);
+}
 
-.actions { display: flex; gap: 6px; align-items: center; }
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 
 .actionBtn {
   padding: 4px 8px;
@@ -111,8 +128,13 @@
   cursor: pointer;
   transition: background 0.15s;
 }
-.actionBtn:hover { background: var(--bg); }
-.actionBtn.add { border-color: var(--accent); color: var(--accent); }
+.actionBtn:hover {
+  background: var(--bg);
+}
+.actionBtn.add {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .alreadyBtn {
   font-size: 11px;
