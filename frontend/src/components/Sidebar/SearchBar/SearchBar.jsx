@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { searchUsers, addContact, getContacts } from '../../../services/contacts';
+import { searchUsers } from '../../../services/contacts';
 import { createGroup } from '../../../services/groups';
 import { api } from '../../../services/api';
 import useAppStore from '../../../store/useAppStore';
@@ -23,7 +23,7 @@ export default function SearchBar() {
   const [results, setResults] = useState(null);
   const timer = useRef(null);
 
-  const { contacts = [], setContacts, setCurrentChat, setChats } = useAppStore();
+  const { setCurrentChat, setChats } = useAppStore();
 
   function onInput(val) {
     setQuery(val);
@@ -50,14 +50,24 @@ export default function SearchBar() {
 
   async function openDM(user) {
     clearSearch();
-    setCurrentChat({ type: 'direct', id: user.id, name: user.username, is_online: user.is_online });
+    try {
+      const chat = await api('/chats/direct', 'POST', { user_id: user.id });
+      setCurrentChat({
+        type: 'direct',
+        id: chat.id,
+        name: user.username,
+        is_online: user.is_online,
+      });
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+    } catch (e) {
+      toast.error(e.message);
+    }
   }
 
   async function addAndChat(user) {
     try {
-      await addContact(user.id);
-      const updated = await getContacts();
-      if (typeof setContacts === 'function') setContacts(updated);
+      await api('/chats/direct', 'POST', { user_id: user.id });
       toast.success(`${user.username} добавлен`);
     } catch (e) {
       if (!e.message.includes('409') && !e.message.includes('already')) {
@@ -66,7 +76,19 @@ export default function SearchBar() {
       }
     }
     clearSearch();
-    setCurrentChat({ type: 'direct', id: user.id, name: user.username, is_online: user.is_online });
+    try {
+      const chat = await api('/chats/direct', 'POST', { user_id: user.id });
+      setCurrentChat({
+        type: 'direct',
+        id: chat.id,
+        name: user.username,
+        is_online: user.is_online,
+      });
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+    } catch (e) {
+      toast.error(e.message);
+    }
   }
 
   async function handleCreateGroup() {
@@ -81,8 +103,6 @@ export default function SearchBar() {
       toast.error(e.message);
     }
   }
-
-  const contactIds = new Set((contacts || []).map((c) => c.contact_user_id));
 
   return (
     <div className={styles.wrap}>
@@ -115,36 +135,37 @@ export default function SearchBar() {
           {results.length === 0 ? (
             <div className={styles.empty}>Никого не найдено</div>
           ) : (
-            results.map((u) => {
-              const isContact = contactIds.has(u.id);
-              return (
-                <div key={u.id} className={styles.item}>
-                  <div className={styles.avatar}>
-                    {initials(u.username || '?')}
-                    {u.is_online && <div className={styles.onlineDot} />}
-                  </div>
-                  <div className={styles.info}>
-                    <div className={styles.name}>{u.username || 'Без имени'}</div>
-                    <div className={styles.status} style={{ color: u.is_online ? 'var(--green)' : undefined }}>
-                      {u.is_online ? '● online' : 'offline'}
-                    </div>
-                  </div>
-                  <div className={styles.actions}>
-                    {isContact ? (
-                      <>
-                        <span className={styles.alreadyBtn}>✓ добавлен</span>
-                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
-                      </>
-                    ) : (
-                      <>
-                        <button className={`${styles.actionBtn} ${styles.add}`} onClick={() => addAndChat(u)}>＋</button>
-                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
-                      </>
-                    )}
+            results.map((u) => (
+              <div key={u.id} className={styles.item}>
+                <div className={styles.avatar}>
+                  {initials(u.username || '?')}
+                  {u.is_online && <div className={styles.onlineDot} />}
+                </div>
+                <div className={styles.info}>
+                  <div className={styles.name}>{u.username || 'Без имени'}</div>
+                  <div
+                    className={styles.status}
+                    style={{ color: u.is_online ? 'var(--green)' : undefined }}
+                  >
+                    {u.is_online ? '● online' : 'offline'}
                   </div>
                 </div>
-              );
-            })
+                <div className={styles.actions}>
+                  <button
+                    className={`${styles.actionBtn} ${styles.add}`}
+                    onClick={() => addAndChat(u)}
+                  >
+                    ＋
+                  </button>
+                  <button
+                    className={styles.actionBtn}
+                    onClick={() => openDM(u)}
+                  >
+                    💬
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
