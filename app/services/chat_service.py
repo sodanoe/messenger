@@ -56,32 +56,21 @@ class ChatService:
         media_id: int | None = None,
         reply_to_id: int | None = None,
     ) -> dict:
-        # 1. Проверить что sender в чате
         if not await self.members.is_member(chat_id, sender_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
 
-        # 2. Для DM — дополнительно проверить контакты и блокировки
         chat = await self.chats.get_by_id(chat_id)
         if chat.type == ChatType.direct:
             other_id = await self.get_other_member_id(chat_id, sender_id)
             contact = await self.contacts.get(sender_id, other_id)
             if not contact:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts"
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not in contacts")
             if contact.status == ContactStatus.blocked:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="Contact is blocked"
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Contact is blocked")
             reverse = await self.contacts.get(other_id, sender_id)
             if reverse and reverse.status == ContactStatus.blocked:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="You are blocked"
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are blocked")
 
-        # 3. Зашифровать и сохранить
         encrypted = encrypt_text(content)
         msg = await self.messages.create(
             chat_id=chat_id,
@@ -94,7 +83,6 @@ class ChatService:
         )
         await self.db.commit()
 
-        # 4. WebSocket — уведомить всех участников чата
         members = await self.members.get_members(chat_id)
         sender = await self.db.get(User, sender_id)
         media_url = None
@@ -130,20 +118,15 @@ class ChatService:
         }
 
     async def get_other_member_id(self, chat_id: int, me: int) -> int:
-        """Вспомогательный метод — найти второго участника DM чата."""
         members = await self.members.get_members(chat_id)
         for m in members:
             if m.user_id != me:
                 return m.user_id
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Chat member not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat member not found")
 
     async def get_history(self, chat_id: int, user_id: int, cursor: int | None) -> dict:
         if not await self.members.is_member(chat_id, user_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
         msgs = await self.messages.get_history(chat_id, cursor)
         next_cursor = msgs[-1].id if msgs and len(msgs) == 50 else None
 
@@ -151,20 +134,15 @@ class ChatService:
         all_reactions = await self.reactions.get_by_messages(msg_ids)
         reactions_by_msg: dict[int, list[dict]] = {}
 
-        custom_emoji_ids = [
-            r.custom_emoji_id for r in all_reactions if r.custom_emoji_id
-        ]
+        custom_emoji_ids = [r.custom_emoji_id for r in all_reactions if r.custom_emoji_id]
         custom_emoji_map = {}
         if custom_emoji_ids:
             ce_result = await self.db.execute(
                 select(CustomEmoji).where(CustomEmoji.id.in_(custom_emoji_ids))
             )
             import os
-
             for ce in ce_result.scalars().all():
-                custom_emoji_map[ce.id] = (
-                    f"/media/emojis/{os.path.basename(ce.file_location)}"
-                )
+                custom_emoji_map[ce.id] = f"/media/emojis/{os.path.basename(ce.file_location)}"
 
         for r in all_reactions:
             data = {"emoji": r.emoji, "user_id": r.user_id}
@@ -218,58 +196,38 @@ class ChatService:
     async def delete_message(self, user_id: int, message_id: int) -> None:
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
         if msg.sender_id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Нельзя удалить чужое сообщение",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя удалить чужое сообщение")
         await self.messages.soft_delete(msg.id)
         await self.db.commit()
 
         members = await self.members.get_members(msg.chat_id)
         for member in members:
-            await publish(
-                member.user_id,
-                {
-                    "type": "message_deleted",
-                    "chat_id": msg.chat_id,  # ← ДОБАВИТЬ
-                    "message_id": message_id,
-                },
-            )
+            await publish(member.user_id, {
+                "type": "message_deleted",
+                "chat_id": msg.chat_id,
+                "message_id": message_id,
+            })
 
-    async def edit_message(
-        self, user_id: int, message_id: int, new_content: str
-    ) -> None:
+    async def edit_message(self, user_id: int, message_id: int, new_content: str) -> None:
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Сообщение не найдено")
         if msg.sender_id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Нельзя редактировать чужое сообщение",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Нельзя редактировать чужое сообщение")
         new_content = encrypt_text(new_content)
         await self.messages.update_content(msg.id, new_content, "", "")
         await self.db.commit()
         members = await self.members.get_members(msg.chat_id)
         for member in members:
-            await publish(
-                member.user_id, {"type": "message_edited", "message_id": message_id}
-            )
+            await publish(member.user_id, {"type": "message_edited", "message_id": message_id})
 
     async def add_member(self, chat_id: int, user_id: int, adder_id: int) -> None:
         members = await self.members.get_members(chat_id)
         adder = next((m for m in members if m.user_id == adder_id), None)
         if not adder or adder.role != ChatRole.admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins can add members",
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can add members")
         await self.members.add(chat_id, user_id, ChatRole.member)
         await self.db.commit()
 
@@ -278,23 +236,16 @@ class ChatService:
             members = await self.members.get_members(chat_id)
             remover = next((m for m in members if m.user_id == remover_id), None)
             if not remover or remover.role != ChatRole.admin:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Only admins can remove members",
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can remove members")
         await self.members.remove(chat_id, user_id)
         await self.db.commit()
 
     async def add_reaction(self, message_id: int, user_id: int, emoji: str) -> None:
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
         if not await self.members.is_member(msg.chat_id, user_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
 
         custom_emoji_id = None
         if emoji.startswith(":") and emoji.endswith(":"):
@@ -318,22 +269,17 @@ class ChatService:
         reactions = await self.reactions.get_by_message(msg.id)
         reactions_data = await self._build_reactions_data(reactions)
 
-        await publish_to_many(
-            member_ids,
-            {
-                "type": "reaction_update",
-                "chat_id": msg.chat_id,
-                "message_id": message_id,
-                "reactions": reactions_data,
-            },
-        )
+        await publish_to_many(member_ids, {
+            "type": "reaction_update",
+            "chat_id": msg.chat_id,
+            "message_id": message_id,
+            "reactions": reactions_data,
+        })
 
     async def remove_reaction(self, message_id: int, user_id: int, emoji: str) -> None:
         msg = await self.messages.get_by_id(message_id)
         if not msg:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
 
         await self.reactions.remove(msg.id, user_id, emoji)
         await self.db.commit()
@@ -343,20 +289,15 @@ class ChatService:
         reactions = await self.reactions.get_by_message(msg.id)
         reactions_data = await self._build_reactions_data(reactions)
 
-        await publish_to_many(
-            member_ids,
-            {
-                "type": "reaction_update",
-                "chat_id": msg.chat_id,
-                "message_id": message_id,
-                "reactions": reactions_data,
-            },
-        )
+        await publish_to_many(member_ids, {
+            "type": "reaction_update",
+            "chat_id": msg.chat_id,
+            "message_id": message_id,
+            "reactions": reactions_data,
+        })
 
     async def _build_reactions_data(self, reactions) -> list[dict]:
-        """Вспомогательный метод — строит список реакций с правильными URL."""
         import os
-
         custom_emoji_ids = [r.custom_emoji_id for r in reactions if r.custom_emoji_id]
         custom_emoji_map = {}
         if custom_emoji_ids:
@@ -364,9 +305,7 @@ class ChatService:
                 select(CustomEmoji).where(CustomEmoji.id.in_(custom_emoji_ids))
             )
             for ce in result.scalars().all():
-                custom_emoji_map[ce.id] = (
-                    f"/media/emojis/{os.path.basename(ce.file_location)}"
-                )
+                custom_emoji_map[ce.id] = f"/media/emojis/{os.path.basename(ce.file_location)}"
 
         data = []
         for r in reactions:
@@ -382,9 +321,7 @@ class ChatService:
 
     async def get_members(self, chat_id: int, requester_id: int) -> dict:
         if not await self.members.is_member(chat_id, requester_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
         members = await self.members.get_members(chat_id)
         user_ids = [m.user_id for m in members]
         users = await self.db.execute(
@@ -393,11 +330,7 @@ class ChatService:
         username_map = {u.id: u.username for u in users.all()}
         return {
             "members": [
-                {
-                    "id": m.user_id,
-                    "username": username_map.get(m.user_id),
-                    "role": m.role,
-                }
+                {"id": m.user_id, "username": username_map.get(m.user_id), "role": m.role}
                 for m in members
             ]
         }
@@ -406,13 +339,9 @@ class ChatService:
         return await self.chats.get_user_chats(user_id)
 
     async def get_user_chats_list(self, current_user_id: int):
-        # 1. Получаем данные из Repo (убедись, что в Repo добавлен media_id)
         chats_data = await self.chats.get_user_chats_with_details(current_user_id)
 
-        # 2. Поиск собеседников для DM (без изменений)
-        direct_chat_ids = [
-            row.Chat.id for row in chats_data if row.Chat.type == ChatType.direct
-        ]
+        direct_chat_ids = [row.Chat.id for row in chats_data if row.Chat.type == ChatType.direct]
 
         members_map = {}
         if direct_chat_ids:
@@ -458,3 +387,17 @@ class ChatService:
 
         return result
 
+    async def delete_chat(self, chat_id: int, user_id: int) -> None:
+        chat = await self.chats.get_by_id(chat_id)
+        if not chat:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Чат не найден")
+        members = await self.members.get_members(chat_id)
+        requester = next((m for m in members if m.user_id == user_id), None)
+        if not requester:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
+        if chat.type == ChatType.group and requester.role != ChatRole.admin:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can delete group")
+        member_ids = [m.user_id for m in members]
+        await self.db.delete(chat)
+        await self.db.commit()
+        await publish_to_many(member_ids, {"type": "chat_deleted", "chat_id": chat_id})

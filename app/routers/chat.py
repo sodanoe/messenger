@@ -166,3 +166,11 @@ async def remove_reaction(
     service: ChatService = Depends(get_chat_service),
 ):
     await service.remove_reaction(message_id, current_user.id, emoji)
+
+@router.delete("/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_chat(
+    chat_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ChatService = Depends(get_chat_service),
+):
+    await service.delete_chat(chat_id, current_user.id)
