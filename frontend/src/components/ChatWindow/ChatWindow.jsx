@@ -8,6 +8,16 @@ import MessageInput from './MessageInput/MessageInput';
 import GroupInfoModal from '../RightPanel/GroupInfoModal/GroupInfoModal';
 import styles from './ChatWindow.module.css';
 
+function MembersIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="13" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M1 17c0-3 2.5-4.8 6-4.8h6c3.5 0 6 1.8 6 4.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function ChatWindow() {
   const { currentChat, clearCurrentChat, setMessages, me } = useAppStore();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -17,23 +27,19 @@ export default function ChatWindow() {
     clearCurrentChat();
   }
 
-  // Сброс при смене чата
   useEffect(() => {
     loadedChatId.current = null;
   }, [currentChat?.type, currentChat?.id]);
 
-  // Загрузка сообщений
   useEffect(() => {
     if (!currentChat) return;
     if (!me) return;
-    if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`)
-      return;
+    if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`) return;
 
     loadedChatId.current = `${currentChat.type}-${currentChat.id}`;
 
     async function loadMessages() {
       try {
-        // if (currentChat.type === 'dm') {
         if (currentChat.type === 'direct') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
@@ -63,21 +69,14 @@ export default function ChatWindow() {
   return (
     <div className={`${styles.area} chat-area`}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={goBack}>
-          ‹
-        </button>
-        <div
-          className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}
-        >
+        <button className={styles.backBtn} onClick={goBack}>‹</button>
+        <div className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}>
           {currentChat.type === 'group' ? '#' : initials(currentChat.name)}
         </div>
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
-          {/* {currentChat.type === 'dm' && ( */}
           {currentChat.type === 'direct' && (
-            <div
-              className={`${styles.status} ${currentChat.is_online ? styles.online : ''}`}
-            >
+            <div className={`${styles.status} ${currentChat.is_online ? styles.online : ''}`}>
               {currentChat.is_online ? 'online' : 'offline'}
             </div>
           )}
@@ -91,7 +90,7 @@ export default function ChatWindow() {
             onClick={() => setShowGroupInfo(true)}
             title="Участники"
           >
-            👥
+            <MembersIcon />
           </button>
         )}
       </div>
