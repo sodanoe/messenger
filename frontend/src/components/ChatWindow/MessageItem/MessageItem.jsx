@@ -115,8 +115,9 @@ export default function MessageItem({ message }) {
     if (r.user_id === me?.id) grouped[r.emoji].mine = true;
   });
 
-  const myReaction = Object.keys(grouped).find((e) => grouped[e].mine);
-  const reactBtnLabel = myReaction || '+';
+  // const myReaction = Object.keys(grouped).find((e) => grouped[e].mine);
+  // const reactBtnLabel = myReaction || '+';
+  const reactBtnLabel = '+';
 
   const handleOpenPicker = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
