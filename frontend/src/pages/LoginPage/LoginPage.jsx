@@ -6,6 +6,7 @@ import useAppStore from '../../store/useAppStore';
 import { useNotifications } from '../../hooks/useNotifications';
 import styles from './LoginPage.module.css';
 
+
 export default function LoginPage() {
   const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,7 @@ export default function LoginPage() {
 
   const { setToken, setMe, setIsAdmin, setContacts, setGroups } = useAppStore();
   const { requestPermission } = useNotifications();
+
 
   async function onAuthSuccess(accessToken) {
     setToken(accessToken);

@@ -33,7 +33,8 @@ export default function ChatWindow() {
 
     async function loadMessages() {
       try {
-        if (currentChat.type === 'dm') {
+        // if (currentChat.type === 'dm') {
+        if (currentChat.type === 'direct') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
           markRead(currentChat.id).catch(() => {});
@@ -72,7 +73,8 @@ export default function ChatWindow() {
         </div>
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
-          {currentChat.type === 'dm' && (
+          {/* {currentChat.type === 'dm' && ( */}
+          {currentChat.type === 'direct' && (
             <div
               className={`${styles.status} ${currentChat.is_online ? styles.online : ''}`}
             >

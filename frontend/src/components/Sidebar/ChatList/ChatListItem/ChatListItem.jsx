@@ -8,7 +8,8 @@ import styles from './ChatListItem.module.css';
  *   name: string,
  *   isOnline?: boolean,
  *   lastMessage?: string,
- *   mediaId?: number | null, // Добавили поле для медиа
+ *   mediaId?: number | null,
+ *   time?: string,
  *   hasUnread?: boolean,
  *   isActive: boolean,
  *   onClick: () => void
@@ -20,46 +21,88 @@ export default function ChatListItem({
   isOnline,
   lastMessage,
   mediaId,
+  time,
   hasUnread,
   isActive,
   onClick,
 }) {
-  // Логика выбора текста подзаголовка
   const renderSubText = () => {
-    // 1. Если есть текст сообщения (даже если там просто эмодзи)
     if (lastMessage && lastMessage.trim() !== '') {
       return lastMessage;
     }
 
-    // 2. Если текста нет, но есть ID медиафайла
     if (mediaId) {
       return '🖼 Фотография';
     }
 
-    // 3. Если совсем ничего нет — стандартные заглушки
-    return type === 'group' ? 'Групповой чат' : 'Напишите первым...';
+    return type === 'group'
+      ? 'Групповой чат'
+      : 'Напишите первым...';
   };
+
+  function formatTime(dateString) {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+    const now = new Date();
+
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    return date.toLocaleDateString([], {
+      day: '2-digit',
+      month: '2-digit',
+    });
+  }
 
   return (
     <div
-      className={`${styles.item} ${isActive ? styles.active : ''}`}
+      className={`
+        ${styles.item}
+        ${isActive ? styles.active : ''}
+        ${hasUnread ? styles.unread : ''}
+      `}
       onClick={onClick}
     >
+      {/* AVATAR */}
       <div className={styles.avatarWrap}>
         <div
-          className={`${styles.avatar} ${type === 'group' ? styles.group : ''}`}
+          className={`
+            ${styles.avatar}
+            ${type === 'group' ? styles.group : ''}
+          `}
         >
           {type === 'group' ? '#' : initials(name)}
         </div>
+
         {isOnline && <div className={styles.onlineDot} />}
       </div>
 
+      {/* INFO */}
       <div className={styles.info}>
-        <div className={styles.name}>{name}</div>
-        <div className={styles.sub}>{renderSubText()}</div>
-      </div>
+        <div className={styles.top}>
+          <div className={styles.name}>{name}</div>
 
-      {hasUnread && <div className={styles.unreadDot} />}
+          {/* META BLOCK */}
+          <div className={styles.meta}>
+            {hasUnread && <div className={styles.unreadDot} />}
+
+            <div className={styles.time}>
+              {formatTime(time)}
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.sub}>
+          {renderSubText()}
+        </div>
+      </div>
     </div>
   );
 }

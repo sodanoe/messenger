@@ -1,23 +1,22 @@
 .row {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   position: relative;
 }
-.row.me {
-  justify-content: flex-end;
-}
-.row.other {
-  justify-content: flex-start;
-}
+.row.me { justify-content: flex-end; }
+.row.other { justify-content: flex-start; }
 
-/* ── Bubble wrapper ─────────────────────────────────────── */
 .bubbleWrap {
-  position: relative;
   display: inline-flex;
+  flex-direction: column;
   max-width: 68%;
 }
 
-/* ── Bubble ─────────────────────────────────────────────── */
+.bubbleRow {
+  position: relative;
+  display: inline-flex;
+}
+
 .bubble {
   padding: 8px 11px;
   border-radius: 12px;
@@ -28,7 +27,7 @@
   width: 100%;
 }
 .me .bubble {
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
@@ -38,7 +37,6 @@
   border-bottom-left-radius: 4px;
 }
 
-/* ── Reply button — по центру сбоку ────────────────────── */
 .replyBtn {
   position: absolute;
   top: 50%;
@@ -55,27 +53,15 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition:
-    opacity 0.15s,
-    background 0.15s;
+  transition: opacity 0.15s, background 0.15s;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
-.me .replyBtn {
-  left: -36px;
-}
-.other .replyBtn {
-  right: -36px;
-}
-.row:hover .replyBtn {
-  opacity: 1;
-}
-.replyBtn:hover {
-  background: var(--accent);
-  color: #fff;
-}
+.me .replyBtn { left: -36px; }
+.other .replyBtn { right: -36px; }
+.row:hover .replyBtn { opacity: 1; }
+.replyBtn:hover { background: var(--accent); color: #fff; }
 
-/* ── React button — на нижнем углу пузыря ──────────────── */
 .reactBtn {
   position: absolute;
   bottom: -10px;
@@ -91,38 +77,23 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition:
-    opacity 0.15s,
-    background 0.15s,
-    transform 0.1s;
+  transition: opacity 0.15s, background 0.15s, transform 0.1s;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   z-index: 2;
   line-height: 1;
 }
-.me .reactBtn {
-  left: -10px;
-}
-.other .reactBtn {
-  right: -10px;
-}
-.row:hover .reactBtn {
-  opacity: 1;
-}
-.reactBtn:hover {
-  background: var(--accent);
-  color: #fff;
-  transform: scale(1.1);
-}
+.me .reactBtn { left: -10px; }
+.other .reactBtn { right: -10px; }
+.row:hover .reactBtn { opacity: 1; }
+.reactBtn:hover { background: var(--accent); color: #fff; transform: scale(1.1); }
 
-/* ── Sender name ────────────────────────────────────────── */
 .senderName {
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent2, #7c3aed);
+  color: var(--accent2);
   margin-bottom: 3px;
 }
 
-/* ── Reply quote ────────────────────────────────────────── */
 .replyQuote {
   display: flex;
   gap: 8px;
@@ -133,40 +104,13 @@
   background: rgba(0, 0, 0, 0.1);
   border-left: 2px solid rgba(255, 255, 255, 0.5);
 }
-.other .replyQuote {
-  background: var(--bg);
-  border-left-color: var(--accent);
-}
-.replyInner {
-  flex: 1;
-  min-width: 0;
-}
-.replyAuthor {
-  font-size: 11px;
-  font-weight: 600;
-  display: block;
-  opacity: 0.9;
-}
-.replyContent {
-  font-size: 12px;
-  opacity: 0.75;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.replyThumb {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
+.other .replyQuote { background: var(--bg); border-left-color: var(--accent); }
+.replyInner { flex: 1; min-width: 0; }
+.replyAuthor { font-size: 11px; font-weight: 600; display: block; opacity: 0.9; }
+.replyContent { font-size: 12px; opacity: 0.75; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.replyThumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 
-/* ── Media ──────────────────────────────────────────────── */
-.media {
-  margin-bottom: 4px;
-}
+.media { margin-bottom: 4px; }
 .media img {
   max-width: 240px;
   max-height: 300px;
@@ -176,18 +120,18 @@
   object-fit: cover;
 }
 
-/* ── Text ───────────────────────────────────────────────── */
-.text {
-  white-space: pre-wrap;
-}
+.text { white-space: pre-wrap; }
 
-/* ── Reactions ──────────────────────────────────────────── */
 .reactions {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 5px;
+  margin-top: 6px;
+  padding: 0 2px;
 }
+.me .reactions { justify-content: flex-end; }
+.other .reactions { justify-content: flex-start; }
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -196,19 +140,15 @@
   border-radius: 20px;
   font-size: 13px;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   transition: background 0.15s;
 }
-.other .pill {
-  background: var(--bg);
-  border: 1px solid var(--border);
-}
 .pill.mine {
-  background: rgba(99, 102, 241, 0.25);
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent);
 }
-.count {
-  font-size: 11px;
-}
+.count { font-size: 11px; }
 
 .inlineEmoji {
   height: 20px;
@@ -217,7 +157,6 @@
   object-fit: contain;
   margin: 0 2px;
 }
-
 .pillImg {
   height: 16px;
   width: 16px;
@@ -225,7 +164,6 @@
   vertical-align: middle;
 }
 
-/* ── Meta ───────────────────────────────────────────────── */
 .meta {
   display: flex;
   align-items: center;
@@ -233,23 +171,11 @@
   gap: 4px;
   margin-top: 3px;
 }
-.time {
-  font-size: 10px;
-  opacity: 0.65;
-}
-.status {
-  font-size: 11px;
-  opacity: 0.7;
-}
-.status.read {
-  color: #a5f3fc;
-  opacity: 1;
-}
-.me .status.read {
-  color: #a5f3fc;
-}
+.time { font-size: 10px; opacity: 0.65; }
+.status { font-size: 11px; opacity: 0.7; }
+.status.read { color: #a5f3fc; opacity: 1; }
+.me .status.read { color: #a5f3fc; }
 
-/* ── Lightbox ───────────────────────────────────────────── */
 .lightbox {
   position: fixed;
   inset: 0;
@@ -269,14 +195,12 @@
 }
 .lightboxClose {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 16px; right: 16px;
   background: rgba(255, 255, 255, 0.15);
   border: none;
   color: #fff;
   font-size: 20px;
-  width: 36px;
-  height: 36px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;

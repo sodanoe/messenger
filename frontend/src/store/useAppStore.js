@@ -14,12 +14,14 @@ const useAppStore = create((set, get) => ({
   token: localStorage.getItem('msng_token'),
   me: null,
   isAdmin: false,
+  // token: localStorage.getItem('msng_token') || 'fake-token',
+  // me: { id: 1, username: 'test' },
+  // isAdmin: false,
 
   setToken: (token) => {
     localStorage.setItem('msng_token', token);
     set({ token });
   },
-
   setMe: (me) => set({ me }),
   setIsAdmin: (isAdmin) => set({ isAdmin }),
 
@@ -32,7 +34,7 @@ const useAppStore = create((set, get) => ({
       isAdmin: false,
       currentChat: null,
       chats: [],
-      contacts: [], // Очищаем при выходе
+      contacts: [],
       messages: [],
       lastInvite: null,
       replyTo: null,
@@ -41,14 +43,7 @@ const useAppStore = create((set, get) => ({
   },
 
   // ── Current Active Chat ───────────────────────────────
-  currentChat: (() => {
-    try {
-      const saved = localStorage.getItem('msng_chat');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  })(),
+  currentChat: { type: 'direct', id: 1, name: 'test1', is_online: true },
 
   setCurrentChat: (chat) => {
     if (chat) localStorage.setItem('msng_chat', JSON.stringify(chat));
@@ -63,8 +58,73 @@ const useAppStore = create((set, get) => ({
     set({ currentChat: null, messages: [], msgStore: {} });
   },
 
-  // ── Unified Chats (Единая лента) ──────────────────────
-  chats: [],
+  // ── Unified Chats ─────────────────────────────────────
+  // chats: [
+  //   {
+  //     id: 1,
+  //     type: 'direct',
+  //     name: 'test1',
+  //     other_user_id: 2,
+  //     is_online: true,
+  //     last_message: 'привет',
+  //     updated_at: new Date().toISOString(),
+  //   },
+  //   {
+  //     id: 2,
+  //     type: 'direct',
+  //     name: 'Алексей',
+  //     other_user_id: 2,
+  //     is_online: true,
+  //     last_message: 'Привет! Как дела?',
+  //     last_msg_media_id: null,
+  //     has_unread: true,
+  //     updated_at: new Date().toISOString(),
+  //   },
+  //   {
+  //     id: 3,
+  //     type: 'direct',
+  //     name: 'Мария',
+  //     other_user_id: 3,
+  //     is_online: false,
+  //     last_message: '',
+  //     last_msg_media_id: 1,
+  //     has_unread: false,
+  //     updated_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+  //   },
+  //   {
+  //     id: 4,
+  //     type: 'group',
+  //     name: 'Работа',
+  //     is_online: false,
+  //     last_message: 'Завтра созвон в 10',
+  //     last_msg_media_id: null,
+  //     has_unread: true,
+  //     updated_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+  //   },
+  //   {
+  //     id: 5,
+  //     type: 'direct',
+  //     name: 'Иван',
+  //     other_user_id: 4,
+  //     is_online: true,
+  //     last_message: '',
+  //     last_msg_media_id: null,
+  //     has_unread: false,
+  //     updated_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+  //   },
+  //   {
+  //     id: 6,
+  //     type: 'direct',
+  //     name: 'Длинное имя пользователя',
+  //     other_user_id: 5,
+  //     is_online: false,
+  //     last_message:
+  //       'Очень длинное сообщение чтобы проверить обрезание текста в интерфейсе',
+  //     last_msg_media_id: null,
+  //     has_unread: true,
+  //     updated_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  //   },
+  // ],
   setChats: (chats) => set({ chats }),
 
   updateChatOnline: (userId, isOnline) =>
@@ -90,12 +150,28 @@ const useAppStore = create((set, get) => ({
     })),
 
   // ── Contacts ──────────────────────────────────────────
-  // Добавили отсутствующую секцию
   contacts: [],
   setContacts: (contacts) => set({ contacts }),
 
   // ── Messages ──────────────────────────────────────────
-  messages: [],
+  messages: [
+    {
+      id: 1,
+      sender_id: 1,
+      content: 'Привет!',
+      created_at: new Date().toISOString(),
+      reactions: [{ emoji: '👍', user_id: 2 }],
+      reply_to: null,
+    },
+    {
+      id: 2,
+      sender_id: 2,
+      content: 'Как дела?',
+      created_at: new Date().toISOString(),
+      reactions: [],
+      reply_to: null,
+    },
+  ],
   setMessages: (messages) => set({ messages }),
   addMessage: (msg) =>
     set((state) => {

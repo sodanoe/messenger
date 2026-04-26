@@ -10,20 +10,14 @@ import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
 export default function MessageItem({ message }) {
-  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage } =
-    useAppStore();
-  const [pickerState, setPickerState] = useState({
-    open: false,
-    top: 0,
-    left: 0,
-  });
+  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage } = useAppStore();
+  const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [customEmojis, setCustomEmojis] = useState([]);
   const rowRef = useRef(null);
 
   const isMe = message.sender_id === me?.id;
 
-  // Загружаем эмодзи для парсинга текста
   useEffect(() => {
     api('/emojis/', 'GET')
       .then((data) => setCustomEmojis(data.emojis || []))
@@ -36,9 +30,7 @@ export default function MessageItem({ message }) {
         id: message.id,
         senderName: isMe
           ? 'Вы'
-          : message.sender_username ||
-            currentChat?.name ||
-            `#${message.sender_id}`,
+          : message.sender_username || currentChat?.name || `#${message.sender_id}`,
         content: message.content || '',
         mediaUrl: message.media_url || null,
       });
@@ -53,16 +45,7 @@ export default function MessageItem({ message }) {
         const code = part.slice(1, -1);
         const found = customEmojis.find((e) => e.shortcode === code);
         if (found) {
-          return (
-            <img
-              key={i}
-              src={found.url}
-              className={styles.inlineEmoji}
-              alt={part}
-              title={part}
-              Ч
-            />
-          );
+          return <img key={i} src={found.url} className={styles.inlineEmoji} alt={part} title={part} />;
         }
       }
       return part;
@@ -81,7 +64,7 @@ export default function MessageItem({ message }) {
   async function handleDelete() {
     if (!confirm('Удалить сообщение?')) return;
     try {
-      if (currentChat.type === 'dm') {
+      if (currentChat.type === 'direct') {
         await deleteDM(currentChat.id, message.id);
       } else {
         await deleteGroupMessage(currentChat.id, message.id);
@@ -93,13 +76,10 @@ export default function MessageItem({ message }) {
   }
 
   async function handleReact(emoji) {
-    // Закрываем умное окно
     setPickerState((prev) => ({ ...prev, open: false }));
-
     const isAlreadySet = (message.reactions || []).some(
       (r) => r.emoji === emoji && r.user_id === me?.id,
     );
-
     try {
       const baseUrl = `/chats/${currentChat.id}/messages/${message.id}/reactions`;
       if (isAlreadySet) {
@@ -113,30 +93,18 @@ export default function MessageItem({ message }) {
   }
 
   const mediaUrl = message.media_url
-    ? message.media_url.startsWith('http')
-      ? message.media_url
-      : API_BASE() + message.media_url
+    ? message.media_url.startsWith('http') ? message.media_url : API_BASE() + message.media_url
     : null;
 
   const replyTo = message.reply_to;
   const replyAuthor = replyTo
-    ? replyTo.sender_id === me?.id
-      ? 'Вы'
-      : currentChat?.name || `#${replyTo.sender_id}`
+    ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
     : null;
-
   const replySnippet = replyTo
-    ? replyTo.content?.trim()
-      ? replyTo.content.slice(0, 80)
-      : replyTo.media_url
-        ? '📷 Фото'
-        : '—'
+    ? replyTo.content?.trim() ? replyTo.content.slice(0, 80) : replyTo.media_url ? '📷 Фото' : '—'
     : null;
-
   const replyThumb = replyTo?.media_url
-    ? replyTo.media_url.startsWith('http')
-      ? replyTo.media_url
-      : API_BASE() + replyTo.media_url
+    ? replyTo.media_url.startsWith('http') ? replyTo.media_url : API_BASE() + replyTo.media_url
     : null;
 
   const reactions = message.reactions || [];
@@ -152,22 +120,13 @@ export default function MessageItem({ message }) {
 
   const handleOpenPicker = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const pickerHeight = 350; // Примерная высота окна с кастомными эмодзи
+    const pickerHeight = 350;
     const pickerWidth = 260;
     const margin = 8;
-
-    // Считаем: выводить сверху кнопки или снизу?
     let top = rect.top - pickerHeight - margin;
-    if (top < margin) {
-      top = rect.bottom + margin; // Если сверху нет места, кидаем вниз
-    }
-
-    // Чтобы не улетало за правый край экрана
+    if (top < margin) top = rect.bottom + margin;
     let left = rect.left;
-    if (left + pickerWidth > window.innerWidth) {
-      left = window.innerWidth - pickerWidth - margin;
-    }
-
+    if (left + pickerWidth > window.innerWidth) left = window.innerWidth - pickerWidth - margin;
     setPickerState({ open: true, top, left });
   };
 
@@ -177,112 +136,76 @@ export default function MessageItem({ message }) {
         ref={rowRef}
         className={`${styles.row} ${isMe ? styles.me : styles.other}`}
         data-msg-id={message.id}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          handleDelete();
-        }}
+        onContextMenu={(e) => { e.preventDefault(); handleDelete(); }}
       >
         <div className={styles.bubbleWrap}>
-          {message.id && (
-            <button
-              className={styles.replyBtn}
-              title="Ответить"
-              onClick={handleReply}
-            >
-              ↩
-            </button>
-          )}
-
-          <div className={styles.bubble}>
-            {!isMe && currentChat?.type === 'group' && (
-              <div className={styles.senderName}>
-                {message.sender_username || '?'}
-              </div>
+          {/* bubbleRow — содержит только пузырь и кнопки позиционирования */}
+          <div className={styles.bubbleRow}>
+            {message.id && (
+              <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>
+                ↩
+              </button>
             )}
 
-            {replyTo && (
-              <div className={styles.replyQuote}>
-                <div className={styles.replyInner}>
-                  <span className={styles.replyAuthor}>{replyAuthor}</span>
-                  <span className={styles.replyContent}>{replySnippet}</span>
+            <div className={styles.bubble}>
+              {!isMe && currentChat?.type === 'group' && (
+                <div className={styles.senderName}>{message.sender_username || '?'}</div>
+              )}
+
+              {replyTo && (
+                <div className={styles.replyQuote}>
+                  <div className={styles.replyInner}>
+                    <span className={styles.replyAuthor}>{replyAuthor}</span>
+                    <span className={styles.replyContent}>{replySnippet}</span>
+                  </div>
+                  {replyThumb && <img className={styles.replyThumb} src={replyThumb} alt="фото" />}
                 </div>
-                {replyThumb && (
-                  <img
-                    className={styles.replyThumb}
-                    src={replyThumb}
-                    alt="фото"
-                  />
+              )}
+
+              {mediaUrl && (
+                <div className={styles.media}>
+                  <img src={mediaUrl} alt="photo" loading="lazy" onClick={() => setLightboxUrl(mediaUrl)} />
+                </div>
+              )}
+
+              {message.content && (
+                <div className={styles.text}>{formatContent(message.content)}</div>
+              )}
+
+              <div className={styles.meta}>
+                <span className={styles.time}>{fmtTime(message.created_at)}</span>
+                {isMe && currentChat?.type === 'direct' && (
+                  <span className={`${styles.status} ${message.read_at ? styles.read : ''}`}>
+                    {message.read_at ? '✓✓' : '✓'}
+                  </span>
                 )}
               </div>
-            )}
-
-            {mediaUrl && (
-              <div className={styles.media}>
-                <img
-                  src={mediaUrl}
-                  alt="photo"
-                  loading="lazy"
-                  onClick={() => setLightboxUrl(mediaUrl)}
-                />
-              </div>
-            )}
-
-            {message.content && (
-              <div className={styles.text}>
-                {formatContent(message.content)}
-              </div>
-            )}
-
-            {Object.keys(grouped).length > 0 && (
-              <div className={styles.reactions}>
-                {Object.entries(grouped).map(([emoji, { count, mine }]) => {
-                  const found = customEmojis.find(
-                    (e) => `:${e.shortcode}:` === emoji,
-                  );
-                  return (
-                    <span
-                      key={emoji}
-                      className={`${styles.pill} ${mine ? styles.mine : ''}`}
-                      onClick={() => handleReact(emoji)}
-                    >
-                      {found ? (
-                        <img
-                          src={found.url}
-                          className={styles.pillImg}
-                          alt={emoji}
-                        />
-                      ) : (
-                        emoji
-                      )}
-                      {count > 1 && (
-                        <span className={styles.count}>{count}</span>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className={styles.meta}>
-              <span className={styles.time}>{fmtTime(message.created_at)}</span>
-              {isMe && currentChat?.type === 'dm' && (
-                <span
-                  className={`${styles.status} ${message.read_at ? styles.read : ''}`}
-                >
-                  {message.read_at ? '✓✓' : '✓'}
-                </span>
-              )}
             </div>
+
+            {message.id && (
+              <button className={styles.reactBtn} title="Реакция" onClick={handleOpenPicker}>
+                {reactBtnLabel}
+              </button>
+            )}
           </div>
 
-          {message.id && (
-            <button
-              className={styles.reactBtn}
-              title="Реакция"
-              onClick={handleOpenPicker}
-            >
-              {reactBtnLabel}
-            </button>
+          {/* Реакции снаружи пузыря */}
+          {Object.keys(grouped).length > 0 && (
+            <div className={styles.reactions}>
+              {Object.entries(grouped).map(([emoji, { count, mine }]) => {
+                const found = customEmojis.find((e) => `:${e.shortcode}:` === emoji);
+                return (
+                  <span
+                    key={emoji}
+                    className={`${styles.pill} ${mine ? styles.mine : ''}`}
+                    onClick={() => handleReact(emoji)}
+                  >
+                    {found ? <img src={found.url} className={styles.pillImg} alt={emoji} /> : emoji}
+                    {count > 1 && <span className={styles.count}>{count}</span>}
+                  </span>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -297,12 +220,7 @@ export default function MessageItem({ message }) {
 
       {lightboxUrl && (
         <div className={styles.lightbox} onClick={() => setLightboxUrl(null)}>
-          <button
-            className={styles.lightboxClose}
-            onClick={() => setLightboxUrl(null)}
-          >
-            ✕
-          </button>
+          <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)}>✕</button>
           <img src={lightboxUrl} alt="" onClick={(e) => e.stopPropagation()} />
         </div>
       )}

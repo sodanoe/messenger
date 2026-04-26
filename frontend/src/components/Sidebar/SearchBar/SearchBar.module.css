@@ -1,29 +1,45 @@
 .wrap {
   position: relative;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
   flex-shrink: 0;
 }
 
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .inputRow {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 9px 8px 9px 12px;
+  transition: box-shadow 0.15s;
+}
+
+.inputRow:focus-within {
+  box-shadow: 0 0 0 2px rgba(43, 82, 120, 0.4);
 }
 
 .input {
   flex: 1;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: none;
+  background: transparent;
   color: var(--text);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s;
+  font-family: inherit;
+  padding: 0 4px; /* ← добавь это */
+  min-width: 0;   /* ← и это, чтобы flex не обрезал */
 }
-.input:focus {
-  border-color: var(--accent);
+
+.input::placeholder {
+  color: var(--text);
+  opacity: 0.45;
 }
 
 .clear {
@@ -32,20 +48,70 @@
   color: var(--text2);
   font-size: 14px;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
   flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.clear:hover { color: var(--text); }
+
+.createGroupBtn {
+  position: relative;
+  width: 34px;
+  border-radius: 10px;
+  border: none;
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  align-self: stretch;
+}
+
+.createGroupBtn:hover {
+  background: rgba(43, 82, 120, 0.45);
+  color: var(--text);
+}
+
+.createGroupBtn:active {
+  transform: scale(0.95);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 100;
+}
+
+.createGroupBtn:hover .tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .results {
   position: absolute;
-  top: calc(100% - 1px);
-  left: 0;
-  right: 0;
+  top: calc(100% - 4px);
+  left: 12px;
+  right: 12px;
   background: var(--bg2);
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
   z-index: 50;
   max-height: 320px;
   overflow-y: auto;
@@ -64,16 +130,17 @@
   gap: 10px;
   padding: 8px 12px;
   transition: background 0.1s;
+  border-radius: 8px;
+  margin: 4px;
 }
-.item:hover {
-  background: var(--bg);
-}
+
+.item:hover { background: var(--bg3); }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: #fff;
   display: flex;
   align-items: center;
@@ -81,6 +148,7 @@
   font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
+  position: relative;
 }
 
 .onlineDot {
@@ -94,10 +162,7 @@
   border: 1.5px solid var(--bg2);
 }
 
-.info {
-  flex: 1;
-  min-width: 0;
-}
+.info { flex: 1; min-width: 0; }
 
 .name {
   font-size: 13px;
@@ -107,34 +172,29 @@
   white-space: nowrap;
 }
 
-.status {
-  font-size: 11px;
-  color: var(--text2);
-}
+.status { font-size: 11px; color: var(--text2); }
 
-.actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
+.actions { display: flex; gap: 6px; align-items: center; }
 
 .actionBtn {
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: none;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg3);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
   transition: background 0.15s;
 }
-.actionBtn:hover {
-  background: var(--bg);
-}
+
+.actionBtn:hover { background: var(--border); }
+
 .actionBtn.add {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: rgba(43, 82, 120, 0.2);
+  color: var(--text);
 }
+
+.actionBtn.add:hover { background: rgba(43, 82, 120, 0.35); }
 
 .alreadyBtn {
   font-size: 11px;

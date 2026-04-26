@@ -2,24 +2,30 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+
   cursor: pointer;
-  transition: background 0.1s;
-  border-radius: 8px;
-  margin: 1px 6px;
+  transition: background 0.12s, transform 0.06s;
 }
+
+/* hover — мягкий, не кричащий */
 .item:hover {
-  background: var(--bg);
+  background: var(--bg3);
 }
+
+/* active чат */
 .item.active {
-  background: var(--accent);
+  background: rgba(43, 82, 120, 0.25);
 }
-.item.active .name {
-  color: #fff;
+
+/* микро-нажатие */
+.item:active {
+  transform: scale(0.98);
 }
-.item.active .sub {
-  color: rgba(255, 255, 255, 0.7);
-}
+
+/* AVATAR */
 
 .avatarWrap {
   position: relative;
@@ -29,61 +35,115 @@
 .avatar {
   width: 36px;
   height: 36px;
+
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: rgba(43, 82, 120, 0.4);
+
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+
+  font-size: 12px;
   font-weight: 600;
+  color: var(--text);
 }
+
 .avatar.group {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--accent2, #7c3aed);
-  font-size: 18px;
-  font-weight: 700;
+  background: rgba(120, 80, 160, 0.35);
 }
+
+/* online */
 
 .onlineDot {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 9px;
-  height: 9px;
+  right: 0;
+  bottom: 0;
+
+  width: 8px;
+  height: 8px;
+
+  background: #4ade80;
   border-radius: 50%;
-  background: var(--green, #22c55e);
   border: 2px solid var(--bg2);
 }
+
+/* INFO */
 
 .info {
   flex: 1;
   min-width: 0;
+
+  display: flex;
+  flex-direction: column;
 }
+
+/* верхняя линия */
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* имя */
 
 .name {
   font-size: 13px;
   font-weight: 500;
+  color: var(--text);
+
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text);
 }
+
+/* сообщение */
 
 .sub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text2);
-  margin-top: 2px;
+  opacity: 0.85;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.time {
+  font-size: 11px;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+/* unread */
+
 .unreadDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+/* если есть непрочитанные — усиливаем */
+.item.unread .name {
+  font-weight: 600;
+}
+
+.item.unread .sub {
+  color: var(--text);
+  opacity: 1;
 }

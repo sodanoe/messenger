@@ -1,30 +1,35 @@
 import { useState, useRef } from 'react';
-import {
-  searchUsers,
-  addContact,
-  getContacts,
-} from '../../../services/contacts';
+import { searchUsers, addContact, getContacts } from '../../../services/contacts';
+import { createGroup } from '../../../services/groups';
+import { api } from '../../../services/api';
 import useAppStore from '../../../store/useAppStore';
 import { initials } from '../../../utils/format';
 import toast from 'react-hot-toast';
 import styles from './SearchBar.module.css';
 
+function GroupPlusIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="13" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M1 17c0-3 2.5-4.8 6-4.8h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M14 12.5v4M12 14.5h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function SearchBar() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState(null); // null = скрыто
+  const [results, setResults] = useState(null);
   const timer = useRef(null);
 
-  // Достаем данные из стора. Если contacts там нет, используем пустой массив по умолчанию
-  const { contacts = [], setContacts, setCurrentChat } = useAppStore();
+  const { contacts = [], setContacts, setCurrentChat, setChats } = useAppStore();
 
   function onInput(val) {
     setQuery(val);
     const trimmed = val.trim();
     clearTimeout(timer.current);
-    if (!trimmed) {
-      setResults(null);
-      return;
-    }
+    if (!trimmed) { setResults(null); return; }
     timer.current = setTimeout(() => doSearch(trimmed), 280);
   }
 
@@ -45,21 +50,14 @@ export default function SearchBar() {
 
   async function openDM(user) {
     clearSearch();
-    setCurrentChat({
-      type: 'dm',
-      id: user.id,
-      name: user.username,
-      is_online: user.is_online,
-    });
+    setCurrentChat({ type: 'direct', id: user.id, name: user.username, is_online: user.is_online });
   }
 
   async function addAndChat(user) {
     try {
       await addContact(user.id);
       const updated = await getContacts();
-      if (typeof setContacts === 'function') {
-        setContacts(updated);
-      }
+      if (typeof setContacts === 'function') setContacts(updated);
       toast.success(`${user.username} добавлен`);
     } catch (e) {
       if (!e.message.includes('409') && !e.message.includes('already')) {
@@ -68,32 +66,48 @@ export default function SearchBar() {
       }
     }
     clearSearch();
-    setCurrentChat({
-      type: 'dm',
-      id: user.id,
-      name: user.username,
-      is_online: user.is_online,
-    });
+    setCurrentChat({ type: 'direct', id: user.id, name: user.username, is_online: user.is_online });
   }
 
-  // ЗАЩИТА: Добавлен (contacts || []), чтобы .map() не вызывался у undefined
+  async function handleCreateGroup() {
+    const name = prompt('Название группы:');
+    if (!name?.trim()) return;
+    try {
+      await createGroup(name.trim());
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+      toast.success('Группа создана');
+    } catch (e) {
+      toast.error(e.message);
+    }
+  }
+
   const contactIds = new Set((contacts || []).map((c) => c.contact_user_id));
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.inputRow}>
-        <input
-          className={styles.input}
-          value={query}
-          onChange={(e) => onInput(e.target.value)}
-          placeholder="🔍 Найти пользователя…"
-          autoComplete="off"
-        />
-        {query && (
-          <button className={styles.clear} onClick={clearSearch}>
-            ✕
-          </button>
-        )}
+      <div className={styles.row}>
+        <div className={styles.inputRow}>
+          <input
+            className={styles.input}
+            value={query}
+            onChange={(e) => onInput(e.target.value)}
+            placeholder="Найти пользователя…"
+            autoComplete="off"
+          />
+          {query && (
+            <button className={styles.clear} onClick={clearSearch}>✕</button>
+          )}
+        </div>
+
+        <button
+          className={styles.createGroupBtn}
+          onClick={handleCreateGroup}
+          aria-label="Создать группу"
+        >
+          <GroupPlusIcon />
+          <span className={styles.tooltip}>Создать группу</span>
+        </button>
       </div>
 
       {results !== null && (
@@ -105,24 +119,13 @@ export default function SearchBar() {
               const isContact = contactIds.has(u.id);
               return (
                 <div key={u.id} className={styles.item}>
-                  <div
-                    className={styles.avatar}
-                    style={{ position: 'relative' }}
-                  >
-                    {/* Защита на случай отсутствия username */}
+                  <div className={styles.avatar}>
                     {initials(u.username || '?')}
                     {u.is_online && <div className={styles.onlineDot} />}
                   </div>
                   <div className={styles.info}>
-                    <div className={styles.name}>
-                      {u.username || 'Без имени'}
-                    </div>
-                    <div
-                      className={styles.status}
-                      style={{
-                        color: u.is_online ? 'var(--green)' : undefined,
-                      }}
-                    >
+                    <div className={styles.name}>{u.username || 'Без имени'}</div>
+                    <div className={styles.status} style={{ color: u.is_online ? 'var(--green)' : undefined }}>
                       {u.is_online ? '● online' : 'offline'}
                     </div>
                   </div>
@@ -130,27 +133,12 @@ export default function SearchBar() {
                     {isContact ? (
                       <>
                         <span className={styles.alreadyBtn}>✓ добавлен</span>
-                        <button
-                          className={styles.actionBtn}
-                          onClick={() => openDM(u)}
-                        >
-                          💬
-                        </button>
+                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
                       </>
                     ) : (
                       <>
-                        <button
-                          className={`${styles.actionBtn} ${styles.add}`}
-                          onClick={() => addAndChat(u)}
-                        >
-                          ＋
-                        </button>
-                        <button
-                          className={styles.actionBtn}
-                          onClick={() => openDM(u)}
-                        >
-                          💬
-                        </button>
+                        <button className={`${styles.actionBtn} ${styles.add}`} onClick={() => addAndChat(u)}>＋</button>
+                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
                       </>
                     )}
                   </div>

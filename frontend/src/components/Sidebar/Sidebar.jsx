@@ -1,92 +1,130 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import useAppStore from '../../store/useAppStore';
 import { api } from '../../services/api';
 import SearchBar from './SearchBar/SearchBar';
 import ChatList from './ChatList/ChatList';
 import styles from './Sidebar.module.css';
 
+function getInitials(username) {
+  if (!username) return '?';
+  return username.slice(0, 2).toUpperCase();
+}
+
 export default function Sidebar() {
-  const { me, isAdmin, chats, setChats, logout, lastInvite, setLastInvite } =
+  const { me, isAdmin, chats, logout, lastInvite, setLastInvite } =
     useAppStore();
 
-  const [inviteHint, setInviteHint] = useState(
-    'Создай код и отправь новому пользователю',
-  );
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const data = await api('/chats/', 'GET');
-
-        // ЗАЩИТА: Если бэкенд прислал что-то не то, ставим пустой массив вместо undefined
-        setChats(data?.chats || []);
-      } catch (err) {
-        console.error('Ошибка загрузки чатов:', err);
-        // В случае ошибки тоже гарантируем, что chats будет массивом
-        setChats([]);
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
       }
-    };
-    fetchChats();
-  }, [setChats]);
-
-  function doLogout() {
-    logout();
-  }
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   async function genInvite() {
     try {
       const r = await api('/auth/invite', 'POST');
       setLastInvite(r.code);
-      setInviteHint('Нажми на код чтобы скопировать');
-    } catch {
-      // silent
-    }
+    } catch {}
   }
 
   function copyInvite() {
     if (!lastInvite) return;
-    navigator.clipboard
-      .writeText(lastInvite)
-      .then(() => setInviteHint('✓ Скопировано'))
-      .catch(() => prompt('Скопируй код:', lastInvite));
+    navigator.clipboard.writeText(lastInvite).catch(() => {
+      prompt('Скопируй код:', lastInvite);
+    });
   }
 
   return (
-    <aside className={`${styles.sidebar} sidebar`}>
+    <aside className={styles.sidebar}>
+      {/* HEADER */}
       <div className={styles.header}>
         <div className={styles.logo}>// msg</div>
-        <div className={styles.meBadge}>{me?.username}</div>
-        {isAdmin && <span className={styles.adminBadge}>ADMIN</span>}
-        <button className={styles.logoutBtn} onClick={doLogout} title="Выйти">
-          ⏏
-        </button>
+
+        <div className={styles.headerRight} ref={menuRef}>
+          <button
+            className={`${styles.menuBtn} ${
+              menuOpen ? styles.active : ''
+            }`}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          {menuOpen && (
+            <div className={styles.menu}>
+              {/* PROFILE */}
+              <div className={styles.menuProfile}>
+                <div className={styles.menuAvatar}>
+                  {getInitials(me?.username)}
+                </div>
+
+                <div className={styles.menuUserInfo}>
+                  <div className={styles.menuUsername}>
+                    {me?.username}
+                  </div>
+
+                  {isAdmin && (
+                    <div className={styles.menuAdmin}>ADMIN</div>
+                  )}
+                </div>
+              </div>
+
+              {/* ADMIN */}
+              {isAdmin && (
+                <div className={styles.menuSection}>
+                  <div
+                    className={styles.menuItem}
+                    onClick={genInvite}
+                  >
+                    Создать инвайт
+                  </div>
+
+                  {lastInvite && (
+                    <div
+                      className={styles.menuItem}
+                      onClick={copyInvite}
+                    >
+                      {lastInvite}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* LOGOUT */}
+              <div className={styles.menuSection}>
+                <div
+                  className={`${styles.menuItem} ${styles.danger}`}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    logout();
+                  }}
+                >
+                  Выйти
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <SearchBar />
+      {/* SEARCH */}
+      <div className={styles.searchWrapper}>
+        <SearchBar />
+      </div>
 
+      {/* CHAT LIST */}
       <div className={styles.chatListContainer}>
-        {/* Передаем chats, который теперь гарантированно массив или пустой список */}
         <ChatList chats={chats || []} />
       </div>
-
-      {isAdmin && (
-        <div className={styles.adminPanel}>
-          <div className={styles.adminTitle}>⚡ Инвайты</div>
-          <div className={styles.inviteRow}>
-            <div
-              className={`${styles.inviteCode} ${!lastInvite ? styles.empty : ''}`}
-              onClick={copyInvite}
-              title="Нажми чтобы скопировать"
-            >
-              {lastInvite || 'нет кода'}
-            </div>
-            <button className={styles.smallBtn} onClick={genInvite}>
-              + Создать
-            </button>
-          </div>
-          <div className={styles.inviteHint}>{inviteHint}</div>
-        </div>
-      )}
     </aside>
   );
 }
