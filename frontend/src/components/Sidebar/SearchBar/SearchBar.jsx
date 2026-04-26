@@ -23,7 +23,12 @@ export default function SearchBar() {
   const [results, setResults] = useState(null);
   const timer = useRef(null);
 
-  const { setCurrentChat, setChats } = useAppStore();
+  const { setCurrentChat, setChats, chats } = useAppStore();
+
+  // Пользователи с которыми уже есть DM
+  const existingDMUserIds = new Set(
+    (chats || []).filter(c => c.type === 'direct').map(c => c.other_user_id)
+  );
 
   function onInput(val) {
     setQuery(val);
@@ -67,27 +72,24 @@ export default function SearchBar() {
 
   async function addAndChat(user) {
     try {
-      await api('/chats/direct', 'POST', { user_id: user.id });
-      toast.success(`${user.username} добавлен`);
-    } catch (e) {
-      if (!e.message.includes('409') && !e.message.includes('already')) {
-        toast.error(e.message);
-        return;
-      }
-    }
-    clearSearch();
-    try {
       const chat = await api('/chats/direct', 'POST', { user_id: user.id });
+      toast.success(`${user.username} добавлен`);
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+      clearSearch();
       setCurrentChat({
         type: 'direct',
         id: chat.id,
         name: user.username,
         is_online: user.is_online,
       });
-      const data = await api('/chats/', 'GET');
-      if (data?.chats) setChats(data.chats);
     } catch (e) {
-      toast.error(e.message);
+      if (e.message.includes('409') || e.message.includes('already')) {
+        // Чат уже существует — просто открываем
+        openDM(user);
+      } else {
+        toast.error(e.message);
+      }
     }
   }
 
@@ -135,37 +137,44 @@ export default function SearchBar() {
           {results.length === 0 ? (
             <div className={styles.empty}>Никого не найдено</div>
           ) : (
-            results.map((u) => (
-              <div key={u.id} className={styles.item}>
-                <div className={styles.avatar}>
-                  {initials(u.username || '?')}
-                  {u.is_online && <div className={styles.onlineDot} />}
-                </div>
-                <div className={styles.info}>
-                  <div className={styles.name}>{u.username || 'Без имени'}</div>
-                  <div
-                    className={styles.status}
-                    style={{ color: u.is_online ? 'var(--green)' : undefined }}
-                  >
-                    {u.is_online ? '● online' : 'offline'}
+            results.map((u) => {
+              const isContact = existingDMUserIds.has(u.id);
+              return (
+                <div key={u.id} className={styles.item}>
+                  <div className={styles.avatar}>
+                    {initials(u.username || '?')}
+                    {u.is_online && <div className={styles.onlineDot} />}
+                  </div>
+                  <div className={styles.info}>
+                    <div className={styles.name}>{u.username || 'Без имени'}</div>
+                    <div
+                      className={styles.status}
+                      style={{ color: u.is_online ? 'var(--green)' : undefined }}
+                    >
+                      {u.is_online ? '● online' : 'offline'}
+                    </div>
+                  </div>
+                  <div className={styles.actions}>
+                    {isContact ? (
+                      <>
+                        <span className={styles.alreadyBtn}>✓ добавлен</span>
+                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className={`${styles.actionBtn} ${styles.add}`}
+                          onClick={() => addAndChat(u)}
+                        >
+                          ＋
+                        </button>
+                        <button className={styles.actionBtn} onClick={() => openDM(u)}>💬</button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className={styles.actions}>
-                  <button
-                    className={`${styles.actionBtn} ${styles.add}`}
-                    onClick={() => addAndChat(u)}
-                  >
-                    ＋
-                  </button>
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => openDM(u)}
-                  >
-                    💬
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
