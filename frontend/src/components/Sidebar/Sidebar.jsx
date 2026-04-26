@@ -16,7 +16,6 @@ export default function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Загружаем чаты при монтировании
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -54,8 +53,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
-      {/* HEADER */}
+    <aside className={`${styles.sidebar} sidebar`}>
       <div className={styles.header}>
         <div className={styles.logo}>// msg</div>
 
@@ -107,12 +105,10 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* SEARCH */}
       <div className={styles.searchWrapper}>
         <SearchBar />
       </div>
 
-      {/* CHAT LIST */}
       <div className={styles.chatListContainer}>
         <ChatList chats={chats || []} />
       </div>
