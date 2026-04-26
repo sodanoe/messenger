@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { login, register, fetchMe, checkAdmin } from '../../services/auth';
-import { getContacts } from '../../services/contacts';
-import { getGroups } from '../../services/groups';
 import useAppStore from '../../store/useAppStore';
 import { useNotifications } from '../../hooks/useNotifications';
 import styles from './LoginPage.module.css';
-
 
 export default function LoginPage() {
   const [tab, setTab] = useState('login');
@@ -19,9 +16,8 @@ export default function LoginPage() {
   const [rPass, setRPass] = useState('');
   const [rInvite, setRInvite] = useState('');
 
-  const { setToken, setMe, setIsAdmin, setContacts, setGroups } = useAppStore();
+  const { setToken, setMe, setIsAdmin } = useAppStore();
   const { requestPermission } = useNotifications();
-
 
   async function onAuthSuccess(accessToken) {
     setToken(accessToken);
@@ -29,11 +25,8 @@ export default function LoginPage() {
     setMe({ id: profile.id, username: profile.username });
     const admin = await checkAdmin();
     setIsAdmin(admin);
-    const [contacts, groups] = await Promise.all([getContacts(), getGroups()]);
-    setContacts(contacts);
-    setGroups(groups);
     requestPermission();
-    // navigate не нужен — App сам покажет ChatPage когда token установлен
+    // Чаты загрузит Sidebar сам после монтирования
   }
 
   async function doLogin() {
@@ -71,19 +64,13 @@ export default function LoginPage() {
       <div className={styles.tabs}>
         <button
           className={`${styles.tab} ${tab === 'login' ? styles.active : ''}`}
-          onClick={() => {
-            setTab('login');
-            setError('');
-          }}
+          onClick={() => { setTab('login'); setError(''); }}
         >
           Вход
         </button>
         <button
           className={`${styles.tab} ${tab === 'register' ? styles.active : ''}`}
-          onClick={() => {
-            setTab('register');
-            setError('');
-          }}
+          onClick={() => { setTab('register'); setError(''); }}
         >
           Регистрация
         </button>
@@ -148,11 +135,7 @@ export default function LoginPage() {
               onKeyDown={(e) => e.key === 'Enter' && doRegister()}
             />
           </div>
-          <button
-            className={styles.btn}
-            onClick={doRegister}
-            disabled={loading}
-          >
+          <button className={styles.btn} onClick={doRegister} disabled={loading}>
             {loading ? '…' : 'Зарегистрироваться'}
           </button>
         </div>
