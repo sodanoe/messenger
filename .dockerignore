@@ -56,3 +56,71 @@ README*
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyc
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Бэкапы
+*.bak
+
+# Скрипты деплоя
+deploy/
+*.sh
+
+# Docker
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Env файлы (секреты не в образ!)
+.env
+.env.*
+!.env.example
+
+# Документация
+*.md
+README*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Фронтенд — не нужен в образе бэкенда
+frontend/
+
+# Node / prettier (попал в корень)
+node_modules/
+package.json
+package-lock.json
+
+# Дампы и временные файлы
+project_dump.txt
+*.tar.gz
