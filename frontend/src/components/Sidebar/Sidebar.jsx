@@ -11,11 +11,23 @@ function getInitials(username) {
 }
 
 export default function Sidebar() {
-  const { me, isAdmin, chats, logout, lastInvite, setLastInvite } =
-    useAppStore();
+  const { me, isAdmin, chats, setChats, logout, lastInvite, setLastInvite } = useAppStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  // Загружаем чаты при монтировании
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const data = await api('/chats/', 'GET');
+        setChats(data?.chats || []);
+      } catch {
+        setChats([]);
+      }
+    };
+    fetchChats();
+  }, [setChats]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -49,9 +61,7 @@ export default function Sidebar() {
 
         <div className={styles.headerRight} ref={menuRef}>
           <button
-            className={`${styles.menuBtn} ${
-              menuOpen ? styles.active : ''
-            }`}
+            className={`${styles.menuBtn} ${menuOpen ? styles.active : ''}`}
             onClick={() => setMenuOpen((v) => !v)}
           >
             <span />
@@ -61,52 +71,33 @@ export default function Sidebar() {
 
           {menuOpen && (
             <div className={styles.menu}>
-              {/* PROFILE */}
               <div className={styles.menuProfile}>
                 <div className={styles.menuAvatar}>
                   {getInitials(me?.username)}
                 </div>
-
                 <div className={styles.menuUserInfo}>
-                  <div className={styles.menuUsername}>
-                    {me?.username}
-                  </div>
-
-                  {isAdmin && (
-                    <div className={styles.menuAdmin}>ADMIN</div>
-                  )}
+                  <div className={styles.menuUsername}>{me?.username}</div>
+                  {isAdmin && <div className={styles.menuAdmin}>ADMIN</div>}
                 </div>
               </div>
 
-              {/* ADMIN */}
               {isAdmin && (
                 <div className={styles.menuSection}>
-                  <div
-                    className={styles.menuItem}
-                    onClick={genInvite}
-                  >
+                  <div className={styles.menuItem} onClick={genInvite}>
                     Создать инвайт
                   </div>
-
                   {lastInvite && (
-                    <div
-                      className={styles.menuItem}
-                      onClick={copyInvite}
-                    >
+                    <div className={styles.menuItem} onClick={copyInvite}>
                       {lastInvite}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* LOGOUT */}
               <div className={styles.menuSection}>
                 <div
                   className={`${styles.menuItem} ${styles.danger}`}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                  }}
+                  onClick={() => { setMenuOpen(false); logout(); }}
                 >
                   Выйти
                 </div>
