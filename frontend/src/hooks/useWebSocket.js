@@ -56,6 +56,8 @@ export function useWebSocket() {
       } catch {
         return;
       }
+      
+      console.log('WS:', msg.type, msg); // временно
 
       const store = useAppStore.getState();
       const chat = store.currentChat;
