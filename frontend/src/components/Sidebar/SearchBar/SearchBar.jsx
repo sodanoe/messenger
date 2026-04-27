@@ -52,9 +52,20 @@ export default function SearchBar() {
     clearTimeout(timer.current);
   }
 
+  async function ensureContact(user) {
+    try {
+      await api('/contacts', 'POST', { username: user.username });
+    } catch (e) {
+      if (!e.message.includes('409') && !e.message.includes('already')) {
+        throw e;
+      }
+    }
+  }
+
   async function openDM(user) {
     clearSearch();
     try {
+      await ensureContact(user);
       const chat = await api('/chats/direct', 'POST', { user_id: user.id });
       setCurrentChat({
         type: 'direct',
@@ -70,16 +81,12 @@ export default function SearchBar() {
   }
 
   async function addAndChat(user) {
-    // Сначала добавляем в контакты (создаёт двустороннюю запись)
     try {
-      await api('/contacts', 'POST', { username: user.username });
+      await ensureContact(user);
     } catch (e) {
-      if (!e.message.includes('409') && !e.message.includes('already')) {
-        toast.error(e.message);
-        return;
-      }
+      toast.error(e.message);
+      return;
     }
-    // Потом создаём или открываем DM чат
     try {
       const chat = await api('/chats/direct', 'POST', { user_id: user.id });
       toast.success(`${user.username} добавлен`);
