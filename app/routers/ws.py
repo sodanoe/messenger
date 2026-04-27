@@ -6,8 +6,9 @@ WebSocket endpoint  –  GET /ws?ticket=<one-time-ticket>
   2. manager.connect(user_id, ws)
   3. Redis SET user:online:{id} EX 30
   4. Рассылаем контактам {type: user_online}
-  5. Receive-loop: heartbeat + обновление contact_ids каждые 10 пингов
-  6. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
+  5. Отправляем себе статусы контактов которые уже онлайн
+  6. Receive-loop: heartbeat + обновление contact_ids каждые 10 пингов
+  7. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
 """
 
 import asyncio
@@ -55,10 +56,18 @@ async def websocket_endpoint(
     await manager.connect(user_id, ws)
     await redis.set(f"user:online:{user_id}", "1", ex=30)
 
+    # Рассылаем контактам что мы онлайн
     await manager.send_to_many(
         contact_ids,
         {"type": "user_online", "user_id": user_id},
     )
+
+    # Отправляем себе статусы контактов которые уже онлайн
+    for contact_id in contact_ids:
+        is_online = await redis.exists(f"user:online:{contact_id}")
+        if is_online:
+            await ws.send_json({"type": "user_online", "user_id": contact_id})
+
     logger.info("WS open  user_id=%s  contacts=%s", user_id, contact_ids)
 
     # ── 3. Receive loop (heartbeat) ────────────────────────────────────────
