@@ -56,10 +56,14 @@ const useAppStore = create((set, get) => ({
       prev?.type === chat?.type &&
       prev?.id === chat?.id;
 
-    set({
+    set((state) => ({
       currentChat: chat,
+      // сбрасываем has_unread при открытии чата
+      chats: state.chats.map((c) =>
+        c.id === chat?.id ? { ...c, has_unread: false } : c
+      ),
       ...(!isSame && { messages: [], msgStore: {} }),
-    });
+    }));
   },
 
   clearCurrentChat: () => {
@@ -74,6 +78,13 @@ const useAppStore = create((set, get) => ({
   // ── Chats ─────────────────────────────────────────────
   chats: [],
   setChats: (chats) => set({ chats }),
+
+  setChatUnread: (chatId, value) =>
+    set((state) => ({
+      chats: state.chats.map((c) =>
+        c.id === chatId ? { ...c, has_unread: value } : c
+      ),
+    })),
 
   updateChatOnline: (userId, isOnline) =>
     set((state) => ({

@@ -56,20 +56,17 @@ export function useWebSocket() {
       } catch {
         return;
       }
-      
-      console.log('WS:', msg.type, msg); // временно
 
       const store = useAppStore.getState();
       const chat = store.currentChat;
       const myId = store.me?.id;
 
-      // ── Новое сообщение (DM или группа) ──────────────────
+      // ── Новое сообщение (DM) ──────────────────────────────
       if (msg.type === 'new_message') {
         const chatId = msg.chat_id;
         const senderId = msg.sender_id;
-        const chatType = 'direct';
 
-        if (chat?.type === chatType && chat?.id === chatId) {
+        if (chat?.type === 'direct' && chat?.id === chatId) {
           if (senderId !== myId) {
             store.addMessage({
               id: msg.id,
@@ -85,6 +82,8 @@ export function useWebSocket() {
           }
         } else {
           if (senderId !== myId) {
+            // помечаем чат как непрочитанный
+            store.setChatUnread(chatId, true);
             const targetChat = store.chats.find(c => c.id === chatId);
             notifyUser(targetChat?.name || 'Новое сообщение', msg.content || '');
           }
@@ -96,9 +95,8 @@ export function useWebSocket() {
       if (msg.type === 'new_group_message') {
         const chatId = msg.chat_id;
         const senderId = msg.sender_id;
-        const chatType = 'group';
 
-        if (chat?.type === chatType && chat?.id === chatId) {
+        if (chat?.type === 'group' && chat?.id === chatId) {
           if (senderId !== myId) {
             store.addMessage({
               id: msg.id,
@@ -114,6 +112,7 @@ export function useWebSocket() {
           }
         } else {
           if (senderId !== myId) {
+            store.setChatUnread(chatId, true);
             const targetChat = store.chats.find(c => c.id === chatId);
             notifyUser(`# ${targetChat?.name || 'Группа'}`, msg.content || '');
           }
