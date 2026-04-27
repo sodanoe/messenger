@@ -61,71 +61,85 @@ export function useWebSocket() {
       const chat = store.currentChat;
       const myId = store.me?.id;
 
-      // ── Сообщения (DM и Группы) ──────────────────────────
-      if (msg.type === 'new_message' || msg.type === 'new_group_message') {
-        const isGroup = msg.type === 'new_group_message';
-        const chatId = isGroup ? msg.group_id : msg.from;
-        const chatType = isGroup ? 'group' : 'direct';
+      // ── Новое сообщение (DM или группа) ──────────────────
+      if (msg.type === 'new_message') {
+        const chatId = msg.chat_id;
+        const senderId = msg.sender_id;
+        const chatType = 'direct';
 
-        // 1. Если чат открыт — добавляем сообщение в окно
         if (chat?.type === chatType && chat?.id === chatId) {
-          if (msg.from !== myId) {
+          if (senderId !== myId) {
             store.addMessage({
               id: msg.id,
-              content: msg.content || msg.content_encrypted || '',
-              content_encrypted: msg.content_encrypted || null,
-              sender_id: msg.from,
+              content: msg.content || '',
+              content_encrypted: null,
+              sender_id: senderId,
               sender_username: msg.sender_username || null,
               created_at: msg.created_at,
               media_url: msg.media_url || null,
               reply_to: msg.reply_to || null,
               reactions: [],
             });
-            if (!isGroup)
-              api(`/messages/${msg.from}/read`, 'POST').catch(() => {});
           }
         } else {
-          // 2. Если чат закрыт — шлем пуш
-          const targetChat = store.chats.find(
-            (c) => c.id === chatId && c.type === chatType,
-          );
-          const senderName = isGroup
-            ? `# ${targetChat?.name || 'Группа'}`
-            : targetChat?.name || `#${msg.from}`;
-
-          if (msg.from !== myId) {
-            notifyUser(senderName, msg.content || 'Новое сообщение');
+          if (senderId !== myId) {
+            const targetChat = store.chats.find(c => c.id === chatId);
+            notifyUser(targetChat?.name || 'Новое сообщение', msg.content || '');
           }
         }
-
-        // 3. Обновляем список чатов (текст и позицию в списке)
-        store.updateChatLastMessage(
-          chatId,
-          msg.content || 'Файл',
-          msg.created_at,
-        );
+        store.updateChatLastMessage(chatId, msg.content || 'Файл', msg.created_at);
       }
 
-      // ── Реакции ────────────────────────────────────
-      if (
-        msg.type === 'reaction_update' ||
-        msg.type === 'group_reaction_update'
-      ) {
+      // ── Новое сообщение в группе ──────────────────────────
+      if (msg.type === 'new_group_message') {
+        const chatId = msg.chat_id;
+        const senderId = msg.sender_id;
+        const chatType = 'group';
+
+        if (chat?.type === chatType && chat?.id === chatId) {
+          if (senderId !== myId) {
+            store.addMessage({
+              id: msg.id,
+              content: msg.content || '',
+              content_encrypted: null,
+              sender_id: senderId,
+              sender_username: msg.sender_username || null,
+              created_at: msg.created_at,
+              media_url: msg.media_url || null,
+              reply_to: msg.reply_to || null,
+              reactions: [],
+            });
+          }
+        } else {
+          if (senderId !== myId) {
+            const targetChat = store.chats.find(c => c.id === chatId);
+            notifyUser(`# ${targetChat?.name || 'Группа'}`, msg.content || '');
+          }
+        }
+        store.updateChatLastMessage(chatId, msg.content || 'Файл', msg.created_at);
+      }
+
+      // ── Реакции ──────────────────────────────────────────
+      if (msg.type === 'reaction_update' || msg.type === 'group_reaction_update') {
         store.updateMessageReactions(msg.message_id, msg.reactions);
       }
 
-      // ── Удаление ───────────────────────────────────────
-      if (
-        msg.type === 'message_deleted' ||
-        msg.type === 'group_message_deleted'
-      ) {
+      // ── Удаление сообщения ───────────────────────────────
+      if (msg.type === 'message_deleted' || msg.type === 'group_message_deleted') {
         store.removeMessage(msg.message_id);
       }
 
-      // ── Статус онлайн ──────────────────────────────────
+      // ── Удаление чата ────────────────────────────────────
+      if (msg.type === 'chat_deleted') {
+        store.setChats(store.chats.filter(c => c.id !== msg.chat_id));
+        if (chat?.id === msg.chat_id) {
+          store.clearCurrentChat();
+        }
+      }
+
+      // ── Онлайн статус ────────────────────────────────────
       if (msg.type === 'user_online') store.updateChatOnline(msg.user_id, true);
-      if (msg.type === 'user_offline')
-        store.updateChatOnline(msg.user_id, false);
+      if (msg.type === 'user_offline') store.updateChatOnline(msg.user_id, false);
     };
 
     ws.onerror = () => {};
