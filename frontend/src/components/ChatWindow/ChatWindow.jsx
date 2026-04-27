@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import useAppStore from '../../store/useAppStore';
-import { getMessages, markRead } from '../../services/contacts';
+import { getMessages, 
+  // markRead 
+} from '../../services/contacts';
 import { getGroupMessages } from '../../services/groups';
 import { initials } from '../../utils/format';
 import MessageList from './MessageList/MessageList';
@@ -43,7 +45,8 @@ export default function ChatWindow() {
         if (currentChat.type === 'direct') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
-          markRead(currentChat.id).catch(() => {});
+
+          // markRead(currentChat.id).catch(() => {});
         } else {
           const data = await getGroupMessages(currentChat.id);
           setMessages([...data.messages].reverse());

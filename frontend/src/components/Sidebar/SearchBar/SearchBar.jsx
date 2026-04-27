@@ -25,7 +25,6 @@ export default function SearchBar() {
 
   const { setCurrentChat, setChats, chats } = useAppStore();
 
-  // Пользователи с которыми уже есть DM
   const existingDMUserIds = new Set(
     (chats || []).filter(c => c.type === 'direct').map(c => c.other_user_id)
   );
@@ -71,6 +70,16 @@ export default function SearchBar() {
   }
 
   async function addAndChat(user) {
+    // Сначала добавляем в контакты (создаёт двустороннюю запись)
+    try {
+      await api('/contacts', 'POST', { username: user.username });
+    } catch (e) {
+      if (!e.message.includes('409') && !e.message.includes('already')) {
+        toast.error(e.message);
+        return;
+      }
+    }
+    // Потом создаём или открываем DM чат
     try {
       const chat = await api('/chats/direct', 'POST', { user_id: user.id });
       toast.success(`${user.username} добавлен`);
@@ -84,12 +93,7 @@ export default function SearchBar() {
         is_online: user.is_online,
       });
     } catch (e) {
-      if (e.message.includes('409') || e.message.includes('already')) {
-        // Чат уже существует — просто открываем
-        openDM(user);
-      } else {
-        toast.error(e.message);
-      }
+      toast.error(e.message);
     }
   }
 
