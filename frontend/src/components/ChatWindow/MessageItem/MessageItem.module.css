@@ -64,14 +64,14 @@
 
 .reactBtn {
   position: absolute;
-  bottom: -10px;
-  width: 26px;
-  height: 26px;
+  bottom: 4px;        /* было -10px */
+  width: 22px;        /* было 26px */
+  height: 22px;       /* было 26px */
   border-radius: 50%;
   border: 2px solid var(--bg);
   background: var(--bg2);
   color: var(--text2);
-  font-size: 13px;
+  font-size: 11px;    /* было 13px */
   cursor: pointer;
   display: flex;
   align-items: center;
