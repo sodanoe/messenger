@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crypto.service import encrypt_text, decrypt_text
 from app.models import User
-from app.models.contact import ContactStatus
+from app.models.contact import ContactStatus, Contact
 from app.repositories.chat.chat_repo import ChatRepo
 from app.repositories.chat.member_repo import MemberRepo
 from app.repositories.chat.message_repo import MessageRepo
@@ -91,6 +91,12 @@ class ChatService:
             if media:
                 media_url = media.path
 
+        # Ставим has_unread=True получателю (только для DM)
+        if chat.type == ChatType.direct:
+            other_id = await self.get_other_member_id(chat_id, sender_id)
+            await self.contacts.set_unread(other_id, sender_id, True)
+            await self.db.commit()
+
         ws_payload = {
             "type": "new_message",
             "id": msg.id,
@@ -127,6 +133,14 @@ class ChatService:
     async def get_history(self, chat_id: int, user_id: int, cursor: int | None) -> dict:
         if not await self.members.is_member(chat_id, user_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member")
+
+        # Сбрасываем has_unread при открытии чата (только для DM)
+        chat = await self.chats.get_by_id(chat_id)
+        if chat.type == ChatType.direct:
+            other_id = await self.get_other_member_id(chat_id, user_id)
+            await self.contacts.set_unread(user_id, other_id, False)
+            await self.db.commit()
+
         msgs = await self.messages.get_history(chat_id, cursor)
         next_cursor = msgs[-1].id if msgs and len(msgs) == 50 else None
 
@@ -355,6 +369,20 @@ class ChatService:
             for m in members_res.all():
                 members_map[m.chat_id] = m
 
+        # Подтягиваем has_unread из contacts для всех DM
+        other_user_ids = [m.id for m in members_map.values()]
+        unread_map: dict[int, bool] = {}
+        if other_user_ids:
+            contacts_res = await self.db.execute(
+                select(Contact.contact_user_id, Contact.has_unread)
+                .where(
+                    Contact.user_id == current_user_id,
+                    Contact.contact_user_id.in_(other_user_ids),
+                )
+            )
+            for row in contacts_res.all():
+                unread_map[row.contact_user_id] = row.has_unread
+
         result = []
         for row in chats_data:
             chat = row.Chat
@@ -375,6 +403,7 @@ class ChatService:
                 "last_msg_media_id": row.last_msg_media_id,
                 "updated_at": row.last_msg_at or chat.created_at,
                 "is_online": False,
+                "has_unread": False,
                 "other_user_id": None,
             }
 
@@ -382,6 +411,7 @@ class ChatService:
                 m = members_map[chat.id]
                 chat_info["name"] = m.username
                 chat_info["other_user_id"] = m.id
+                chat_info["has_unread"] = unread_map.get(m.id, False)
 
             result.append(chat_info)
 
