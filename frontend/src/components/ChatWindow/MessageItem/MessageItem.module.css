@@ -64,14 +64,14 @@
 
 .reactBtn {
   position: absolute;
-  bottom: 4px;        /* было -10px */
-  width: 22px;        /* было 26px */
-  height: 22px;       /* было 26px */
+  bottom: -8px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--bg);
+  border: 1.5px solid var(--bg);
   background: var(--bg2);
   color: var(--text2);
-  font-size: 11px;    /* было 13px */
+  font-size: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -81,9 +81,10 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   z-index: 2;
   line-height: 1;
+  padding: 0;
 }
-.me .reactBtn { left: -10px; }
-.other .reactBtn { right: -10px; }
+.me .reactBtn { left: -8px; }
+.other .reactBtn { right: -8px; }
 .row:hover .reactBtn { opacity: 1; }
 .reactBtn:hover { background: var(--accent); color: #fff; transform: scale(1.1); }
 
