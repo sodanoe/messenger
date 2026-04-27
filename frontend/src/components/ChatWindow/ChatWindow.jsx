@@ -21,9 +21,14 @@ function MembersIcon({ size = 18 }) {
 }
 
 export default function ChatWindow() {
-  const { currentChat, clearCurrentChat, setMessages, me } = useAppStore();
+  const { currentChat, clearCurrentChat, setMessages, me, chats } = useAppStore();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const loadedChatId = useRef(null);
+
+  // берём актуальный онлайн-статус из chats, а не из currentChat
+  const isOnline = currentChat?.type === 'direct'
+    ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
+    : false;
 
   function goBack() {
     clearCurrentChat();
@@ -45,7 +50,6 @@ export default function ChatWindow() {
         if (currentChat.type === 'direct') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
-
           // markRead(currentChat.id).catch(() => {});
         } else {
           const data = await getGroupMessages(currentChat.id);
@@ -79,8 +83,8 @@ export default function ChatWindow() {
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
           {currentChat.type === 'direct' && (
-            <div className={`${styles.status} ${currentChat.is_online ? styles.online : ''}`}>
-              {currentChat.is_online ? 'online' : 'offline'}
+            <div className={`${styles.status} ${isOnline ? styles.online : ''}`}>
+              {isOnline ? 'online' : 'offline'}
             </div>
           )}
           {currentChat.type === 'group' && (
