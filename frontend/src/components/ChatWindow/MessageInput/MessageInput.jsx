@@ -8,7 +8,7 @@ import styles from './MessageInput.module.css';
 
 export default function MessageInput() {
   const inputRef = useRef(null);
-  const { currentChat, me, replyTo, clearReplyTo, addMessage } = useAppStore();
+  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage } = useAppStore();
   const { pendingMedia, handleFile, removePending } = useMediaUpload();
 
   function autoGrow() {
@@ -69,6 +69,13 @@ export default function MessageInput() {
           reactions: [],
           read_at: null,
         });
+
+        // Обновляем последнее сообщение в chat-листе
+        updateChatLastMessage(
+          currentChat.id,
+          sentMedia && !content ? '🖼 Фотография' : content,
+          result.created_at || new Date().toISOString(),
+        );
       }
     } catch (e) {
       toast.error(e.message + ' (сообщение не доставлено)');
