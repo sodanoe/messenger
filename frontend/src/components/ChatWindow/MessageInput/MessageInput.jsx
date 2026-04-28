@@ -57,14 +57,8 @@ export default function MessageInput() {
           sender_id: me?.id,
           created_at: result.created_at || new Date().toISOString(),
           media_url: result.media_url || sentMedia?.url || null,
-          reply_to: sentReplyTo
-            ? {
-                id: sentReplyTo.id,
-                sender_id: sentReplyTo.senderId,  // правильный id отправителя цитируемого сообщения
-                content: sentReplyTo.content,
-                media_url: sentReplyTo.mediaUrl || null,
-              }
-            : null,
+          // берём reply_to прямо из ответа бэкенда — там уже правильный объект
+          reply_to: result.reply_to || null,
           reactions: [],
           read_at: null,
         });

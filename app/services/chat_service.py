@@ -97,6 +97,22 @@ class ChatService:
             await self.contacts.set_unread(other_id, sender_id, True)
             await self.db.commit()
 
+        # Строим объект reply_to если есть
+        reply_to_obj = None
+        if reply_to_id:
+            orig = await self.messages.get_by_id(reply_to_id)
+            if orig:
+                reply_to_obj = {
+                    "id": orig.id,
+                    "sender_id": orig.sender_id,
+                    "content": decrypt_text(orig.content_encrypted)[:120],
+                    "media_url": None,
+                }
+                if orig.media_id:
+                    reply_media = await self.media.get_by_id(orig.media_id)
+                    if reply_media:
+                        reply_to_obj["media_url"] = reply_media.path
+
         ws_payload = {
             "type": "new_message",
             "id": msg.id,
@@ -106,7 +122,7 @@ class ChatService:
             "content": content,
             "created_at": msg.created_at.isoformat(),
             "media_url": media_url,
-            "reply_to": reply_to_id,
+            "reply_to": reply_to_obj,
         }
         for member in members:
             if member.user_id != sender_id:
@@ -119,6 +135,7 @@ class ChatService:
             "content": content,
             "created_at": msg.created_at,
             "reply_to_id": reply_to_id,
+            "reply_to": reply_to_obj,
             "reactions": [],
             "media_url": media_url,
         }
@@ -260,7 +277,6 @@ class ChatService:
         chat = await self.chats.get_by_id(chat_id)
         await self.members.remove(chat_id, user_id)
         await self.db.commit()
-        # Отдельное событие для удалённого участника — не путать с удалением группы
         await publish(user_id, {
             "type": "member_removed",
             "chat_id": chat_id,
