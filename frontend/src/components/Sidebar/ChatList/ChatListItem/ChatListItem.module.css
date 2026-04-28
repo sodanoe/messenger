@@ -3,24 +3,21 @@
   align-items: center;
   gap: 10px;
 
-  padding: 8px 10px;
+  padding: 10px 10px;
   border-radius: 10px;
 
   cursor: pointer;
   transition: background 0.12s, transform 0.06s;
 }
 
-/* hover — мягкий, не кричащий */
 .item:hover {
   background: var(--bg3);
 }
 
-/* active чат */
 .item.active {
   background: rgba(43, 82, 120, 0.25);
 }
 
-/* микро-нажатие */
 .item:active {
   transform: scale(0.98);
 }
@@ -33,8 +30,8 @@
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
 
   border-radius: 50%;
   background: rgba(43, 82, 120, 0.4);
@@ -43,7 +40,7 @@
   align-items: center;
   justify-content: center;
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
 }
@@ -59,8 +56,8 @@
   right: 0;
   bottom: 0;
 
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 
   background: #4ade80;
   border-radius: 50%;
@@ -75,20 +72,20 @@
 
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
-
-/* верхняя линия */
 
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 /* имя */
 
 .name {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text);
 
@@ -100,7 +97,7 @@
 /* сообщение */
 
 .sub {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text2);
   opacity: 0.85;
 
@@ -110,7 +107,7 @@
 }
 
 .time {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text2);
   flex-shrink: 0;
 }
@@ -118,17 +115,10 @@
 /* unread */
 
 .unreadDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accent);
-}
-
-.top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 }
 
 .meta {
