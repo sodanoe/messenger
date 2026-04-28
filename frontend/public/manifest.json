@@ -1,6 +1,6 @@
 {
   "name": "Submarine",
-  "short_name": "Submarine",
+  "short_name": "Messenger",
   "description": "Мессенджер",
   "start_url": "/",
   "display": "standalone",
