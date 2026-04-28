@@ -55,6 +55,7 @@ export default function MessageItem({ message }) {
   function handleReply() {
     setReplyTo({
       id: message.id,
+      senderId: message.sender_id,
       senderName: isMe ? 'Вы' : message.sender_username || currentChat?.name,
       content: message.content || '',
       mediaUrl: message.media_url || null,
@@ -115,8 +116,6 @@ export default function MessageItem({ message }) {
     if (r.user_id === me?.id) grouped[r.emoji].mine = true;
   });
 
-  // const myReaction = Object.keys(grouped).find((e) => grouped[e].mine);
-  // const reactBtnLabel = myReaction || '+';
   const reactBtnLabel = '+';
 
   const handleOpenPicker = (e) => {
@@ -140,7 +139,6 @@ export default function MessageItem({ message }) {
         onContextMenu={(e) => { e.preventDefault(); handleDelete(); }}
       >
         <div className={styles.bubbleWrap}>
-          {/* bubbleRow — содержит только пузырь и кнопки позиционирования */}
           <div className={styles.bubbleRow}>
             {message.id && (
               <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>
@@ -190,7 +188,6 @@ export default function MessageItem({ message }) {
             )}
           </div>
 
-          {/* Реакции снаружи пузыря */}
           {Object.keys(grouped).length > 0 && (
             <div className={styles.reactions}>
               {Object.entries(grouped).map(([emoji, { count, mine }]) => {

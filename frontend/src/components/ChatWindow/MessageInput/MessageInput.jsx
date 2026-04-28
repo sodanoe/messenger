@@ -49,7 +49,6 @@ export default function MessageInput() {
         );
       }
 
-      // Добавляем сообщение из ответа сервера — без дублей
       if (result) {
         addMessage({
           id: result.id,
@@ -61,7 +60,7 @@ export default function MessageInput() {
           reply_to: sentReplyTo
             ? {
                 id: sentReplyTo.id,
-                sender_id: me?.id,
+                sender_id: sentReplyTo.senderId,  // правильный id отправителя цитируемого сообщения
                 content: sentReplyTo.content,
                 media_url: sentReplyTo.mediaUrl || null,
               }
