@@ -6,8 +6,8 @@ import {
   removeMember,
   leaveGroup,
   deleteGroup,
-  getGroups,
 } from '../../../services/groups';
+import { api } from '../../../services/api';
 import { getContacts } from '../../../services/contacts';
 import { initials } from '../../../utils/format';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export default function GroupInfoModal({ onClose }) {
     contacts,
     setContacts,
     chats,
-    setGroups,
+    setChats,
     clearCurrentChat,
   } = useAppStore();
   const [members, setMembers] = useState([]);
@@ -56,28 +56,26 @@ export default function GroupInfoModal({ onClose }) {
     }
   }
 
-  // УНИВЕРСАЛЬНЫЙ ПОИСК ИМЕНИ
   const getName = (obj) => {
-    // 1. Если имя есть в самом объекте
     if (obj?.username && obj.username !== 'Неизвестный') return obj.username;
-
-    // 2. Если нет, ищем в списке чатов (Sidebar) по ID
     const userId = obj?.contact_user_id || obj?.user_id || obj?.id;
     const foundInChats = (chats || []).find((c) => c.other_user_id === userId);
     if (foundInChats?.name) return foundInChats.name;
-
-    // 3. Крайний случай
     return userId ? `Юзер #${userId}` : 'Неизвестный';
   };
 
   const getUserId = (obj) => obj?.contact_user_id || obj?.user_id || obj?.id;
 
+  async function refreshChats() {
+    try {
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+    } catch {}
+  }
+
   async function doInvite(contact) {
     const userId = getUserId(contact);
-    const username = getName(contact);
-
     if (!userId && !inviteInput) return;
-
     try {
       if (userId) {
         await inviteMember(groupId, userId);
@@ -93,7 +91,7 @@ export default function GroupInfoModal({ onClose }) {
         }
       }
       setInviteInput('');
-      toast.success(`Добавлен`);
+      toast.success('Добавлен');
       await loadMembers();
     } catch (e) {
       toast.error(e.message);
@@ -112,11 +110,10 @@ export default function GroupInfoModal({ onClose }) {
   }
 
   async function doLeave() {
-    if (!confirm(`Покинуть группу?`)) return;
+    if (!confirm('Покинуть группу?')) return;
     try {
       await leaveGroup(groupId, me?.id);
-      const updated = await getGroups();
-      setGroups(updated);
+      await refreshChats();
       clearCurrentChat();
       onClose();
     } catch (e) {
@@ -125,11 +122,10 @@ export default function GroupInfoModal({ onClose }) {
   }
 
   async function doDelete() {
-    if (!confirm(`Удалить группу необратимо?`)) return;
+    if (!confirm('Удалить группу необратимо?')) return;
     try {
       await deleteGroup(groupId);
-      const updated = await getGroups();
-      setGroups(updated);
+      await refreshChats();
       clearCurrentChat();
       onClose();
     } catch (e) {
@@ -152,9 +148,7 @@ export default function GroupInfoModal({ onClose }) {
       <div className={styles.modal}>
         <div className={styles.header}>
           <span className={styles.title}>{currentChat?.name || 'Группа'}</span>
-          <button className={styles.closeBtn} onClick={onClose}>
-            ✕
-          </button>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
 
         <div className={styles.sectionTitle}>
