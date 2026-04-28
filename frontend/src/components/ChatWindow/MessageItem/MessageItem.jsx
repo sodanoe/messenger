@@ -10,8 +10,19 @@ import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
 export default function MessageItem({ message }) {
-  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage } = useAppStore();
-  const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
+  const {
+    me,
+    currentChat,
+    setReplyTo,
+    addToMsgStore,
+    removeMessage,
+    updateChatLastMessage,
+  } = useAppStore();
+  const [pickerState, setPickerState] = useState({
+    open: false,
+    top: 0,
+    left: 0,
+  });
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [customEmojis, setCustomEmojis] = useState([]);
   const rowRef = useRef(null);
@@ -30,7 +41,9 @@ export default function MessageItem({ message }) {
         id: message.id,
         senderName: isMe
           ? 'Вы'
-          : message.sender_username || currentChat?.name || `#${message.sender_id}`,
+          : message.sender_username ||
+            currentChat?.name ||
+            `#${message.sender_id}`,
         content: message.content || '',
         mediaUrl: message.media_url || null,
       });
@@ -45,7 +58,15 @@ export default function MessageItem({ message }) {
         const code = part.slice(1, -1);
         const found = customEmojis.find((e) => e.shortcode === code);
         if (found) {
-          return <img key={i} src={found.url} className={styles.inlineEmoji} alt={part} title={part} />;
+          return (
+            <img
+              key={i}
+              src={found.url}
+              className={styles.inlineEmoji}
+              alt={part}
+              title={part}
+            />
+          );
         }
       }
       return part;
@@ -73,12 +94,16 @@ export default function MessageItem({ message }) {
       removeMessage(message.id);
 
       // Читаем актуальный стор после удаления чтобы получить правильный список
-      const remaining = useAppStore.getState().messages.filter(m => m.id !== message.id);
+      const remaining = useAppStore
+        .getState()
+        .messages.filter((m) => m.id !== message.id);
       const lastMsg = remaining[remaining.length - 1];
       updateChatLastMessage(
         currentChat.id,
         lastMsg
-          ? lastMsg.media_url && !lastMsg.content ? '🖼 Фотография' : lastMsg.content || ''
+          ? lastMsg.media_url && !lastMsg.content
+            ? '🖼 Фотография'
+            : lastMsg.content || ''
           : '',
         lastMsg?.created_at || new Date().toISOString(),
       );
@@ -105,18 +130,28 @@ export default function MessageItem({ message }) {
   }
 
   const mediaUrl = message.media_url
-    ? message.media_url.startsWith('http') ? message.media_url : API_BASE() + message.media_url
+    ? message.media_url.startsWith('http')
+      ? message.media_url
+      : API_BASE() + message.media_url
     : null;
 
   const replyTo = message.reply_to;
   const replyAuthor = replyTo
-    ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
+    ? replyTo.sender_id === me?.id
+      ? 'Вы'
+      : currentChat?.name || `#${replyTo.sender_id}`
     : null;
   const replySnippet = replyTo
-    ? replyTo.content?.trim() ? replyTo.content.slice(0, 80) : replyTo.media_url ? '📷 Фото' : '—'
+    ? replyTo.content?.trim()
+      ? replyTo.content.slice(0, 80)
+      : replyTo.media_url
+        ? '📷 Фото'
+        : '—'
     : null;
   const replyThumb = replyTo?.media_url
-    ? replyTo.media_url.startsWith('http') ? replyTo.media_url : API_BASE() + replyTo.media_url
+    ? replyTo.media_url.startsWith('http')
+      ? replyTo.media_url
+      : API_BASE() + replyTo.media_url
     : null;
 
   const reactions = message.reactions || [];
@@ -130,14 +165,13 @@ export default function MessageItem({ message }) {
   const reactBtnLabel = '+';
 
   const handleOpenPicker = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pickerHeight = 350;
-    const pickerWidth = 260;
-    const margin = 8;
-    let top = rect.top - pickerHeight - margin;
-    if (top < margin) top = rect.bottom + margin;
-    let left = rect.left;
-    if (left + pickerWidth > window.innerWidth) left = window.innerWidth - pickerWidth - margin;
+    const pickerHeight = 450;
+    const pickerWidth = 352;
+    const margin = 16;
+
+    const top = window.innerHeight - pickerHeight - margin;
+    const left = (window.innerWidth - pickerWidth) / 2;
+
     setPickerState({ open: true, top, left });
   };
 
@@ -147,19 +181,28 @@ export default function MessageItem({ message }) {
         ref={rowRef}
         className={`${styles.row} ${isMe ? styles.me : styles.other}`}
         data-msg-id={message.id}
-        onContextMenu={(e) => { e.preventDefault(); handleDelete(); }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          handleDelete();
+        }}
       >
         <div className={styles.bubbleWrap}>
           <div className={styles.bubbleRow}>
             {message.id && (
-              <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>
+              <button
+                className={styles.replyBtn}
+                title="Ответить"
+                onClick={handleReply}
+              >
                 ↩
               </button>
             )}
 
             <div className={styles.bubble}>
               {!isMe && currentChat?.type === 'group' && (
-                <div className={styles.senderName}>{message.sender_username || '?'}</div>
+                <div className={styles.senderName}>
+                  {message.sender_username || '?'}
+                </div>
               )}
 
               {replyTo && (
@@ -168,24 +211,41 @@ export default function MessageItem({ message }) {
                     <span className={styles.replyAuthor}>{replyAuthor}</span>
                     <span className={styles.replyContent}>{replySnippet}</span>
                   </div>
-                  {replyThumb && <img className={styles.replyThumb} src={replyThumb} alt="фото" />}
+                  {replyThumb && (
+                    <img
+                      className={styles.replyThumb}
+                      src={replyThumb}
+                      alt="фото"
+                    />
+                  )}
                 </div>
               )}
 
               {mediaUrl && (
                 <div className={styles.media}>
-                  <img src={mediaUrl} alt="photo" loading="lazy" onClick={() => setLightboxUrl(mediaUrl)} />
+                  <img
+                    src={mediaUrl}
+                    alt="photo"
+                    loading="lazy"
+                    onClick={() => setLightboxUrl(mediaUrl)}
+                  />
                 </div>
               )}
 
               {message.content && (
-                <div className={styles.text}>{formatContent(message.content)}</div>
+                <div className={styles.text}>
+                  {formatContent(message.content)}
+                </div>
               )}
 
               <div className={styles.meta}>
-                <span className={styles.time}>{fmtTime(message.created_at)}</span>
+                <span className={styles.time}>
+                  {fmtTime(message.created_at)}
+                </span>
                 {isMe && currentChat?.type === 'direct' && (
-                  <span className={`${styles.status} ${message.read_at ? styles.read : ''}`}>
+                  <span
+                    className={`${styles.status} ${message.read_at ? styles.read : ''}`}
+                  >
                     {message.read_at ? '✓✓' : '✓'}
                   </span>
                 )}
@@ -193,7 +253,11 @@ export default function MessageItem({ message }) {
             </div>
 
             {message.id && (
-              <button className={styles.reactBtn} title="Реакция" onClick={handleOpenPicker}>
+              <button
+                className={styles.reactBtn}
+                title="Реакция"
+                onClick={handleOpenPicker}
+              >
                 {reactBtnLabel}
               </button>
             )}
@@ -202,14 +266,24 @@ export default function MessageItem({ message }) {
           {Object.keys(grouped).length > 0 && (
             <div className={styles.reactions}>
               {Object.entries(grouped).map(([emoji, { count, mine }]) => {
-                const found = customEmojis.find((e) => `:${e.shortcode}:` === emoji);
+                const found = customEmojis.find(
+                  (e) => `:${e.shortcode}:` === emoji,
+                );
                 return (
                   <span
                     key={emoji}
                     className={`${styles.pill} ${mine ? styles.mine : ''}`}
                     onClick={() => handleReact(emoji)}
                   >
-                    {found ? <img src={found.url} className={styles.pillImg} alt={emoji} /> : emoji}
+                    {found ? (
+                      <img
+                        src={found.url}
+                        className={styles.pillImg}
+                        alt={emoji}
+                      />
+                    ) : (
+                      emoji
+                    )}
                     {count > 1 && <span className={styles.count}>{count}</span>}
                   </span>
                 );
@@ -229,7 +303,12 @@ export default function MessageItem({ message }) {
 
       {lightboxUrl && (
         <div className={styles.lightbox} onClick={() => setLightboxUrl(null)}>
-          <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)}>✕</button>
+          <button
+            className={styles.lightboxClose}
+            onClick={() => setLightboxUrl(null)}
+          >
+            ✕
+          </button>
           <img src={lightboxUrl} alt="" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
