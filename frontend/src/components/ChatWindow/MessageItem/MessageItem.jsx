@@ -165,14 +165,13 @@ export default function MessageItem({ message }) {
   const reactBtnLabel = '+';
 
   const handleOpenPicker = (e) => {
-    const pickerHeight = 450;
-    const pickerWidth = 352;
-    const margin = 16;
+  const pickerHeight = 450;
+  const pickerWidth = 352;
 
-    const top = window.innerHeight - pickerHeight - margin;
-    const left = (window.innerWidth - pickerWidth) / 2;
+  const top = (window.innerHeight - pickerHeight) / 2;
+  const left = (window.innerWidth - pickerWidth) / 2;
 
-    setPickerState({ open: true, top, left });
+  setPickerState({ open: true, top, left });
   };
 
   return (
