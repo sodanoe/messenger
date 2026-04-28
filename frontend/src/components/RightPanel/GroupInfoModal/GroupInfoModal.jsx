@@ -126,6 +126,7 @@ export default function GroupInfoModal({ onClose }) {
     try {
       await deleteGroup(groupId);
       await refreshChats();
+      toast.success('Группа удалена');
       clearCurrentChat();
       onClose();
     } catch (e) {
@@ -148,7 +149,9 @@ export default function GroupInfoModal({ onClose }) {
       <div className={styles.modal}>
         <div className={styles.header}>
           <span className={styles.title}>{currentChat?.name || 'Группа'}</span>
-          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+          <button className={styles.closeBtn} onClick={onClose}>
+            ✕
+          </button>
         </div>
 
         <div className={styles.sectionTitle}>
