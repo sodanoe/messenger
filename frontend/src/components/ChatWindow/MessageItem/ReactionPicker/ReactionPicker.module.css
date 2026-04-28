@@ -1,63 +1,24 @@
-.picker {
+.uploadRow {
   display: flex;
-  flex-direction: column; /* Секции будут друг под другом */
-  gap: 4px;
-  padding: 8px;
+  justify-content: center;
+  padding: 6px 8px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 20px; /* Чуть уменьшил радиус для удобства */
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  width: fit-content;
-  max-width: 220px; /* Чтобы пикер не растягивался на весь экран */
-  z-index: 1000;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
 }
 
-/* Секции с кнопками */
-.section,
-.customSection {
-  display: flex;
-  flex-wrap: wrap; /* Чтобы эмодзи переносились на вторую строку */
-  gap: 4px;
-  justify-content: center;
-}
-
-/* Разделитель для кастомных эмодзи */
-.customSection {
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-}
-
-.btn {
+.uploadBtn {
   background: none;
   border: none;
-  font-size: 20px;
+  color: var(--text2);
+  font-size: 13px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-  transition:
-    transform 0.1s,
-    background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
 }
 
-.btn:hover {
-  transform: scale(1.25);
+.uploadBtn:hover {
   background: var(--bg);
-}
-
-/* Стили для картинки кастомного эмодзи */
-.customImg {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.right {
-  align-self: flex-end;
-}
-.left {
-  align-self: flex-start;
 }
