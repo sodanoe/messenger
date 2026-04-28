@@ -3,6 +3,7 @@ import { API_BASE } from '../config';
 import { api } from '../services/api';
 import useAppStore from '../store/useAppStore';
 import { useNotifications } from './useNotifications';
+import toast from 'react-hot-toast';
 
 export function useWebSocket() {
   const wsRef = useRef(null);
@@ -82,7 +83,6 @@ export function useWebSocket() {
           }
         } else {
           if (senderId !== myId) {
-            // помечаем чат как непрочитанный
             store.setChatUnread(chatId, true);
             const targetChat = store.chats.find(c => c.id === chatId);
             notifyUser(targetChat?.name || 'Новое сообщение', msg.content || '');
@@ -130,12 +130,37 @@ export function useWebSocket() {
         store.removeMessage(msg.message_id);
       }
 
-      // ── Удаление чата ────────────────────────────────────
+      // ── Удаление группы (для всех участников) ────────────
       if (msg.type === 'chat_deleted') {
+        const targetChat = store.chats.find(c => c.id === msg.chat_id);
+        if (targetChat?.type === 'group') {
+          toast(`Группа «${targetChat.name}» удалена`);
+        }
         store.setChats(store.chats.filter(c => c.id !== msg.chat_id));
         if (chat?.id === msg.chat_id) {
           store.clearCurrentChat();
         }
+      }
+
+      // ── Тебя удалили из группы ───────────────────────────
+      if (msg.type === 'member_removed') {
+        const targetChat = store.chats.find(c => c.id === msg.chat_id);
+        const name = msg.chat_name || targetChat?.name || 'Группа';
+        toast(`Вас удалили из группы «${name}»`);
+        store.setChats(store.chats.filter(c => c.id !== msg.chat_id));
+        if (chat?.id === msg.chat_id) {
+          store.clearCurrentChat();
+        }
+      }
+
+      // ── Тебя добавили в группу ───────────────────────────
+      if (msg.type === 'group_member_added') {
+        const name = msg.chat_name || 'Группа';
+        toast.success(`Вас добавили в группу «${name}»`);
+        // Обновляем список чатов чтобы новая группа появилась
+        api('/chats/', 'GET').then(data => {
+          if (data?.chats) store.setChats(data.chats);
+        }).catch(() => {});
       }
 
       // ── Онлайн статус ────────────────────────────────────

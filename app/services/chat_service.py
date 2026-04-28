@@ -244,6 +244,12 @@ class ChatService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can add members")
         await self.members.add(chat_id, user_id, ChatRole.member)
         await self.db.commit()
+        chat = await self.chats.get_by_id(chat_id)
+        await publish(user_id, {
+            "type": "group_member_added",
+            "chat_id": chat_id,
+            "chat_name": chat.name if chat else None,
+        })
 
     async def remove_member(self, chat_id: int, user_id: int, remover_id: int) -> None:
         if user_id != remover_id:
@@ -251,8 +257,15 @@ class ChatService:
             remover = next((m for m in members if m.user_id == remover_id), None)
             if not remover or remover.role != ChatRole.admin:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can remove members")
+        chat = await self.chats.get_by_id(chat_id)
         await self.members.remove(chat_id, user_id)
         await self.db.commit()
+        # Отдельное событие для удалённого участника — не путать с удалением группы
+        await publish(user_id, {
+            "type": "member_removed",
+            "chat_id": chat_id,
+            "chat_name": chat.name if chat else None,
+        })
 
     async def add_reaction(self, message_id: int, user_id: int, emoji: str) -> None:
         msg = await self.messages.get_by_id(message_id)
