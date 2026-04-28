@@ -98,6 +98,7 @@ export default function MessageItem({ message }) {
     : null;
 
   const replyTo = message.reply_to;
+  console.log('reply_to:', replyTo); // временно
   const replyAuthor = replyTo
     ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
     : null;
