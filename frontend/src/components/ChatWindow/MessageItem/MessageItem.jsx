@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
 export default function MessageItem({ message }) {
-  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage } = useAppStore();
+  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage } = useAppStore();
   const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [customEmojis, setCustomEmojis] = useState([]);
@@ -71,6 +71,17 @@ export default function MessageItem({ message }) {
         await deleteGroupMessage(currentChat.id, message.id);
       }
       removeMessage(message.id);
+
+      // Читаем актуальный стор после удаления чтобы получить правильный список
+      const remaining = useAppStore.getState().messages.filter(m => m.id !== message.id);
+      const lastMsg = remaining[remaining.length - 1];
+      updateChatLastMessage(
+        currentChat.id,
+        lastMsg
+          ? lastMsg.media_url && !lastMsg.content ? '🖼 Фотография' : lastMsg.content || ''
+          : '',
+        lastMsg?.created_at || new Date().toISOString(),
+      );
     } catch (e) {
       toast.error(e.message);
     }
@@ -98,7 +109,6 @@ export default function MessageItem({ message }) {
     : null;
 
   const replyTo = message.reply_to;
-  console.log('reply_to:', replyTo); // временно
   const replyAuthor = replyTo
     ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
     : null;
