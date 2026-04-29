@@ -1,24 +1,39 @@
-.uploadRow {
+.picker {
   display: flex;
-  justify-content: center;
-  padding: 6px 8px;
+  padding: 6px 10px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  gap: 2px;
 }
 
-.uploadBtn {
+.row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.btn {
   background: none;
   border: none;
-  color: var(--text2);
-  font-size: 13px;
+  font-size: 22px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.15s;
+  padding: 4px 6px;
+  border-radius: 50%;
+  transition: transform 0.1s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.uploadBtn:hover {
+.btn:hover {
+  transform: scale(1.3);
   background: var(--bg);
+}
+
+.customImg {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }

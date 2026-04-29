@@ -1,61 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import Picker from '@emoji-mart/react';
-import emojiData from '@emoji-mart/data';
 import { api } from '../../../../services/api';
 import styles from './ReactionPicker.module.css';
-import toast from 'react-hot-toast';
+
+const STANDARD_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 export default function ReactionPicker({ onReact, onClose, position }) {
   const ref = useRef(null);
-  const fileInputRef = useRef(null);
   const [customEmojis, setCustomEmojis] = useState([]);
 
   useEffect(() => {
-    loadEmojis();
+    api('/emojis/', 'GET')
+      .then((data) => setCustomEmojis(data.emojis || []))
+      .catch(console.error);
   }, []);
 
-  async function loadEmojis() {
-    try {
-      const data = await api('/emojis/', 'GET');
-      const emojis = data.emojis || [];
-      // Форматируем под формат emoji-mart
-      setCustomEmojis([
-        {
-          id: 'custom',
-          name: 'Стикеры',
-          emojis: emojis.map((e) => ({
-            id: e.shortcode,
-            name: e.shortcode,
-            keywords: [e.shortcode],
-            skins: [{ src: e.url }],
-          })),
-        },
-      ]);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  const handleUpload = async (ev) => {
-    const file = ev.target.files[0];
-    if (!file) return;
-    const shortcode = prompt('Короткое имя (например: cat_dance):');
-    if (!shortcode) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('shortcode', shortcode);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/emojis/`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: formData,
-      });
-      if (res.ok) { toast.success('Загружено!'); loadEmojis(); }
-      else toast.error('Ошибка загрузки');
-    } catch { toast.error('Ошибка сети'); }
-  };
-
-  // Закрытие по клику вне
   useEffect(() => {
     const onClick = (e) => {
       if (ref.current && !ref.current.contains(e.target)) onClose();
@@ -64,44 +22,28 @@ export default function ReactionPicker({ onReact, onClose, position }) {
     return () => document.removeEventListener('mousedown', onClick);
   }, [onClose]);
 
-  const handleSelect = (emoji) => {
-    // emoji.native — стандартный юникод ("❤️")
-    // emoji.src — кастомный (путь к картинке)
-    if (emoji.src) {
-      onReact(`:${emoji.id}:`); // Сохраняем как :shortcode: как и раньше
-    } else {
-      onReact(emoji.native);
-    }
-  };
-
   return (
     <div
       ref={ref}
+      className={styles.picker}
       style={{ position: 'fixed', top: position.top, left: position.left, zIndex: 1000 }}
     >
-      <Picker
-        data={emojiData}
-        custom={customEmojis}
-        onEmojiSelect={handleSelect}
-        theme="dark"
-        locale="ru"
-        previewPosition="none"
-        skinTonePosition="none"
-        maxFrequentRows={1}
-      />
-
-      {/* Кнопка загрузки своего стикера */}
-      <div className={styles.uploadRow}>
-        <button className={styles.uploadBtn} onClick={() => fileInputRef.current.click()}>
-          ➕ Загрузить стикер
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleUpload}
-          style={{ display: 'none' }}
-          accept="image/*"
-        />
+      <div className={styles.row}>
+        {STANDARD_EMOJIS.map((emoji) => (
+          <button key={emoji} className={styles.btn} onClick={() => onReact(emoji)}>
+            {emoji}
+          </button>
+        ))}
+        {customEmojis.map((e) => (
+          <button
+            key={e.id}
+            className={styles.btn}
+            title={`:${e.shortcode}:`}
+            onClick={() => onReact(`:${e.shortcode}:`)}
+          >
+            <img src={e.url} alt={e.shortcode} className={styles.customImg} />
+          </button>
+        ))}
       </div>
     </div>
   );

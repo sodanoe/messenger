@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import useAppStore from '../../../store/useAppStore';
-import { reactDM, deleteDM } from '../../../services/contacts';
-import { reactGroup, deleteGroupMessage } from '../../../services/groups';
+import { deleteDM } from '../../../services/contacts';
+import { deleteGroupMessage } from '../../../services/groups';
 import { api } from '../../../services/api';
 import { fmtTime } from '../../../utils/format';
 import { API_BASE } from '../../../config';
@@ -10,19 +10,8 @@ import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
 export default function MessageItem({ message }) {
-  const {
-    me,
-    currentChat,
-    setReplyTo,
-    addToMsgStore,
-    removeMessage,
-    updateChatLastMessage,
-  } = useAppStore();
-  const [pickerState, setPickerState] = useState({
-    open: false,
-    top: 0,
-    left: 0,
-  });
+  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage } = useAppStore();
+  const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [customEmojis, setCustomEmojis] = useState([]);
   const rowRef = useRef(null);
@@ -39,11 +28,7 @@ export default function MessageItem({ message }) {
     if (message.id) {
       addToMsgStore(message.id, {
         id: message.id,
-        senderName: isMe
-          ? 'Вы'
-          : message.sender_username ||
-            currentChat?.name ||
-            `#${message.sender_id}`,
+        senderName: isMe ? 'Вы' : message.sender_username || currentChat?.name || `#${message.sender_id}`,
         content: message.content || '',
         mediaUrl: message.media_url || null,
       });
@@ -58,15 +43,7 @@ export default function MessageItem({ message }) {
         const code = part.slice(1, -1);
         const found = customEmojis.find((e) => e.shortcode === code);
         if (found) {
-          return (
-            <img
-              key={i}
-              src={found.url}
-              className={styles.inlineEmoji}
-              alt={part}
-              title={part}
-            />
-          );
+          return <img key={i} src={found.url} className={styles.inlineEmoji} alt={part} title={part} />;
         }
       }
       return part;
@@ -92,19 +69,11 @@ export default function MessageItem({ message }) {
         await deleteGroupMessage(currentChat.id, message.id);
       }
       removeMessage(message.id);
-
-      // Читаем актуальный стор после удаления чтобы получить правильный список
-      const remaining = useAppStore
-        .getState()
-        .messages.filter((m) => m.id !== message.id);
+      const remaining = useAppStore.getState().messages.filter((m) => m.id !== message.id);
       const lastMsg = remaining[remaining.length - 1];
       updateChatLastMessage(
         currentChat.id,
-        lastMsg
-          ? lastMsg.media_url && !lastMsg.content
-            ? '🖼 Фотография'
-            : lastMsg.content || ''
-          : '',
+        lastMsg ? (lastMsg.media_url && !lastMsg.content ? '🖼 Фотография' : lastMsg.content || '') : '',
         lastMsg?.created_at || new Date().toISOString(),
       );
     } catch (e) {
@@ -129,29 +98,42 @@ export default function MessageItem({ message }) {
     }
   }
 
+  const handleOpenPicker = (e) => {
+    const pickerHeight = 60;
+    const pickerWidth = 320;
+    const margin = 8;
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      setPickerState({
+        open: true,
+        top: (window.innerHeight - pickerHeight) / 2,
+        left: (window.innerWidth - pickerWidth) / 2,
+      });
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      let top = rect.top - pickerHeight - margin;
+      if (top < margin) top = rect.bottom + margin;
+      let left = rect.left + rect.width / 2 - pickerWidth / 2;
+      if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
+      if (left < margin) left = margin;
+      setPickerState({ open: true, top, left });
+    }
+  };
+
   const mediaUrl = message.media_url
-    ? message.media_url.startsWith('http')
-      ? message.media_url
-      : API_BASE() + message.media_url
+    ? message.media_url.startsWith('http') ? message.media_url : API_BASE() + message.media_url
     : null;
 
   const replyTo = message.reply_to;
   const replyAuthor = replyTo
-    ? replyTo.sender_id === me?.id
-      ? 'Вы'
-      : currentChat?.name || `#${replyTo.sender_id}`
+    ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
     : null;
   const replySnippet = replyTo
-    ? replyTo.content?.trim()
-      ? replyTo.content.slice(0, 80)
-      : replyTo.media_url
-        ? '📷 Фото'
-        : '—'
+    ? replyTo.content?.trim() ? replyTo.content.slice(0, 80) : replyTo.media_url ? '📷 Фото' : '—'
     : null;
   const replyThumb = replyTo?.media_url
-    ? replyTo.media_url.startsWith('http')
-      ? replyTo.media_url
-      : API_BASE() + replyTo.media_url
+    ? replyTo.media_url.startsWith('http') ? replyTo.media_url : API_BASE() + replyTo.media_url
     : null;
 
   const reactions = message.reactions || [];
@@ -162,155 +144,10 @@ export default function MessageItem({ message }) {
     if (r.user_id === me?.id) grouped[r.emoji].mine = true;
   });
 
-  const reactBtnLabel = '+';
-
-  const handleOpenPicker = (e) => {
-  const pickerHeight = 450;
-  const pickerWidth = 352;
-
-  const top = (window.innerHeight - pickerHeight) / 2;
-  const left = (window.innerWidth - pickerWidth) / 2;
-
-  setPickerState({ open: true, top, left });
-  };
-
   return (
     <>
       <div
         ref={rowRef}
         className={`${styles.row} ${isMe ? styles.me : styles.other}`}
         data-msg-id={message.id}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          handleDelete();
-        }}
-      >
-        <div className={styles.bubbleWrap}>
-          <div className={styles.bubbleRow}>
-            {message.id && (
-              <button
-                className={styles.replyBtn}
-                title="Ответить"
-                onClick={handleReply}
-              >
-                ↩
-              </button>
-            )}
-
-            <div className={styles.bubble}>
-              {!isMe && currentChat?.type === 'group' && (
-                <div className={styles.senderName}>
-                  {message.sender_username || '?'}
-                </div>
-              )}
-
-              {replyTo && (
-                <div className={styles.replyQuote}>
-                  <div className={styles.replyInner}>
-                    <span className={styles.replyAuthor}>{replyAuthor}</span>
-                    <span className={styles.replyContent}>{replySnippet}</span>
-                  </div>
-                  {replyThumb && (
-                    <img
-                      className={styles.replyThumb}
-                      src={replyThumb}
-                      alt="фото"
-                    />
-                  )}
-                </div>
-              )}
-
-              {mediaUrl && (
-                <div className={styles.media}>
-                  <img
-                    src={mediaUrl}
-                    alt="photo"
-                    loading="lazy"
-                    onClick={() => setLightboxUrl(mediaUrl)}
-                  />
-                </div>
-              )}
-
-              {message.content && (
-                <div className={styles.text}>
-                  {formatContent(message.content)}
-                </div>
-              )}
-
-              <div className={styles.meta}>
-                <span className={styles.time}>
-                  {fmtTime(message.created_at)}
-                </span>
-                {isMe && currentChat?.type === 'direct' && (
-                  <span
-                    className={`${styles.status} ${message.read_at ? styles.read : ''}`}
-                  >
-                    {message.read_at ? '✓✓' : '✓'}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {message.id && (
-              <button
-                className={styles.reactBtn}
-                title="Реакция"
-                onClick={handleOpenPicker}
-              >
-                {reactBtnLabel}
-              </button>
-            )}
-          </div>
-
-          {Object.keys(grouped).length > 0 && (
-            <div className={styles.reactions}>
-              {Object.entries(grouped).map(([emoji, { count, mine }]) => {
-                const found = customEmojis.find(
-                  (e) => `:${e.shortcode}:` === emoji,
-                );
-                return (
-                  <span
-                    key={emoji}
-                    className={`${styles.pill} ${mine ? styles.mine : ''}`}
-                    onClick={() => handleReact(emoji)}
-                  >
-                    {found ? (
-                      <img
-                        src={found.url}
-                        className={styles.pillImg}
-                        alt={emoji}
-                      />
-                    ) : (
-                      emoji
-                    )}
-                    {count > 1 && <span className={styles.count}>{count}</span>}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {pickerState.open && (
-        <ReactionPicker
-          position={{ top: pickerState.top, left: pickerState.left }}
-          onReact={handleReact}
-          onClose={() => setPickerState((prev) => ({ ...prev, open: false }))}
-        />
-      )}
-
-      {lightboxUrl && (
-        <div className={styles.lightbox} onClick={() => setLightboxUrl(null)}>
-          <button
-            className={styles.lightboxClose}
-            onClick={() => setLightboxUrl(null)}
-          >
-            ✕
-          </button>
-          <img src={lightboxUrl} alt="" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
-    </>
-  );
-}
+        onContextMenu={(e) => { e.preventDefault(); handle
