@@ -29,6 +29,8 @@ const useAppStore = create((set, get) => ({
       replyTo: null,
       msgStore: {},
       customEmojis: [],
+      nextCursor: null,
+      hasMore: false,
     });
   },
 
@@ -48,13 +50,13 @@ const useAppStore = create((set, get) => ({
       chats: state.chats.map((c) =>
         c.id === chat?.id ? { ...c, has_unread: false } : c
       ),
-      ...(!isSame && { messages: [], msgStore: {} }),
+      ...(!isSame && { messages: [], msgStore: {}, nextCursor: null, hasMore: false }),
     }));
   },
 
   clearCurrentChat: () => {
     localStorage.removeItem('msng_chat');
-    set({ currentChat: null, messages: [], msgStore: {} });
+    set({ currentChat: null, messages: [], msgStore: {}, nextCursor: null, hasMore: false });
   },
 
   // ── Chats ─────────────────────────────────────────────
@@ -90,7 +92,22 @@ const useAppStore = create((set, get) => ({
 
   // ── Messages ──────────────────────────────────────────
   messages: [],
-  setMessages: (messages) => set({ messages }),
+  nextCursor: null,
+  hasMore: false,
+
+  setMessages: (messages, nextCursor = null) =>
+    set({
+      messages,
+      nextCursor,
+      hasMore: nextCursor !== null,
+    }),
+
+  prependMessages: (newMessages, nextCursor) =>
+    set((state) => ({
+      messages: [...newMessages, ...state.messages],
+      nextCursor,
+      hasMore: nextCursor !== null,
+    })),
 
   addMessage: (msg) =>
     set((state) => {

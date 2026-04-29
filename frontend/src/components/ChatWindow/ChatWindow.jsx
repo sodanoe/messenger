@@ -28,7 +28,6 @@ export default function ChatWindow() {
     ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
     : false;
 
-  // Загружаем кастомные эмодзи один раз
   useEffect(() => {
     api('/emojis/', 'GET')
       .then((data) => setCustomEmojis(data.emojis || []))
@@ -51,13 +50,13 @@ export default function ChatWindow() {
 
     async function loadMessages() {
       try {
+        let data;
         if (currentChat.type === 'direct') {
-          const data = await getMessages(currentChat.id);
-          setMessages([...data.messages].reverse());
+          data = await getMessages(currentChat.id);
         } else {
-          const data = await getGroupMessages(currentChat.id);
-          setMessages([...data.messages].reverse());
+          data = await getGroupMessages(currentChat.id);
         }
+        setMessages([...data.messages].reverse(), data.next_cursor);
       } catch {
         // silent
       }
