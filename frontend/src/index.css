@@ -7,12 +7,12 @@
 }
 
 :root {
-  --bg: #0d1117;
-  --bg2: #161b27;
-  --bg3: #1c2333;
-  --text: #e2e8f0;
-  --text2: #94a3b8;
-  --border: #1e293b;
+  --bg: #181612;
+  --bg2: #22201c;
+  --bg3: #2a2720;
+  --text: #d4cfc8;
+  --text2: #8a8278;
+  --border: #2e2820;
   --accent: #2b5278;
   --accent2: #1e3a5f;
   --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
@@ -79,9 +79,9 @@ input { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 em-emoji-picker {
-  --rgb-background: 22, 27, 39;
-  --rgb-input: 28, 35, 51;
-  --rgb-color: 226, 232, 240;
+  --rgb-background: 34, 32, 28;
+  --rgb-input: 42, 39, 32;
+  --rgb-color: 212, 207, 200;
   --rgb-accent: 43, 82, 120;
   --border-radius: 12px;
   --shadow: none;
