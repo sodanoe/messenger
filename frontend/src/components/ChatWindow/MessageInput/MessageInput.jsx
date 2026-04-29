@@ -9,7 +9,7 @@ import styles from './MessageInput.module.css';
 
 export default function MessageInput() {
   const inputRef = useRef(null);
-  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage } = useAppStore();
+  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage, customEmojis } = useAppStore();
   const { pendingMedia, handleFile, removePending } = useMediaUpload();
   const [emojiBarOpen, setEmojiBarOpen] = useState(false);
   const [emojiBarPos, setEmojiBarPos] = useState({ top: 0, left: 0 });
@@ -20,6 +20,21 @@ export default function MessageInput() {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   }
+
+  const formatSnippet = (text) => {
+    if (!text) return '';
+    const parts = text.split(/(:[a-zA-Z0-9_]+:)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith(':') && part.endsWith(':')) {
+        const code = part.slice(1, -1);
+        const found = customEmojis.find((e) => e.shortcode === code);
+        if (found) {
+          return <img key={i} src={found.url} style={{ height: 16, width: 16, verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} alt={part} />;
+        }
+      }
+      return part;
+    });
+  };
 
   function handleEmojiBtn(e) {
     const pickerHeight = 450;
@@ -128,10 +143,6 @@ export default function MessageInput() {
     if (f && f.type.startsWith('image/')) handleFile(f);
   }
 
-  const replySnippet = replyTo
-    ? replyTo.content ? replyTo.content.slice(0, 60) : replyTo.mediaUrl ? '📷 Фото' : '—'
-    : '';
-
   const previewUrl = pendingMedia?.previewUrl;
 
   return (
@@ -139,7 +150,9 @@ export default function MessageInput() {
       {replyTo && (
         <div className={styles.replyPreview}>
           <span className={styles.replyIcon}>↩</span>
-          <span className={styles.replyText}>{replyTo.senderName}: {replySnippet}</span>
+          <span className={styles.replyText}>
+            {replyTo.senderName}: {replyTo.content ? formatSnippet(replyTo.content) : replyTo.mediaUrl ? '📷 Фото' : '—'}
+          </span>
           <button className={styles.replyClose} onClick={clearReplyTo}>✕</button>
         </div>
       )}
@@ -151,22 +164,12 @@ export default function MessageInput() {
         </div>
       )}
 
-      <div
-        className={styles.inputArea}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
+      <div className={styles.inputArea} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
         <label className={styles.attachBtn} title="Прикрепить картинку">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
           </svg>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            style={{ display: 'none' }}
-            onChange={onFileChange}
-          />
+          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: 'none' }} onChange={onFileChange} />
         </label>
 
         <textarea

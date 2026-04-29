@@ -1,14 +1,5 @@
 import { create } from 'zustand';
 
-/**
- * @typedef {Object} CurrentChat
- * @property {'direct'|'group'} type
- * @property {number} id
- * @property {string} [name]
- * @property {boolean} [is_online]
- * @property {number} [other_user_id]
- */
-
 const useAppStore = create((set, get) => ({
   // ── Auth ──────────────────────────────────────────────
   token: localStorage.getItem('msng_token'),
@@ -26,7 +17,6 @@ const useAppStore = create((set, get) => ({
   logout: () => {
     localStorage.removeItem('msng_token');
     localStorage.removeItem('msng_chat');
-
     set({
       token: null,
       me: null,
@@ -38,6 +28,7 @@ const useAppStore = create((set, get) => ({
       lastInvite: null,
       replyTo: null,
       msgStore: {},
+      customEmojis: [],
     });
   },
 
@@ -50,15 +41,10 @@ const useAppStore = create((set, get) => ({
     } else {
       localStorage.removeItem('msng_chat');
     }
-
     const prev = get().currentChat;
-    const isSame =
-      prev?.type === chat?.type &&
-      prev?.id === chat?.id;
-
+    const isSame = prev?.type === chat?.type && prev?.id === chat?.id;
     set((state) => ({
       currentChat: chat,
-      // сбрасываем has_unread при открытии чата
       chats: state.chats.map((c) =>
         c.id === chat?.id ? { ...c, has_unread: false } : c
       ),
@@ -68,11 +54,7 @@ const useAppStore = create((set, get) => ({
 
   clearCurrentChat: () => {
     localStorage.removeItem('msng_chat');
-    set({
-      currentChat: null,
-      messages: [],
-      msgStore: {},
-    });
+    set({ currentChat: null, messages: [], msgStore: {} });
   },
 
   // ── Chats ─────────────────────────────────────────────
@@ -89,33 +71,17 @@ const useAppStore = create((set, get) => ({
   updateChatOnline: (userId, isOnline) =>
     set((state) => ({
       chats: state.chats.map((c) =>
-        c.other_user_id === userId
-          ? { ...c, is_online: isOnline }
-          : c
+        c.other_user_id === userId ? { ...c, is_online: isOnline } : c
       ),
     })),
 
-  updateChatLastMessage: (
-    chatId,
-    content,
-    updatedAt = new Date().toISOString(),
-  ) =>
+  updateChatLastMessage: (chatId, content, updatedAt = new Date().toISOString()) =>
     set((state) => ({
       chats: state.chats
         .map((c) =>
-          c.id === chatId
-            ? {
-                ...c,
-                last_message: content,
-                updated_at: updatedAt,
-              }
-            : c
+          c.id === chatId ? { ...c, last_message: content, updated_at: updatedAt } : c
         )
-        .sort(
-          (a, b) =>
-            new Date(b.updated_at) -
-            new Date(a.updated_at)
-        ),
+        .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)),
     })),
 
   // ── Contacts ──────────────────────────────────────────
@@ -128,13 +94,8 @@ const useAppStore = create((set, get) => ({
 
   addMessage: (msg) =>
     set((state) => {
-      if (msg.id && state.messages.some((m) => m.id === msg.id)) {
-        return state;
-      }
-
-      return {
-        messages: [...state.messages, msg],
-      };
+      if (msg.id && state.messages.some((m) => m.id === msg.id)) return state;
+      return { messages: [...state.messages, msg] };
     }),
 
   removeMessage: (msgId) =>
@@ -165,6 +126,10 @@ const useAppStore = create((set, get) => ({
   replyTo: null,
   setReplyTo: (replyTo) => set({ replyTo }),
   clearReplyTo: () => set({ replyTo: null }),
+
+  // ── Custom Emojis ─────────────────────────────────────
+  customEmojis: [],
+  setCustomEmojis: (customEmojis) => set({ customEmojis }),
 }));
 
 export default useAppStore;

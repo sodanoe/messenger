@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import useAppStore from '../../store/useAppStore';
-import { getMessages, 
-  // markRead 
-} from '../../services/contacts';
+import { getMessages } from '../../services/contacts';
 import { getGroupMessages } from '../../services/groups';
+import { api } from '../../services/api';
 import { initials } from '../../utils/format';
 import MessageList from './MessageList/MessageList';
 import MessageInput from './MessageInput/MessageInput';
@@ -21,14 +20,20 @@ function MembersIcon({ size = 18 }) {
 }
 
 export default function ChatWindow() {
-  const { currentChat, clearCurrentChat, setMessages, me, chats } = useAppStore();
+  const { currentChat, clearCurrentChat, setMessages, me, chats, setCustomEmojis } = useAppStore();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const loadedChatId = useRef(null);
 
-  // берём актуальный онлайн-статус из chats, а не из currentChat
   const isOnline = currentChat?.type === 'direct'
     ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
     : false;
+
+  // Загружаем кастомные эмодзи один раз
+  useEffect(() => {
+    api('/emojis/', 'GET')
+      .then((data) => setCustomEmojis(data.emojis || []))
+      .catch(() => {});
+  }, []);
 
   function goBack() {
     clearCurrentChat();
@@ -42,7 +47,6 @@ export default function ChatWindow() {
     if (!currentChat) return;
     if (!me) return;
     if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`) return;
-
     loadedChatId.current = `${currentChat.type}-${currentChat.id}`;
 
     async function loadMessages() {
@@ -50,7 +54,6 @@ export default function ChatWindow() {
         if (currentChat.type === 'direct') {
           const data = await getMessages(currentChat.id);
           setMessages([...data.messages].reverse());
-          // markRead(currentChat.id).catch(() => {});
         } else {
           const data = await getGroupMessages(currentChat.id);
           setMessages([...data.messages].reverse());
@@ -92,11 +95,7 @@ export default function ChatWindow() {
           )}
         </div>
         {currentChat.type === 'group' && (
-          <button
-            className={styles.membersBtn}
-            onClick={() => setShowGroupInfo(true)}
-            title="Участники"
-          >
+          <button className={styles.membersBtn} onClick={() => setShowGroupInfo(true)} title="Участники">
             <MembersIcon />
           </button>
         )}

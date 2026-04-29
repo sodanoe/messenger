@@ -10,19 +10,12 @@ import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
 export default function MessageItem({ message }) {
-  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage } = useAppStore();
+  const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage, customEmojis } = useAppStore();
   const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
   const [lightboxUrl, setLightboxUrl] = useState(null);
-  const [customEmojis, setCustomEmojis] = useState([]);
   const rowRef = useRef(null);
 
   const isMe = message.sender_id === me?.id;
-
-  useEffect(() => {
-    api('/emojis/', 'GET')
-      .then((data) => setCustomEmojis(data.emojis || []))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (message.id) {
@@ -102,14 +95,12 @@ export default function MessageItem({ message }) {
     const pickerHeight = 60;
     const pickerWidth = Math.min(320, window.innerWidth - 32);
     const margin = 12;
-
     const rect = e.currentTarget.getBoundingClientRect();
     let top = rect.top - pickerHeight - margin;
     if (top < margin) top = rect.bottom + margin;
     let left = rect.left + rect.width / 2 - pickerWidth / 2;
     if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
     if (left < margin) left = margin;
-
     setPickerState({ open: true, top, left });
   };
 
@@ -120,9 +111,6 @@ export default function MessageItem({ message }) {
   const replyTo = message.reply_to;
   const replyAuthor = replyTo
     ? replyTo.sender_id === me?.id ? 'Вы' : currentChat?.name || `#${replyTo.sender_id}`
-    : null;
-  const replySnippet = replyTo
-    ? replyTo.content?.trim() ? replyTo.content.slice(0, 80) : replyTo.media_url ? '📷 Фото' : '—'
     : null;
   const replyThumb = replyTo?.media_url
     ? replyTo.media_url.startsWith('http') ? replyTo.media_url : API_BASE() + replyTo.media_url
@@ -159,7 +147,11 @@ export default function MessageItem({ message }) {
                 <div className={styles.replyQuote}>
                   <div className={styles.replyInner}>
                     <span className={styles.replyAuthor}>{replyAuthor}</span>
-                    <span className={styles.replyContent}>{replySnippet}</span>
+                    <span className={styles.replyContent}>
+                      {replyTo.content
+                        ? formatContent(replyTo.content)
+                        : replyTo.media_url ? '📷 Фото' : '—'}
+                    </span>
                   </div>
                   {replyThumb && <img className={styles.replyThumb} src={replyThumb} alt="фото" />}
                 </div>
