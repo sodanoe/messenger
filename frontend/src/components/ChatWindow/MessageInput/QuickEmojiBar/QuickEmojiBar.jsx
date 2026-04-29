@@ -44,7 +44,7 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/emojis/`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('msng_token')}` },
         body: formData,
       });
       if (res.ok) { toast.success('Загружено!'); loadEmojis(); }
