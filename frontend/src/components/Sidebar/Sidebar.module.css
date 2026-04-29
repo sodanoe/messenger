@@ -163,12 +163,6 @@
   color: var(--danger, #e55);
 }
 
-/* SEARCH */
-
-/* .searchWrapper {
-  padding: 0 16px 10px;
-} */
-
 /* CHAT LIST */
 
 .chatListContainer {
@@ -176,6 +170,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* MOBILE */
