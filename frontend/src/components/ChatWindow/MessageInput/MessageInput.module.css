@@ -126,13 +126,14 @@
   border: none;
   background: var(--accent-gradient);
   color: #fff;
-  font-size: 15px;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 0;
   transition: opacity 0.15s, transform 0.1s;
   box-shadow: var(--shadow-sm);
+  padding: 0;
 }
 .sendBtn:hover { opacity: 0.9; transform: scale(1.05); }
