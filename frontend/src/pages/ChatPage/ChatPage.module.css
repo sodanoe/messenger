@@ -1,8 +1,7 @@
 .app {
   display: flex;
   height: 100dvh;
-  height: 100%;
-  max-height: -webkit-fill-available;
+  max-height: 100dvh;
   overflow: hidden;
   max-width: 1920px;
   margin: 0 auto;
@@ -10,16 +9,8 @@
 }
 
 @media (max-width: 767px) {
-  .app :global(.sidebar) {
-    display: flex;
-  }
-  .app :global(.chat-area) {
-    display: none;
-  }
-  .app.chatOpen :global(.sidebar) {
-    display: none;
-  }
-  .app.chatOpen :global(.chat-area) {
-    display: flex;
-  }
+  .app :global(.sidebar) { display: flex; }
+  .app :global(.chat-area) { display: none; }
+  .app.chatOpen :global(.sidebar) { display: none; }
+  .app.chatOpen :global(.chat-area) { display: flex; }
 }
