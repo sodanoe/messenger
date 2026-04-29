@@ -74,8 +74,12 @@ export default function MessageInput() {
     const content = inputRef.current?.value.trim() || '';
     if (!content && !pendingMedia) return;
 
-    if (inputRef.current) inputRef.current.value = '';
-    autoGrow();
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      autoGrow();
+      // Держим фокус чтобы клавиатура не сворачивалась
+      inputRef.current.focus();
+    }
 
     const sentReplyTo = replyTo ? { ...replyTo } : null;
     const sentMedia = pendingMedia ? { ...pendingMedia } : null;
@@ -115,9 +119,14 @@ export default function MessageInput() {
   }
 
   function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+    const isMobile = window.innerWidth < 768;
+    if (e.key === 'Enter') {
+      // На мобильном Enter всегда переносит строку
+      // На десктопе Enter отправляет, Shift+Enter переносит
+      if (!isMobile && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     }
   }
 
