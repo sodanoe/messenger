@@ -150,4 +150,88 @@ export default function MessageItem({ message }) {
         ref={rowRef}
         className={`${styles.row} ${isMe ? styles.me : styles.other}`}
         data-msg-id={message.id}
-        onContextMenu={(e) => { e.preventDefault(); handle
+        onContextMenu={(e) => { e.preventDefault(); handleDelete(); }}
+      >
+        <div className={styles.bubbleWrap}>
+          <div className={styles.bubbleRow}>
+            {message.id && (
+              <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>↩</button>
+            )}
+
+            <div className={styles.bubble}>
+              {!isMe && currentChat?.type === 'group' && (
+                <div className={styles.senderName}>{message.sender_username || '?'}</div>
+              )}
+
+              {replyTo && (
+                <div className={styles.replyQuote}>
+                  <div className={styles.replyInner}>
+                    <span className={styles.replyAuthor}>{replyAuthor}</span>
+                    <span className={styles.replyContent}>{replySnippet}</span>
+                  </div>
+                  {replyThumb && <img className={styles.replyThumb} src={replyThumb} alt="фото" />}
+                </div>
+              )}
+
+              {mediaUrl && (
+                <div className={styles.media}>
+                  <img src={mediaUrl} alt="photo" loading="lazy" onClick={() => setLightboxUrl(mediaUrl)} />
+                </div>
+              )}
+
+              {message.content && (
+                <div className={styles.text}>{formatContent(message.content)}</div>
+              )}
+
+              <div className={styles.meta}>
+                <span className={styles.time}>{fmtTime(message.created_at)}</span>
+                {isMe && currentChat?.type === 'direct' && (
+                  <span className={`${styles.status} ${message.read_at ? styles.read : ''}`}>
+                    {message.read_at ? '✓✓' : '✓'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {message.id && (
+              <button className={styles.reactBtn} title="Реакция" onClick={handleOpenPicker}>+</button>
+            )}
+          </div>
+
+          {Object.keys(grouped).length > 0 && (
+            <div className={styles.reactions}>
+              {Object.entries(grouped).map(([emoji, { count, mine }]) => {
+                const found = customEmojis.find((e) => `:${e.shortcode}:` === emoji);
+                return (
+                  <span
+                    key={emoji}
+                    className={`${styles.pill} ${mine ? styles.mine : ''}`}
+                    onClick={() => handleReact(emoji)}
+                  >
+                    {found ? <img src={found.url} className={styles.pillImg} alt={emoji} /> : emoji}
+                    {count > 1 && <span className={styles.count}>{count}</span>}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {pickerState.open && (
+        <ReactionPicker
+          position={{ top: pickerState.top, left: pickerState.left }}
+          onReact={handleReact}
+          onClose={() => setPickerState((prev) => ({ ...prev, open: false }))}
+        />
+      )}
+
+      {lightboxUrl && (
+        <div className={styles.lightbox} onClick={() => setLightboxUrl(null)}>
+          <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)}>✕</button>
+          <img src={lightboxUrl} alt="" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+    </>
+  );
+}
