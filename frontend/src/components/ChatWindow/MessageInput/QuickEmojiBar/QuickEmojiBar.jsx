@@ -38,9 +38,9 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
     }
   }
 
-  async function handleDelete(shortcodeToDelete) {
+  async function handleDelete(emojiId) {
     try {
-      await api(`/emojis/${shortcodeToDelete}`, 'DELETE');
+      await api(`/emojis/${emojiId}`, 'DELETE');
       toast.success('Удалено');
       loadEmojis();
     } catch {
@@ -126,15 +126,11 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
         </>
       ) : (
         <div className={styles.manager}>
-          {/* Шапка */}
           <div className={styles.managerHeader}>
-            <button className={styles.backBtn} onClick={() => setShowManager(false)}>
-              ←
-            </button>
+            <button className={styles.backBtn} onClick={() => setShowManager(false)}>←</button>
             <span>Мои стикеры</span>
           </div>
 
-          {/* Список стикеров */}
           <div className={styles.stickerGrid}>
             {rawEmojis.length === 0 && (
               <div className={styles.empty}>Стикеров пока нет</div>
@@ -145,7 +141,7 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
                 <div className={styles.stickerName}>{e.shortcode}</div>
                 <button
                   className={styles.deleteBtn}
-                  onClick={() => handleDelete(e.shortcode)}
+                  onClick={() => handleDelete(e.id)}
                   title="Удалить"
                 >
                   ✕
@@ -154,14 +150,11 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
             ))}
           </div>
 
-          {/* Разделитель */}
           <div className={styles.divider} />
 
-          {/* Форма добавления */}
           <div className={styles.addSection}>
             <div className={styles.addLabel}>Добавить стикер</div>
 
-            {/* Drag & drop зона */}
             <div
               className={`${styles.dropZone} ${isDragging ? styles.dragging : ''} ${pendingPreview ? styles.hasPreview : ''}`}
               onClick={() => fileInputRef.current.click()}
@@ -198,7 +191,6 @@ export default function QuickEmojiBar({ onSelect, onClose, position }) {
               accept="image/*"
             />
 
-            {/* Поле названия */}
             <input
               type="text"
               className={styles.nameInput}

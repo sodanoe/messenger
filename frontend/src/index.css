@@ -61,3 +61,22 @@ input { font-family: inherit; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* emoji-mart theme */
+em-emoji-picker {
+  --rgb-background: 22, 27, 39;
+  --rgb-input: 28, 35, 51;
+  --rgb-color: 226, 232, 240;
+  --rgb-accent: 43, 82, 120;
+  --border-radius: 12px;
+  --shadow: none;
+}
+
+@media (prefers-color-scheme: light) {
+  em-emoji-picker {
+    --rgb-background: 255, 255, 255;
+    --rgb-input: 232, 238, 244;
+    --rgb-color: 30, 41, 59;
+    --rgb-accent: 43, 82, 120;
+  }
+}
