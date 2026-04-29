@@ -26,12 +26,12 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f0f4f8;
-    --bg2: #ffffff;
-    --bg3: #e8eef4;
-    --text: #1e293b;
-    --text2: #64748b;
-    --border: #e2e8f0;
+    --bg: #e8f0f7;
+    --bg2: #c8d8e8;
+    --bg3: #d8e4ef;
+    --text: #0f1f2e;
+    --text2: #4a6275;
+    --border: #a8c0d4;
     --accent: #2b5278;
     --accent2: #1e3a5f;
     --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
@@ -89,9 +89,9 @@ em-emoji-picker {
 
 @media (prefers-color-scheme: light) {
   em-emoji-picker {
-    --rgb-background: 255, 255, 255;
-    --rgb-input: 232, 238, 244;
-    --rgb-color: 30, 41, 59;
+    --rgb-background: 200, 216, 232;
+    --rgb-input: 216, 228, 239;
+    --rgb-color: 15, 31, 46;
     --rgb-accent: 43, 82, 120;
   }
 }
