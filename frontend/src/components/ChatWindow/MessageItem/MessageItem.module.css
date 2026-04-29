@@ -37,6 +37,11 @@
   border-bottom-left-radius: 4px;
 }
 
+.mediaBubble {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
 .singleEmoji {
   background: transparent !important;
   padding: 4px 0;
@@ -126,14 +131,52 @@
 .replyContent { font-size: 12px; opacity: 0.75; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .replyThumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 
-.media { margin-bottom: 4px; }
+.media {
+  position: relative;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mediaOnly {
+  margin: 0;
+  border-radius: 12px;
+}
+.me .mediaOnly { border-bottom-right-radius: 4px; }
+.other .mediaOnly { border-bottom-left-radius: 4px; }
+
+.mediaBlur {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(16px);
+  transform: scale(1.15);
+  opacity: 0.7;
+  z-index: 0;
+}
+
 .media img {
+  position: relative;
+  z-index: 1;
   max-width: 240px;
   max-height: 300px;
-  border-radius: 8px;
   display: block;
   cursor: zoom-in;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+.metaOverlay {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+  padding: 2px 6px;
 }
 
 .text { white-space: pre-wrap; }
@@ -234,17 +277,11 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.emojiBtn:hover {
-  background: var(--bg);
-}
+.emojiBtn:hover { background: var(--bg); }
 
 @media (max-width: 768px) {
-  .bubbleWrap {
-    max-width: 88%;
-  }
-  .media img {
-    max-width: 100%;
-  }
+  .bubbleWrap { max-width: 88%; }
+  .media img { max-width: 100%; }
 }
 
 @keyframes highlightFade {

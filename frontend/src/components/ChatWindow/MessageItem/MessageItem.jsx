@@ -43,7 +43,6 @@ export default function MessageItem({ message }) {
     });
   };
 
-  // Определяем single-emoji
   const trimmed = message.content?.trim() || '';
   const isSingleCustomEmoji = /^:[a-zA-Z0-9_]+:$/.test(trimmed);
   const isSingleUnicodeEmoji = trimmed.length > 0 && /^\p{Emoji}$/u.test(trimmed);
@@ -139,6 +138,8 @@ export default function MessageItem({ message }) {
     if (r.user_id === me?.id) grouped[r.emoji].mine = true;
   });
 
+  const mediaOnly = mediaUrl && !message.content && !replyTo;
+
   return (
     <>
       <div
@@ -153,7 +154,7 @@ export default function MessageItem({ message }) {
               <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>↩</button>
             )}
 
-            <div className={`${styles.bubble} ${isSingleEmoji ? styles.singleEmoji : ''}`}>
+            <div className={`${styles.bubble} ${isSingleEmoji ? styles.singleEmoji : ''} ${mediaOnly ? styles.mediaBubble : ''}`}>
               {!isMe && currentChat?.type === 'group' && (
                 <div className={styles.senderName}>{message.sender_username || '?'}</div>
               )}
@@ -173,7 +174,8 @@ export default function MessageItem({ message }) {
               )}
 
               {mediaUrl && (
-                <div className={styles.media}>
+                <div className={`${styles.media} ${mediaOnly ? styles.mediaOnly : ''}`}>
+                  <div className={styles.mediaBlur} style={{ backgroundImage: `url(${mediaUrl})` }} />
                   <img src={mediaUrl} alt="photo" loading="lazy" onClick={() => setLightboxUrl(mediaUrl)} />
                 </div>
               )}
@@ -182,7 +184,7 @@ export default function MessageItem({ message }) {
                 <div className={styles.text}>{formatContent(message.content)}</div>
               )}
 
-              <div className={styles.meta}>
+              <div className={`${styles.meta} ${mediaOnly ? styles.metaOverlay : ''}`}>
                 <span className={styles.time}>{fmtTime(message.created_at)}</span>
                 {isMe && currentChat?.type === 'direct' && (
                   <span className={`${styles.status} ${message.read_at ? styles.read : ''}`}>
