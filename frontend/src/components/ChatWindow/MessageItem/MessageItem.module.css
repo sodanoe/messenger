@@ -219,7 +219,16 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-
 .emojiBtn:hover {
   background: var(--bg);
+}
+
+@media (max-width: 768px) {
+  .bubbleWrap {
+    max-width: 88%;
+  }
+
+  .media img {
+    max-width: 100%;
+  }
 }
