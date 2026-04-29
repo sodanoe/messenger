@@ -1,28 +1,16 @@
 .item {
   display: flex;
   align-items: center;
-  gap: 10px;
-
-  padding: 10px 10px;
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: 10px;
-
   cursor: pointer;
   transition: background 0.12s, transform 0.06s;
 }
 
-.item:hover {
-  background: var(--bg3);
-}
-
-.item.active {
-  background: rgba(43, 82, 120, 0.25);
-}
-
-.item:active {
-  transform: scale(0.98);
-}
-
-/* AVATAR */
+.item:hover { background: var(--bg3); }
+.item.active { background: rgba(43, 82, 120, 0.25); }
+.item:active { transform: scale(0.98); }
 
 .avatarWrap {
   position: relative;
@@ -30,49 +18,37 @@
 }
 
 .avatar {
-  width: 42px;
-  height: 42px;
-
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: rgba(43, 82, 120, 0.4);
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
 }
 
-.avatar.group {
-  background: rgba(120, 80, 160, 0.35);
-}
-
-/* online */
+.avatar.group { background: rgba(120, 80, 160, 0.35); }
 
 .onlineDot {
   position: absolute;
-  right: 0;
-  bottom: 0;
-
-  width: 9px;
-  height: 9px;
-
+  right: 1px;
+  bottom: 1px;
+  width: 11px;
+  height: 11px;
   background: #4ade80;
   border-radius: 50%;
   border: 2px solid var(--bg2);
 }
 
-/* INFO */
-
 .info {
   flex: 1;
   min-width: 0;
-
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .top {
@@ -82,41 +58,33 @@
   gap: 8px;
 }
 
-/* имя */
-
 .name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text);
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* сообщение */
-
 .sub {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text2);
   opacity: 0.85;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .time {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text2);
   flex-shrink: 0;
 }
 
-/* unread */
-
 .unreadDot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
 }
@@ -128,12 +96,5 @@
   flex-shrink: 0;
 }
 
-/* если есть непрочитанные — усиливаем */
-.item.unread .name {
-  font-weight: 600;
-}
-
-.item.unread .sub {
-  color: var(--text);
-  opacity: 1;
-}
+.item.unread .name { font-weight: 600; }
+.item.unread .sub { color: var(--text); opacity: 1; }
