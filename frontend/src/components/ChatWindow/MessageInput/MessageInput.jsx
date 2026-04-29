@@ -176,7 +176,7 @@ export default function MessageInput() {
           ref={inputRef}
           className={styles.textarea}
           rows={1}
-          placeholder="Сообщение… (Enter — отправить)"
+          placeholder="Сообщение…"
           onKeyDown={handleKey}
           onInput={autoGrow}
         />
