@@ -18,7 +18,185 @@
   border-radius: 6px;
   transition: background 0.15s;
 }
+.uploadBtn:hover { background: var(--bg); }
 
-.uploadBtn:hover {
-  background: var(--bg);
+/* Менеджер стикеров */
+.manager {
+  width: 352px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 500px;
 }
+
+.managerHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.backBtn:hover { background: var(--bg); }
+
+.stickerGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  max-height: 160px;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text2);
+  width: 100%;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.stickerItem {
+  position: relative;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stickerThumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px;
+}
+
+.stickerName {
+  font-size: 9px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 52px;
+  text-align: center;
+}
+
+.deleteBtn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger, #e53e3e);
+  border: 1.5px solid var(--bg2);
+  color: #fff;
+  font-size: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.divider {
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.addSection {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.addLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dropZone {
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 80px;
+  justify-content: center;
+}
+.dropZone:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.05); }
+.dropZone.dragging { border-color: var(--accent); background: rgba(59, 130, 246, 0.08); }
+.dropZone.hasPreview { padding: 8px; }
+
+.dropIcon { color: var(--text2); }
+.dropText { font-size: 12px; color: var(--text2); }
+.dropHint { font-size: 11px; color: var(--text2); opacity: 0.6; }
+
+.dropPreview {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.nameInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.nameInput:focus { border-color: var(--accent); }
+.nameInput::placeholder { color: var(--text2); opacity: 0.6; }
+
+.uploadSubmitBtn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  width: 100%;
+}
+.uploadSubmitBtn:hover { opacity: 0.9; }
+.uploadSubmitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
