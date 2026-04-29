@@ -100,25 +100,17 @@ export default function MessageItem({ message }) {
 
   const handleOpenPicker = (e) => {
     const pickerHeight = 60;
-    const pickerWidth = 320;
-    const margin = 8;
-    const isMobile = window.innerWidth < 768;
+    const pickerWidth = Math.min(320, window.innerWidth - 32);
+    const margin = 12;
 
-    if (isMobile) {
-      setPickerState({
-        open: true,
-        top: (window.innerHeight - pickerHeight) / 2,
-        left: (window.innerWidth - pickerWidth) / 2,
-      });
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect();
-      let top = rect.top - pickerHeight - margin;
-      if (top < margin) top = rect.bottom + margin;
-      let left = rect.left + rect.width / 2 - pickerWidth / 2;
-      if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
-      if (left < margin) left = margin;
-      setPickerState({ open: true, top, left });
-    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    let top = rect.top - pickerHeight - margin;
+    if (top < margin) top = rect.bottom + margin;
+    let left = rect.left + rect.width / 2 - pickerWidth / 2;
+    if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
+    if (left < margin) left = margin;
+
+    setPickerState({ open: true, top, left });
   };
 
   const mediaUrl = message.media_url
@@ -194,7 +186,7 @@ export default function MessageItem({ message }) {
             </div>
 
             {message.id && (
-              <button className={styles.reactBtn} title="Реакция" onClick={handleOpenPicker}>+</button>
+              <button className={styles.reactBtn} onClick={handleOpenPicker}>+</button>
             )}
           </div>
 
