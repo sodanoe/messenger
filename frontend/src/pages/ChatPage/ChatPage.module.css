@@ -1,6 +1,8 @@
 .app {
   display: flex;
   height: 100dvh;
+  height: 100%;
+  max-height: -webkit-fill-available;
   overflow: hidden;
   max-width: 1920px;
   margin: 0 auto;
