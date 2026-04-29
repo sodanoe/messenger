@@ -53,6 +53,15 @@ export default function MessageItem({ message }) {
     });
   }
 
+  function handleScrollToReply() {
+    if (!replyTo?.id) return;
+    const el = document.querySelector(`[data-msg-id="${replyTo.id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add(styles.highlight);
+    setTimeout(() => el.classList.remove(styles.highlight), 1000);
+  }
+
   async function handleDelete() {
     if (!confirm('Удалить сообщение?')) return;
     try {
@@ -144,7 +153,7 @@ export default function MessageItem({ message }) {
               )}
 
               {replyTo && (
-                <div className={styles.replyQuote}>
+                <div className={styles.replyQuote} onClick={handleScrollToReply}>
                   <div className={styles.replyInner}>
                     <span className={styles.replyAuthor}>{replyAuthor}</span>
                     <span className={styles.replyContent}>

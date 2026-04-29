@@ -232,3 +232,13 @@
     max-width: 100%;
   }
 }
+
+@keyframes highlightFade {
+  0% { background: rgba(99, 102, 241, 0.3); }
+  100% { background: transparent; }
+}
+
+.highlight {
+  animation: highlightFade 1s ease-out;
+  border-radius: 12px;
+}
