@@ -48,10 +48,25 @@ html, body, #root {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  background: linear-gradient(135deg, #0E2F4A 0%, #1B4F72 40%, #1F344C 100%);
+  background-size: 200% 200%;
+  animation: psBreathe 8s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    background: var(--bg);
+    animation: none;
+  }
+}
+
+@keyframes psBreathe {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 button { font-family: inherit; }
