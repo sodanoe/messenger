@@ -3,9 +3,16 @@
   height: 100dvh;
   overflow: hidden;
   background: var(--bg);
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Mobile: sidebar visible by default, chat hidden */
+/* Фон за контейнером на широких экранах */
+:global(body) {
+  background: var(--bg);
+}
+
 @media (max-width: 767px) {
   .app :global(.sidebar) {
     display: flex;
