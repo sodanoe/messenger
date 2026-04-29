@@ -1,7 +1,7 @@
 .wrap {
   flex-shrink: 0;
   background: var(--bg2);
-  padding: 8px 16px 12px;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
 }
 
 .replyPreview {
@@ -103,10 +103,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
-
-.textarea::-webkit-scrollbar {
-  display: none;
-}
+.textarea::-webkit-scrollbar { display: none; }
 
 .emojiBtn {
   background: none;
