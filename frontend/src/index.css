@@ -27,8 +27,8 @@
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #e8f0f7;
-    --bg2: #c8d8e8;
-    --bg3: #d8e4ef;
+    --bg2: #f0f2f4;
+    --bg3: #e4e8ec;
     --text: #0f1f2e;
     --text2: #4a6275;
     --border: #a8c0d4;
@@ -89,8 +89,8 @@ em-emoji-picker {
 
 @media (prefers-color-scheme: light) {
   em-emoji-picker {
-    --rgb-background: 200, 216, 232;
-    --rgb-input: 216, 228, 239;
+    --rgb-background: 240, 242, 244;
+    --rgb-input: 228, 232, 236;
     --rgb-color: 15, 31, 46;
     --rgb-accent: 43, 82, 120;
   }
