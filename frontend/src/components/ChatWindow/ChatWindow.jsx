@@ -23,6 +23,8 @@ export default function ChatWindow() {
   const { currentChat, clearCurrentChat, setMessages, me, chats, setCustomEmojis } = useAppStore();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const loadedChatId = useRef(null);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
 
   const isOnline = currentChat?.type === 'direct'
     ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
@@ -36,6 +38,20 @@ export default function ChatWindow() {
 
   function goBack() {
     clearCurrentChat();
+  }
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (dx > 80 && dy < 60) goBack();
+    touchStartX.current = null;
+    touchStartY.current = null;
   }
 
   useEffect(() => {
@@ -76,7 +92,11 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className={`${styles.area} chat-area`}>
+    <div
+      className={`${styles.area} chat-area`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={goBack}>‹</button>
         <div className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}>
