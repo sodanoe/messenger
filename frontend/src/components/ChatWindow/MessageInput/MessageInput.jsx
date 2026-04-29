@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import useAppStore from '../../../store/useAppStore';
 import { sendDM } from '../../../services/contacts';
 import { sendGroupMessage } from '../../../services/groups';
 import { useMediaUpload } from '../../../hooks/useMediaUpload';
+import QuickEmojiBar from './QuickEmojiBar/QuickEmojiBar';
 import toast from 'react-hot-toast';
 import styles from './MessageInput.module.css';
 
@@ -10,12 +11,47 @@ export default function MessageInput() {
   const inputRef = useRef(null);
   const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage } = useAppStore();
   const { pendingMedia, handleFile, removePending } = useMediaUpload();
+  const [emojiBarOpen, setEmojiBarOpen] = useState(false);
+  const [emojiBarPos, setEmojiBarPos] = useState({ top: 0, left: 0 });
 
   function autoGrow() {
     const el = inputRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleEmojiBtn(e) {
+    const pickerHeight = 450;
+    const pickerWidth = 352;
+    const margin = 16;
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      setEmojiBarPos({
+        top: (window.innerHeight - pickerHeight) / 2,
+        left: (window.innerWidth - pickerWidth) / 2,
+      });
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      let top = rect.top - pickerHeight - margin;
+      let left = rect.left + rect.width / 2 - pickerWidth / 2;
+      if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
+      if (left < margin) left = margin;
+      setEmojiBarPos({ top, left });
+    }
+    setEmojiBarOpen(true);
+  }
+
+  function handleEmojiSelect(emoji) {
+    const el = inputRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = el.value.slice(0, start) + emoji + el.value.slice(end);
+    el.selectionStart = el.selectionEnd = start + emoji.length;
+    el.focus();
+    autoGrow();
   }
 
   async function sendMessage() {
@@ -34,19 +70,9 @@ export default function MessageInput() {
     try {
       let result;
       if (currentChat.type === 'dm') {
-        result = await sendDM(
-          currentChat.id,
-          content,
-          sentMedia?.id || null,
-          sentReplyTo?.id || null,
-        );
+        result = await sendDM(currentChat.id, content, sentMedia?.id || null, sentReplyTo?.id || null);
       } else {
-        result = await sendGroupMessage(
-          currentChat.id,
-          content,
-          sentMedia?.id || null,
-          sentReplyTo?.id || null,
-        );
+        result = await sendGroupMessage(currentChat.id, content, sentMedia?.id || null, sentReplyTo?.id || null);
       }
 
       if (result) {
@@ -57,13 +83,10 @@ export default function MessageInput() {
           sender_id: me?.id,
           created_at: result.created_at || new Date().toISOString(),
           media_url: result.media_url || sentMedia?.url || null,
-          // берём reply_to прямо из ответа бэкенда — там уже правильный объект
           reply_to: result.reply_to || null,
           reactions: [],
           read_at: null,
         });
-
-        // Обновляем последнее сообщение в chat-листе
         updateChatLastMessage(
           currentChat.id,
           sentMedia && !content ? '🖼 Фотография' : content,
@@ -106,11 +129,7 @@ export default function MessageInput() {
   }
 
   const replySnippet = replyTo
-    ? replyTo.content
-      ? replyTo.content.slice(0, 60)
-      : replyTo.mediaUrl
-        ? '📷 Фото'
-        : '—'
+    ? replyTo.content ? replyTo.content.slice(0, 60) : replyTo.mediaUrl ? '📷 Фото' : '—'
     : '';
 
   const previewUrl = pendingMedia?.previewUrl;
@@ -120,21 +139,15 @@ export default function MessageInput() {
       {replyTo && (
         <div className={styles.replyPreview}>
           <span className={styles.replyIcon}>↩</span>
-          <span className={styles.replyText}>
-            {replyTo.senderName}: {replySnippet}
-          </span>
-          <button className={styles.replyClose} onClick={clearReplyTo}>
-            ✕
-          </button>
+          <span className={styles.replyText}>{replyTo.senderName}: {replySnippet}</span>
+          <button className={styles.replyClose} onClick={clearReplyTo}>✕</button>
         </div>
       )}
 
       {previewUrl && (
         <div className={styles.mediaPreview}>
           <img src={previewUrl} alt="preview" />
-          <button className={styles.removeMedia} onClick={removePending}>
-            ✕
-          </button>
+          <button className={styles.removeMedia} onClick={removePending}>✕</button>
         </div>
       )}
 
@@ -144,8 +157,11 @@ export default function MessageInput() {
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
+        {/* Скрепка — SVG */}
         <label className={styles.attachBtn} title="Прикрепить картинку">
-          📎
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
+          </svg>
           <input
             type="file"
             accept="image/jpeg,image/png,image/gif,image/webp"
@@ -163,10 +179,31 @@ export default function MessageInput() {
           onInput={autoGrow}
         />
 
+        {/* Смайл — SVG */}
+        <button className={styles.emojiBtn} onClick={handleEmojiBtn} title="Эмодзи">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+        </button>
+
         <button className={styles.sendBtn} onClick={sendMessage}>
-          ➤
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
         </button>
       </div>
+
+      {emojiBarOpen && (
+        <QuickEmojiBar
+          position={emojiBarPos}
+          onSelect={handleEmojiSelect}
+          onClose={() => setEmojiBarOpen(false)}
+        />
+      )}
     </div>
   );
 }
