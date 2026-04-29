@@ -51,7 +51,9 @@ body {
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background: #0e0e0e;
+  background: linear-gradient(135deg, #0a080f 0%, #100d18 50%, #09080e 100%);
+  background-size: 200% 200%;
+  animation: psBreathe 8s ease-in-out infinite;
 }
 
 @media (prefers-color-scheme: light) {
