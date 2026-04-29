@@ -77,7 +77,6 @@ input { font-family: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* emoji-mart theme */
 em-emoji-picker {
   --rgb-background: 22, 27, 39;
   --rgb-input: 28, 35, 51;

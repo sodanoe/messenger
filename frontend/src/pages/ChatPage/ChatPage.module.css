@@ -2,15 +2,9 @@
   display: flex;
   height: 100dvh;
   overflow: hidden;
-  background: var(--bg);
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
-}
-
-/* Фон за контейнером на широких экранах */
-:global(body) {
-  background: var(--bg);
 }
 
 @media (max-width: 767px) {
