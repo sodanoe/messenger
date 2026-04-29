@@ -43,6 +43,12 @@ export default function MessageItem({ message }) {
     });
   };
 
+  // Определяем single-emoji
+  const trimmed = message.content?.trim() || '';
+  const isSingleCustomEmoji = /^:[a-zA-Z0-9_]+:$/.test(trimmed);
+  const isSingleUnicodeEmoji = trimmed.length > 0 && /^\p{Emoji}$/u.test(trimmed);
+  const isSingleEmoji = (isSingleCustomEmoji || isSingleUnicodeEmoji) && !message.media_url;
+
   function handleReply() {
     setReplyTo({
       id: message.id,
@@ -147,7 +153,7 @@ export default function MessageItem({ message }) {
               <button className={styles.replyBtn} title="Ответить" onClick={handleReply}>↩</button>
             )}
 
-            <div className={styles.bubble}>
+            <div className={`${styles.bubble} ${isSingleEmoji ? styles.singleEmoji : ''}`}>
               {!isMe && currentChat?.type === 'group' && (
                 <div className={styles.senderName}>{message.sender_username || '?'}</div>
               )}

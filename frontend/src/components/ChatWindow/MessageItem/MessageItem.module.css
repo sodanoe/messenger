@@ -37,6 +37,21 @@
   border-bottom-left-radius: 4px;
 }
 
+.singleEmoji {
+  background: transparent !important;
+  padding: 4px 0;
+  box-shadow: none !important;
+}
+.singleEmoji .text {
+  font-size: 48px;
+  line-height: 1.1;
+}
+.singleEmoji .inlineEmoji {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+}
+
 .replyBtn {
   position: absolute;
   top: 50%;
@@ -227,7 +242,6 @@
   .bubbleWrap {
     max-width: 88%;
   }
-
   .media img {
     max-width: 100%;
   }
