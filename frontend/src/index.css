@@ -80,3 +80,7 @@ em-emoji-picker {
     --rgb-accent: 43, 82, 120;
   }
 }
+
+input, textarea, select {
+  font-size: 16px !important;
+}
