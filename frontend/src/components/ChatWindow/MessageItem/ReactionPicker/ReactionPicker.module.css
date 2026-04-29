@@ -5,13 +5,21 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  gap: 2px;
+  max-width: 320px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox — прячем скроллбар */
+}
+
+.picker::-webkit-scrollbar {
+  display: none; /* Chrome/Safari — прячем скроллбар */
 }
 
 .row {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0; /* чтобы не сжимались эмодзи */
 }
 
 .btn {
@@ -25,6 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn:hover {
