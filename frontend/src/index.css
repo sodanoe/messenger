@@ -58,8 +58,9 @@ body {
 
 @media (prefers-color-scheme: light) {
   body {
-    background: var(--bg);
-    animation: none;
+    background: linear-gradient(135deg, #8fa8c0 0%, #a0b8cc 40%, #90a8bc 100%);
+    background-size: 200% 200%;
+    animation: psBreathe 8s ease-in-out infinite;
   }
 }
 
