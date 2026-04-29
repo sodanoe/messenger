@@ -40,13 +40,9 @@ async def _media_cleanup_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
-    # 2. Pub/Sub listener для WebSocket multi-worker доставки
     from app.ws.pubsub import start_listener
 
     pubsub_task = asyncio.create_task(start_listener())
-
-    # 3. Media cleanup loop
     cleanup_task = asyncio.create_task(_media_cleanup_loop())
 
     yield
@@ -70,18 +66,12 @@ app.include_router(admin.router)
 app.include_router(chat.router)
 app.include_router(emojis.router)
 
-# ── Static frontend ────────────────────────────────────────────────────
-# app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
+# ── Static media ───────────────────────────────────────────────────────
 os.makedirs("/app/media/emojis", exist_ok=True)
-app.mount("/media/emojis", StaticFiles(directory="/app/media/emojis"), name="emojis")
+os.makedirs("/app/media", exist_ok=True)
+app.mount("/media", StaticFiles(directory="/app/media"), name="media")
 
 
 @app.get("/sw.js", include_in_schema=False)
 async def serve_sw():
     return FileResponse("app/static/sw.js")
-
-
-# @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-# async def serve_index():
-#     return Path("app/static/index.html").read_text()
