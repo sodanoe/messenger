@@ -7,17 +7,17 @@
 }
 
 :root {
-  --bg: #1e1e2e;
-  --bg2: #313244;
-  --bg3: #45475a;
-  --text: #cdd6f4;
-  --text2: #6c7086;
-  --border: #313244;
-  --accent: #89b4fa;
-  --accent2: #74c7ec;
-  --accent-gradient: linear-gradient(135deg, #89b4fa, #74c7ec);
-  --green: #a6e3a1;
-  --danger: #f38ba8;
+  --bg: #141414;
+  --bg2: #1e1e1e;
+  --bg3: #2a2a2a;
+  --text: #d0d0d0;
+  --text2: #666666;
+  --border: #2a2a2a;
+  --accent: #2b5278;
+  --accent2: #1e3a5f;
+  --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
+  --green: #22c55e;
+  --danger: #ef4444;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
@@ -32,11 +32,9 @@
     --text: #0f1f2e;
     --text2: #4a6275;
     --border: #a8c0d4;
-    --accent: #1e66f5;
-    --accent2: #209fb5;
-    --accent-gradient: linear-gradient(135deg, #1e66f5, #209fb5);
-    --green: #40a02b;
-    --danger: #d20f39;
+    --accent: #2b5278;
+    --accent2: #1e3a5f;
+    --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
     --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
@@ -53,9 +51,7 @@ body {
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background: #181825;
-  animation: psBreathe 8s ease-in-out infinite;
-  background-size: 200% 200%;
+  background: #0e0e0e;
 }
 
 @media (prefers-color-scheme: light) {
@@ -81,10 +77,10 @@ input { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 em-emoji-picker {
-  --rgb-background: 49, 50, 68;
-  --rgb-input: 69, 71, 90;
-  --rgb-color: 205, 214, 244;
-  --rgb-accent: 137, 180, 250;
+  --rgb-background: 30, 30, 30;
+  --rgb-input: 42, 42, 42;
+  --rgb-color: 208, 208, 208;
+  --rgb-accent: 43, 82, 120;
   --border-radius: 12px;
   --shadow: none;
 }
@@ -94,7 +90,7 @@ em-emoji-picker {
     --rgb-background: 200, 216, 232;
     --rgb-input: 216, 228, 239;
     --rgb-color: 15, 31, 46;
-    --rgb-accent: 30, 102, 245;
+    --rgb-accent: 43, 82, 120;
   }
 }
 
