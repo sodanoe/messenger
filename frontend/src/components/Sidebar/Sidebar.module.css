@@ -13,16 +13,15 @@
 .header {
   display: flex;
   align-items: center;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 10px 8px 10px 12px;
   flex-shrink: 0;
-  position: relative;
 }
 
 .searchWrap {
   flex: 1;
   min-width: 0;
   position: relative;
-  margin-right: 50px;
 }
 
 .searchInner {
@@ -32,7 +31,6 @@
   background: var(--bg3);
   border-radius: 50px;
   padding: 5px 10px 5px 5px;
-  height: 42px;
 }
 
 .myAvatarBtn {
@@ -77,10 +75,8 @@
 .myAvatarBtn:hover .myAvatarClose { background: var(--border); }
 
 .actionsWrap {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
+  flex-shrink: 0;
 }
 
 .menuBtn {

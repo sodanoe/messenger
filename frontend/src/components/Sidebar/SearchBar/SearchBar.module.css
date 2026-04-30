@@ -43,8 +43,8 @@
 .results {
   position: absolute;
   top: calc(100% + 16px);
-  left: 0;
-  right: -50px;
+  left: -48px;
+  right: -60px;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 16px;
