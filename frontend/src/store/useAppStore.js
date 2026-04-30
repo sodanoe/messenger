@@ -31,6 +31,7 @@ const useAppStore = create((set, get) => ({
       customEmojis: [],
       nextCursor: null,
       hasMore: false,
+      inputRef: null,
     });
   },
 
@@ -147,6 +148,10 @@ const useAppStore = create((set, get) => ({
   // ── Custom Emojis ─────────────────────────────────────
   customEmojis: [],
   setCustomEmojis: (customEmojis) => set({ customEmojis }),
+
+  // ── Input Ref ─────────────────────────────────────────
+  inputRef: null,
+  setInputRef: (inputRef) => set({ inputRef }),
 }));
 
 export default useAppStore;

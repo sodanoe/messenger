@@ -56,6 +56,10 @@ export default function MessageItem({ message }) {
       content: message.content || '',
       mediaUrl: message.media_url || null,
     });
+    const { inputRef } = useAppStore.getState();
+    if (inputRef?.current) {
+      inputRef.current.focus();
+    }
   }
 
   function handleScrollToReply() {
