@@ -4,6 +4,7 @@ import { getMessages } from '../../services/contacts';
 import { getGroupMessages } from '../../services/groups';
 import { api } from '../../services/api';
 import { initials } from '../../utils/format';
+import { getAvatarColor } from '../../utils/avatarColor';
 import MessageList from './MessageList/MessageList';
 import MessageInput from './MessageInput/MessageInput';
 import GroupInfoModal from '../RightPanel/GroupInfoModal/GroupInfoModal';
@@ -99,7 +100,10 @@ export default function ChatWindow() {
     >
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={goBack}>‹</button>
-        <div className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}>
+        <div
+          className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}
+          style={currentChat.type !== 'group' ? { background: getAvatarColor(currentChat.name) } : {}}
+        >
           {currentChat.type === 'group' ? '#' : initials(currentChat.name)}
         </div>
         <div className={styles.headerInfo}>

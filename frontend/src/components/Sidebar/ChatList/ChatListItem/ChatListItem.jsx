@@ -1,4 +1,5 @@
 import { initials } from '../../../../utils/format';
+import { getAvatarColor } from '../../../../utils/avatarColor';
 import useAppStore from '../../../../store/useAppStore';
 import styles from './ChatListItem.module.css';
 
@@ -47,7 +48,10 @@ export default function ChatListItem({
       onClick={onClick}
     >
       <div className={styles.avatarWrap}>
-        <div className={`${styles.avatar} ${type === 'group' ? styles.group : ''}`}>
+        <div
+          className={`${styles.avatar} ${type === 'group' ? styles.group : ''}`}
+          style={type !== 'group' ? { background: getAvatarColor(name) } : {}}
+        >
           {type === 'group' ? '#' : initials(name)}
         </div>
         {isOnline && <div className={styles.onlineDot} />}
