@@ -87,23 +87,26 @@ export default function Sidebar() {
     <aside className={`${styles.sidebar} sidebar`}>
       <div className={styles.header}>
 
-        {/* Аватар — меню профиля */}
-        <div className={styles.avatarWrap} ref={profileRef}>
-          <button
-            className={styles.myAvatarBtn}
-            onClick={() => { setProfileOpen((v) => !v); setActionsOpen(false); }}
-          >
-            {profileOpen ? (
-              <span className={styles.closeIcon}>✕</span>
-            ) : (
-              <div
-                className={styles.myAvatar}
-                style={{ background: getAvatarColor(me?.username) }}
-              >
-                {initials(me?.username || '?')}
-              </div>
-            )}
-          </button>
+        {/* Поиск с аватаром внутри */}
+        <div className={styles.searchWrap} ref={profileRef}>
+          <div className={styles.searchInner}>
+            <button
+              className={styles.myAvatarBtn}
+              onClick={() => { setProfileOpen((v) => !v); setActionsOpen(false); }}
+            >
+              {profileOpen ? (
+                <div className={styles.myAvatarClose}>✕</div>
+              ) : (
+                <div
+                  className={styles.myAvatar}
+                  style={{ background: getAvatarColor(me?.username) }}
+                >
+                  {initials(me?.username || '?')}
+                </div>
+              )}
+            </button>
+            <SearchBar />
+          </div>
 
           {profileOpen && (
             <div className={styles.menuProfile}>
@@ -131,25 +134,20 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Поиск по центру */}
-        <div className={styles.searchWrap}>
-          <SearchBar />
-        </div>
-
-        {/* Бургер — меню действий */}
+        {/* Бургер в круге */}
         <div className={styles.actionsWrap} ref={actionsRef}>
           <button
             className={`${styles.menuBtn} ${actionsOpen ? styles.active : ''}`}
             onClick={() => { setActionsOpen((v) => !v); setProfileOpen(false); }}
           >
             {actionsOpen ? (
-              <span className={styles.closeIcon}>✕</span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             ) : (
-              <>
-                <span />
-                <span />
-                <span />
-              </>
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                <path d="M0 1H16M0 6H16M0 11H16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
             )}
           </button>
 

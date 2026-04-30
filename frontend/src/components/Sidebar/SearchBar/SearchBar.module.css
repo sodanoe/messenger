@@ -1,20 +1,13 @@
 .wrap {
   position: relative;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .inputRow {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg3);
-  border-radius: 12px;
-  padding: 8px 8px 8px 12px;
-  transition: box-shadow 0.15s;
-}
-
-.inputRow:focus-within {
-  box-shadow: 0 0 0 2px rgba(43, 82, 120, 0.4);
 }
 
 .input {
@@ -49,11 +42,11 @@
 
 .results {
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  top: calc(100% + 16px);
+  left: -48px;
+  right: -10px;
   background: var(--bg2);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow-md);
   z-index: 50;
   max-height: 320px;
