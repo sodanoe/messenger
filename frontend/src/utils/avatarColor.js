@@ -15,5 +15,7 @@ export function getAvatarColor(name) {
   for (let i = 0; i < name.length; i++) {
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   }
-  return COLORS[hash % COLORS.length];
+  const color = COLORS[hash % COLORS.length];
+  console.log(name, hash, hash % COLORS.length, color);
+  return color;
 }
