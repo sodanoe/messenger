@@ -14,11 +14,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 10px 8px 10px 12px;
   flex-shrink: 0;
 }
-
-/* ПОИСК + АВАТАР */
 
 .searchWrap {
   flex: 1;
@@ -34,8 +32,6 @@
   border-radius: 50px;
   padding: 5px 10px 5px 5px;
 }
-
-/* АВАТАР ВНУТРИ ПОИСКА */
 
 .myAvatarBtn {
   border: none;
@@ -78,8 +74,6 @@
 
 .myAvatarBtn:hover .myAvatarClose { background: var(--border); }
 
-/* БУРГЕР В КРУГЕ */
-
 .actionsWrap {
   position: relative;
   flex-shrink: 0;
@@ -101,8 +95,6 @@
 
 .menuBtn:hover { background: var(--border); }
 .menuBtn.active { background: var(--border); }
-
-/* МЕНЮ ПРОФИЛЯ */
 
 .menuProfile {
   position: absolute;
@@ -166,8 +158,6 @@
   letter-spacing: 0.05em;
 }
 
-/* МЕНЮ ДЕЙСТВИЙ */
-
 .menuActions {
   position: absolute;
   top: calc(100% + 10px);
@@ -204,8 +194,6 @@
 
 .menuItem:hover { background: var(--bg2); }
 .menuItem.danger { color: var(--danger); }
-
-/* CHAT LIST */
 
 .chatListContainer {
   flex: 1;

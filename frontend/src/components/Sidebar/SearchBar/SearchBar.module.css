@@ -44,8 +44,9 @@
   position: absolute;
   top: calc(100% + 16px);
   left: -48px;
-  right: -10px;
-  background: var(--bg2);
+  right: -60px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow-md);
   z-index: 50;
@@ -70,7 +71,7 @@
   margin: 4px;
 }
 
-.item:hover { background: var(--bg3); }
+.item:hover { background: var(--bg2); }
 
 .avatar {
   width: 32px;
@@ -116,7 +117,7 @@
   padding: 4px 10px;
   border-radius: 8px;
   border: none;
-  background: var(--bg3);
+  background: var(--bg2);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
