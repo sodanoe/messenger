@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import useAppStore from '../../../store/useAppStore';
 import { sendDM } from '../../../services/contacts';
 import { sendGroupMessage } from '../../../services/groups';
@@ -9,10 +9,15 @@ import styles from './MessageInput.module.css';
 
 export default function MessageInput() {
   const inputRef = useRef(null);
-  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage, customEmojis } = useAppStore();
+  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage, customEmojis, setInputRef } = useAppStore();
   const { pendingMedia, handleFile, removePending } = useMediaUpload();
   const [emojiBarOpen, setEmojiBarOpen] = useState(false);
   const [emojiBarPos, setEmojiBarPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    setInputRef(inputRef);
+    return () => setInputRef(null);
+  }, []);
 
   function autoGrow() {
     const el = inputRef.current;
@@ -77,7 +82,6 @@ export default function MessageInput() {
     if (inputRef.current) {
       inputRef.current.value = '';
       autoGrow();
-      // Держим фокус чтобы клавиатура не сворачивалась
       inputRef.current.focus();
     }
 
@@ -121,8 +125,6 @@ export default function MessageInput() {
   function handleKey(e) {
     const isMobile = window.innerWidth < 768;
     if (e.key === 'Enter') {
-      // На мобильном Enter всегда переносит строку
-      // На десктопе Enter отправляет, Shift+Enter переносит
       if (!isMobile && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
