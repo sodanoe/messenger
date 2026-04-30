@@ -1,12 +1,13 @@
 const COLORS = [
-  '#E17076',
-  '#7BC862',
-  '#7da2c7',
-  '#EE7AAE',
-  '#6EC9CB',
-  '#FAA774',
-  '#e8e538',
-  '#8c6161', 
+  '#5B8DEF',
+  '#4DAA8A',
+  '#6C8AE4',
+  '#5FA8D3',
+  '#7C9CBF',
+  '#4C7A96',
+  '#6FAED9',
+  '#7289AB',
+  '#E07A7A',
 ];
 
 export function getAvatarColor(name) {
