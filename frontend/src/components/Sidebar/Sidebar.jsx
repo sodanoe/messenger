@@ -1,39 +1,21 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import useAppStore from '../../store/useAppStore';
 import { api } from '../../services/api';
 import SearchBar from './SearchBar/SearchBar';
 import ChatList from './ChatList/ChatList';
+import { initials } from '../../utils/format';
+import { getAvatarColor } from '../../utils/avatarColor';
+import { createGroup } from '../../services/groups';
+import toast from 'react-hot-toast';
 import styles from './Sidebar.module.css';
-
-function getInitials(username) {
-  if (!username) return '?';
-  return username.slice(0, 2).toUpperCase();
-}
-
-function Logo() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <clipPath id="clip0_95_240">
-          <rect width="35" height="35" rx="10" fill="white"/>
-        </clipPath>
-      </defs>
-      <g clipPath="url(#clip0_95_240)">
-        <path d="M28.4375 0H6.5625C2.93813 0 0 2.93813 0 6.5625V28.4375C0 32.0619 2.93813 35 6.5625 35H28.4375C32.0619 35 35 32.0619 35 28.4375V6.5625C35 2.93813 32.0619 0 28.4375 0Z" fill="#081826"/>
-        <path d="M0 16.4062C8.20312 13.6719 16.4062 19.1406 35 15.0391V35H0V16.4062Z" fill="#0E2F4A"/>
-        <path d="M0 20.5078C10.9375 17.7734 21.875 23.2422 35 19.1406V35H0V20.5078Z" fill="#123A5A"/>
-        <path d="M0 24.6094C13.6719 21.875 27.3438 27.3438 35 23.2422V35H0V24.6094Z" fill="#1B4F72"/>
-      </g>
-      <rect x="0.5" y="0.5" width="34" height="34" rx="9.5" stroke="#1F344C"/>
-    </svg>
-  );
-}
 
 export default function Sidebar() {
   const { me, isAdmin, chats, setChats, logout, lastInvite, setLastInvite } = useAppStore();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const profileRef = useRef(null);
+  const actionsRef = useRef(null);
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -47,15 +29,33 @@ export default function Sidebar() {
     fetchChats();
   }, [setChats]);
 
+  // Закрытие по клику снаружи
   useEffect(() => {
     function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+      if (actionsRef.current && !actionsRef.current.contains(e.target)) {
+        setActionsOpen(false);
       }
     }
-    if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
+    if (profileOpen || actionsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
+  }, [profileOpen, actionsOpen]);
+
+  // Закрытие по Esc
+  useEffect(() => {
+    function handleEsc(e) {
+      if (e.key === 'Escape') {
+        setProfileOpen(false);
+        setActionsOpen(false);
+      }
+    }
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, []);
 
   async function genInvite() {
     try {
@@ -71,59 +71,115 @@ export default function Sidebar() {
     });
   }
 
+  async function handleCreateGroup() {
+    const name = prompt('Название группы:');
+    if (!name?.trim()) return;
+    try {
+      await createGroup(name.trim());
+      const data = await api('/chats/', 'GET');
+      if (data?.chats) setChats(data.chats);
+      toast.success('Группа создана');
+      setActionsOpen(false);
+    } catch (e) {
+      toast.error(e.message);
+    }
+  }
+
   return (
     <aside className={`${styles.sidebar} sidebar`}>
       <div className={styles.header}>
-        <div className={styles.logo}>
-          <Logo />
-        </div>
 
-        <div className={styles.headerRight} ref={menuRef}>
+        {/* Аватар текущего пользователя — меню профиля */}
+        <div className={styles.avatarWrap} ref={profileRef}>
           <button
-            className={`${styles.menuBtn} ${menuOpen ? styles.active : ''}`}
-            onClick={() => setMenuOpen((v) => !v)}
+            className={styles.myAvatarBtn}
+            onClick={() => { setProfileOpen((v) => !v); setActionsOpen(false); }}
+            title="Профиль"
           >
-            <span />
-            <span />
-            <span />
+            {profileOpen ? (
+              <span className={styles.closeIcon}>✕</span>
+            ) : (
+              <div
+                className={styles.myAvatar}
+                style={{ background: getAvatarColor(me?.username) }}
+              >
+                {initials(me?.username || '?')}
+              </div>
+            )}
           </button>
 
-          {menuOpen && (
+          {profileOpen && (
             <div className={styles.menu}>
               <div className={styles.menuProfile}>
-                <div className={styles.menuAvatar}>
-                  {getInitials(me?.username)}
+                <div
+                  className={styles.menuAvatar}
+                  style={{ background: getAvatarColor(me?.username) }}
+                >
+                  {initials(me?.username || '?')}
                 </div>
                 <div className={styles.menuUserInfo}>
                   <div className={styles.menuUsername}>{me?.username}</div>
+                  <div className={styles.menuSubtext}>@{me?.username}</div>
                   {isAdmin && <div className={styles.menuAdmin}>ADMIN</div>}
                 </div>
               </div>
 
+              <div className={styles.menuDivider} />
+
+              <div
+                className={`${styles.menuItem} ${styles.danger}`}
+                onClick={() => { setProfileOpen(false); logout(); }}
+              >
+                Выйти
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Заголовок */}
+        <div className={styles.headerTitle}>Чаты</div>
+
+        {/* Бургер — меню действий */}
+        <div className={styles.actionsWrap} ref={actionsRef}>
+          <button
+            className={`${styles.menuBtn} ${actionsOpen ? styles.active : ''}`}
+            onClick={() => { setActionsOpen((v) => !v); setProfileOpen(false); }}
+            title="Действия"
+          >
+            {actionsOpen ? (
+              <span className={styles.closeIcon}>✕</span>
+            ) : (
+              <>
+                <span />
+                <span />
+                <span />
+              </>
+            )}
+          </button>
+
+          {actionsOpen && (
+            <div className={styles.menuRight}>
+              <div className={styles.menuItem} onClick={handleCreateGroup}>
+                Создать группу
+              </div>
+
               {isAdmin && (
-                <div className={styles.menuSection}>
+                <>
+                  <div className={styles.menuDivider} />
                   <div className={styles.menuItem} onClick={genInvite}>
                     Создать инвайт
                   </div>
                   {lastInvite && (
                     <div className={styles.menuItem} onClick={copyInvite}>
-                      {lastInvite}
+                      Скопировать: {lastInvite}
                     </div>
                   )}
-                </div>
+                </>
               )}
-
-              <div className={styles.menuSection}>
-                <div
-                  className={`${styles.menuItem} ${styles.danger}`}
-                  onClick={() => { setMenuOpen(false); logout(); }}
-                >
-                  Выйти
-                </div>
-              </div>
             </div>
           )}
         </div>
+
       </div>
 
       <div className={styles.searchWrapper}>
