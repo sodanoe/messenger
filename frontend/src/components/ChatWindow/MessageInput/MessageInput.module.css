@@ -1,7 +1,7 @@
 .wrap {
   flex-shrink: 0;
-  background: var(--bg2);
-  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  background: transparent;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
 }
 
 .replyPreview {
@@ -11,7 +11,7 @@
   padding: 6px 12px;
   margin-bottom: 8px;
   border-radius: 10px;
-  background: var(--bg3);
+  background: var(--bg2);
   font-size: 13px;
   color: var(--text2);
   border-left: 3px solid var(--accent);
@@ -57,12 +57,34 @@
   justify-content: center;
 }
 
-.inputArea {
+.row {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
+}
+
+.attachBtn {
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   background: var(--bg3);
-  border-radius: 24px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.attachBtn:hover { background: var(--border); color: var(--text); }
+
+.inputArea {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  background: var(--bg3);
+  border-radius: 22px;
   padding: 6px 6px 6px 14px;
   transition: box-shadow 0.15s;
 }
@@ -71,25 +93,9 @@
 }
 .inputArea.dragOver { box-shadow: 0 0 0 2px rgba(43, 82, 120, 0.6); }
 
-.attachBtn {
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  color: var(--text2);
-  transition: color 0.15s;
-  flex-shrink: 0;
-  line-height: 1;
-  align-self: flex-end;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.attachBtn:hover { color: var(--text); }
-
 .textarea {
   flex: 1;
-  padding: 6px 0;
+  padding: 4px 0;
   border: none;
   background: transparent;
   color: var(--text);
@@ -102,6 +108,7 @@
   font-family: inherit;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  align-self: center;
 }
 .textarea::-webkit-scrollbar { display: none; }
 
@@ -118,13 +125,13 @@
   align-items: center;
   justify-content: center;
   align-self: flex-end;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .emojiBtn:hover { color: var(--text); }
 
 .sendBtn {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: none;
   background: var(--accent-gradient);
