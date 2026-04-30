@@ -1,19 +1,19 @@
 const COLORS = [
-  '#E17076', // красный
-  '#7BC862', // зелёный
-  '#65AADD', // голубой
-  '#A695E7', // фиолетовый
-  '#EE7AAE', // розовый
-  '#6EC9CB', // бирюзовый
-  '#FAA774', // оранжевый
-  '#5FADED', // синий
+  '#E17076',
+  '#7BC862',
+  '#65AADD',
+  '#A695E7',
+  '#EE7AAE',
+  '#6EC9CB',
+  '#FAA774',
+  '#5FADED',
 ];
 
 export function getAvatarColor(name) {
   if (!name) return COLORS[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   }
-  return COLORS[Math.abs(hash) % COLORS.length];
+  return COLORS[hash % COLORS.length];
 }
