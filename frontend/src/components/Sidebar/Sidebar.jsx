@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import useAppStore from '../../store/useAppStore';
 import { api } from '../../services/api';
 import SearchBar from './SearchBar/SearchBar';
@@ -29,7 +29,6 @@ export default function Sidebar() {
     fetchChats();
   }, [setChats]);
 
-  // Закрытие по клику снаружи
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -45,7 +44,6 @@ export default function Sidebar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [profileOpen, actionsOpen]);
 
-  // Закрытие по Esc
   useEffect(() => {
     function handleEsc(e) {
       if (e.key === 'Escape') {
@@ -89,12 +87,11 @@ export default function Sidebar() {
     <aside className={`${styles.sidebar} sidebar`}>
       <div className={styles.header}>
 
-        {/* Аватар текущего пользователя — меню профиля */}
+        {/* Аватар — меню профиля */}
         <div className={styles.avatarWrap} ref={profileRef}>
           <button
             className={styles.myAvatarBtn}
             onClick={() => { setProfileOpen((v) => !v); setActionsOpen(false); }}
-            title="Профиль"
           >
             {profileOpen ? (
               <span className={styles.closeIcon}>✕</span>
@@ -109,8 +106,8 @@ export default function Sidebar() {
           </button>
 
           {profileOpen && (
-            <div className={styles.menu}>
-              <div className={styles.menuProfile}>
+            <div className={styles.menuProfile}>
+              <div className={styles.menuProfileCard}>
                 <div
                   className={styles.menuAvatar}
                   style={{ background: getAvatarColor(me?.username) }}
@@ -123,9 +120,7 @@ export default function Sidebar() {
                   {isAdmin && <div className={styles.menuAdmin}>ADMIN</div>}
                 </div>
               </div>
-
               <div className={styles.menuDivider} />
-
               <div
                 className={`${styles.menuItem} ${styles.danger}`}
                 onClick={() => { setProfileOpen(false); logout(); }}
@@ -136,15 +131,16 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Заголовок */}
-        <div className={styles.headerTitle}>Чаты</div>
+        {/* Поиск по центру */}
+        <div className={styles.searchWrap}>
+          <SearchBar />
+        </div>
 
         {/* Бургер — меню действий */}
         <div className={styles.actionsWrap} ref={actionsRef}>
           <button
             className={`${styles.menuBtn} ${actionsOpen ? styles.active : ''}`}
             onClick={() => { setActionsOpen((v) => !v); setProfileOpen(false); }}
-            title="Действия"
           >
             {actionsOpen ? (
               <span className={styles.closeIcon}>✕</span>
@@ -158,11 +154,10 @@ export default function Sidebar() {
           </button>
 
           {actionsOpen && (
-            <div className={styles.menuRight}>
+            <div className={styles.menuActions}>
               <div className={styles.menuItem} onClick={handleCreateGroup}>
                 Создать группу
               </div>
-
               {isAdmin && (
                 <>
                   <div className={styles.menuDivider} />
@@ -180,10 +175,6 @@ export default function Sidebar() {
           )}
         </div>
 
-      </div>
-
-      <div className={styles.searchWrapper}>
-        <SearchBar />
       </div>
 
       <div className={styles.chatListContainer}>

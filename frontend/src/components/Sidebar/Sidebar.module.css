@@ -11,23 +11,14 @@
 }
 
 .header {
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px 12px;
   flex-shrink: 0;
 }
 
-.headerTitle {
-  flex: 1;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.02em;
-}
-
-/* АВАТАР ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ */
+/* АВАТАР */
 
 .avatarWrap {
   position: relative;
@@ -63,14 +54,56 @@
 }
 
 .closeIcon {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text2);
   line-height: 1;
 }
 
-/* МЕНЮ ПРОФИЛЯ (слева) */
+/* ПОИСК */
 
-.menu {
+.searchWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+/* БУРГЕР */
+
+.actionsWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menuBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.menuBtn span {
+  display: block;
+  height: 2px;
+  width: 16px;
+  background: var(--text);
+  opacity: 0.8;
+  border-radius: 2px;
+}
+
+.menuBtn:hover { background: rgba(255,255,255,0.06); }
+.menuBtn.active { background: rgba(255,255,255,0.1); }
+
+/* МЕНЮ ПРОФИЛЯ */
+
+.menuProfile {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
@@ -84,28 +117,7 @@
   z-index: 100;
 }
 
-/* МЕНЮ ДЕЙСТВИЙ (справа) */
-
-.menuRight {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  width: 220px;
-  padding: 6px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
-  animation: menuIn 0.15s ease;
-  z-index: 100;
-}
-
-@keyframes menuIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.menuProfile {
+.menuProfileCard {
   display: flex;
   gap: 12px;
   padding: 10px 10px 12px;
@@ -153,6 +165,27 @@
   letter-spacing: 0.05em;
 }
 
+/* МЕНЮ ДЕЙСТВИЙ */
+
+.menuActions {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  padding: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
+  animation: menuIn 0.15s ease;
+  z-index: 100;
+}
+
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .menuDivider {
   height: 1px;
   background: var(--border);
@@ -170,42 +203,6 @@
 
 .menuItem:hover { background: var(--bg2); }
 .menuItem.danger { color: var(--danger); }
-
-/* БУРГЕР */
-
-.actionsWrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.menuBtn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.menuBtn span {
-  display: block;
-  height: 2px;
-  width: 16px;
-  background: var(--text);
-  opacity: 0.8;
-  border-radius: 2px;
-  transition: opacity 0.15s;
-}
-
-.menuBtn:hover { background: rgba(255,255,255,0.06); }
-.menuBtn.active { background: rgba(255,255,255,0.1); }
 
 /* CHAT LIST */
 

@@ -1,23 +1,15 @@
 .wrap {
   position: relative;
-  padding: 10px 12px;
-  flex-shrink: 0;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  width: 100%;
 }
 
 .inputRow {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
   background: var(--bg3);
   border-radius: 12px;
-  padding: 9px 8px 9px 12px;
+  padding: 8px 8px 8px 12px;
   transition: box-shadow 0.15s;
 }
 
@@ -30,11 +22,10 @@
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   font-family: inherit;
-  padding: 0 4px; /* ← добавь это */
-  min-width: 0;   /* ← и это, чтобы flex не обрезал */
+  min-width: 0;
 }
 
 .input::placeholder {
@@ -48,7 +39,7 @@
   color: var(--text2);
   font-size: 14px;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 2px 6px;
   border-radius: 6px;
   flex-shrink: 0;
   transition: color 0.15s;
@@ -56,59 +47,11 @@
 
 .clear:hover { color: var(--text); }
 
-.createGroupBtn {
-  position: relative;
-  width: 34px;
-  border-radius: 10px;
-  border: none;
-  background: var(--bg3);
-  color: var(--text2);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
-  align-self: stretch;
-}
-
-.createGroupBtn:hover {
-  background: rgba(43, 82, 120, 0.45);
-  color: var(--text);
-}
-
-.createGroupBtn:active {
-  transform: scale(0.95);
-}
-
-.tooltip {
-  position: absolute;
-  bottom: calc(100% + 7px);
-  right: 0;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.15s, transform 0.15s;
-  z-index: 100;
-}
-
-.createGroupBtn:hover .tooltip {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .results {
   position: absolute;
-  top: calc(100% - 4px);
-  left: 12px;
-  right: 12px;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
   background: var(--bg2);
   border-radius: 12px;
   box-shadow: var(--shadow-md);
