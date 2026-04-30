@@ -8,8 +8,16 @@
 }
 
 @media (max-width: 767px) {
-  .app :global(.sidebar) { display: flex; }
-  .app :global(.chat-area) { display: none; }
-  .app.chatOpen :global(.sidebar) { display: none; }
-  .app.chatOpen :global(.chat-area) { display: flex; }
+  .app :global(.sidebar) {
+    display: flex;
+  }
+  .app :global(.chat-area) {
+    display: none;
+  }
+  .app.chatOpen :global(.sidebar) {
+    display: none;
+  }
+  .app.chatOpen :global(.chat-area) {
+    display: flex;
+  }
 }
