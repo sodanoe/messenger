@@ -1,6 +1,6 @@
 .app {
   display: flex;
-  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
   overscroll-behavior: none;
   max-width: 1920px;
