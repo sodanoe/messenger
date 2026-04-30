@@ -7,17 +7,17 @@
 }
 
 :root {
-  --bg: #141414;
-  --bg2: #1e1e1e;
-  --bg3: #2a2a2a;
-  --text: #d0d0d0;
-  --text2: #666666;
-  --border: #2a2a2a;
+  --bg: #000000;
+  --bg2: #1C1C1E;
+  --bg3: #2C2C2E;
+  --text: #ffffff;
+  --text2: rgba(235, 235, 245, 0.6);
+  --border: #38383A;
   --accent: #2b5278;
   --accent2: #1e3a5f;
   --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
-  --green: #22c55e;
-  --danger: #ef4444;
+  --green: #32d74b;
+  --danger: #ff453a;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
@@ -51,9 +51,7 @@ body {
   color: var(--text);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background: linear-gradient(135deg, #0a080f 0%, #100d18 50%, #09080e 100%);
-  background-size: 200% 200%;
-  animation: psBreathe 8s ease-in-out infinite;
+  background: #000000;
 }
 
 @media (prefers-color-scheme: light) {
@@ -79,9 +77,9 @@ input { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 em-emoji-picker {
-  --rgb-background: 30, 30, 30;
-  --rgb-input: 42, 42, 42;
-  --rgb-color: 208, 208, 208;
+  --rgb-background: 28, 28, 30;
+  --rgb-input: 44, 44, 46;
+  --rgb-color: 255, 255, 255;
   --rgb-accent: 43, 82, 120;
   --border-radius: 12px;
   --shadow: none;
