@@ -1,7 +1,12 @@
 .wrap {
+  position: sticky;
+  bottom: 0;
   flex-shrink: 0;
   background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  z-index: 10;
 }
 
 .replyPreview {
