@@ -5,8 +5,8 @@
   min-width: 0;
   height: calc(var(--vh, 1vh) * 100);
   background: var(--bg);
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 .placeholder {

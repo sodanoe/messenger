@@ -1,7 +1,7 @@
 .wrap {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 14px;
+  padding: 12px 14px 100px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -24,9 +24,5 @@
   height: 1px;
   background: var(--border);
 }
-.dayDivider::before {
-  left: 0;
-}
-.dayDivider::after {
-  right: 0;
-}
+.dayDivider::before { left: 0; }
+.dayDivider::after { right: 0; }
