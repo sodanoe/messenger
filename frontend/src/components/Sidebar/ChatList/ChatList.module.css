@@ -8,6 +8,12 @@
   background: #1C1C1E;
 }
 
+@media (prefers-color-scheme: light) {
+  .list {
+    background: #edf3f9;
+  }
+}
+
 .list::-webkit-scrollbar { width: 6px; }
 
 .list::-webkit-scrollbar-thumb {
