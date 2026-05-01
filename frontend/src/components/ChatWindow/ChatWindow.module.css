@@ -28,7 +28,7 @@
   padding: 12px 20px;
   background: var(--bg2);
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  /* box-shadow: var(--shadow-sm); */
   z-index: 5;
 }
 
