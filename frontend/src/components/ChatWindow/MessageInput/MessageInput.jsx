@@ -10,7 +10,7 @@ import styles from './MessageInput.module.css';
 export default function MessageInput() {
   const inputRef = useRef(null);
   const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage, customEmojis, setInputRef } = useAppStore();
-  const { pendingMedia, handleFile, removePending } = useMediaUpload();
+  const { pendingMedia, isUploading, handleFile, removePending } = useMediaUpload();
   const [emojiBarOpen, setEmojiBarOpen] = useState(false);
   const [emojiBarPos, setEmojiBarPos] = useState({ top: 0, left: 0 });
 
@@ -76,6 +76,7 @@ export default function MessageInput() {
 
   async function sendMessage() {
     if (!currentChat) return;
+    if (isUploading) return;
     const content = inputRef.current?.value.trim() || '';
     if (!content && !pendingMedia) return;
 
@@ -154,8 +155,6 @@ export default function MessageInput() {
     if (f && f.type.startsWith('image/')) handleFile(f);
   }
 
-  const previewUrl = pendingMedia?.previewUrl;
-
   return (
     <div className={styles.wrap} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
       {replyTo && (
@@ -168,15 +167,24 @@ export default function MessageInput() {
         </div>
       )}
 
-      {previewUrl && (
+      {pendingMedia?.previewUrl && (
         <div className={styles.mediaPreview}>
-          <img src={previewUrl} alt="preview" />
-          <button className={styles.removeMedia} onClick={removePending}>✕</button>
+          <img
+            src={pendingMedia.previewUrl}
+            alt="preview"
+            style={{ opacity: isUploading ? 0.5 : 1 }}
+          />
+          {isUploading ? (
+            <div className={styles.uploadingOverlay}>
+              <div className={styles.spinner} />
+            </div>
+          ) : (
+            <button className={styles.removeMedia} onClick={removePending}>✕</button>
+          )}
         </div>
       )}
 
       <div className={styles.row}>
-        {/* Скрепка снаружи слева */}
         <label className={styles.attachBtn} title="Прикрепить картинку">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
@@ -184,7 +192,6 @@ export default function MessageInput() {
           <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" style={{ display: 'none' }} onChange={onFileChange} />
         </label>
 
-        {/* Инпут со смайлом внутри */}
         <div className={`${styles.inputArea} ${styles.dragOver}`}>
           <textarea
             ref={inputRef}
@@ -204,8 +211,7 @@ export default function MessageInput() {
           </button>
         </div>
 
-        {/* Кнопка отправки снаружи справа */}
-        <button className={styles.sendBtn} onClick={sendMessage}>
+        <button className={styles.sendBtn} onClick={sendMessage} disabled={isUploading}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>

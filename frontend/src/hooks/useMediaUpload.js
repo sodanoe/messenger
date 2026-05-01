@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { uploadMedia } from '../services/api';
 import useAppStore from '../store/useAppStore';
 import toast from 'react-hot-toast';
 
 export function useMediaUpload() {
-  const [pendingMedia, setPendingMedia] = useState(null);
-  // pendingMedia: { id, url, previewUrl } | null
-
   const currentChat = useAppStore((s) => s.currentChat);
+  const pendingMedia = useAppStore((s) => s.pendingMedia);
+  const isUploading = useAppStore((s) => s.isUploading);
+  const setPendingMedia = useAppStore((s) => s.setPendingMedia);
+  const setIsUploading = useAppStore((s) => s.setIsUploading);
+  const removePendingMedia = useAppStore((s) => s.removePendingMedia);
 
   async function handleFile(file) {
     if (!file) return;
@@ -20,20 +22,21 @@ export function useMediaUpload() {
       r.onload = (e) => res(e.target.result);
       r.readAsDataURL(file);
     });
+
+    setIsUploading(true);
+    setPendingMedia({ id: null, url: null, previewUrl });
+
     try {
       const data = await uploadMedia(file);
       setPendingMedia({ id: data.id, url: data.url, previewUrl });
-      toast.success('Картинка готова — нажми отправить');
     } catch (e) {
       toast.error('Ошибка загрузки: ' + e.message);
+      removePendingMedia();
+    } finally {
+      setIsUploading(false);
     }
   }
 
-  function removePending() {
-    setPendingMedia(null);
-  }
-
-  // Paste
   useEffect(() => {
     function onPaste(e) {
       if (!currentChat) return;
@@ -52,5 +55,5 @@ export function useMediaUpload() {
     return () => document.removeEventListener('paste', onPaste);
   }, [currentChat]);
 
-  return { pendingMedia, handleFile, removePending };
+  return { pendingMedia, isUploading, handleFile, removePending: removePendingMedia };
 }

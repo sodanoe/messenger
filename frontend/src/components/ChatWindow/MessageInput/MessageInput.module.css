@@ -45,6 +45,7 @@
   border-radius: 10px;
   display: block;
   object-fit: cover;
+  transition: opacity 0.2s;
 }
 .removeMedia {
   position: absolute;
@@ -59,6 +60,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.uploadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .row {
@@ -151,3 +175,4 @@
   padding: 0;
 }
 .sendBtn:hover { opacity: 0.9; transform: scale(1.05); }
+.sendBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }

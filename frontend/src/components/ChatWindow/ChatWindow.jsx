@@ -5,6 +5,7 @@ import { getGroupMessages } from '../../services/groups';
 import { api } from '../../services/api';
 import { initials } from '../../utils/format';
 import { getAvatarColor } from '../../utils/avatarColor';
+import { useMediaUpload } from '../../hooks/useMediaUpload';
 import MessageList from './MessageList/MessageList';
 import MessageInput from './MessageInput/MessageInput';
 import GroupInfoModal from '../RightPanel/GroupInfoModal/GroupInfoModal';
@@ -22,10 +23,13 @@ function MembersIcon({ size = 18 }) {
 
 export default function ChatWindow() {
   const { currentChat, clearCurrentChat, setMessages, me, chats, setCustomEmojis } = useAppStore();
+  const { handleFile } = useMediaUpload();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const loadedChatId = useRef(null);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const dragCounterRef = useRef(0);
 
   const isOnline = currentChat?.type === 'direct'
     ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
@@ -53,6 +57,34 @@ export default function ChatWindow() {
     if (dx > 80 && dy < 60) goBack();
     touchStartX.current = null;
     touchStartY.current = null;
+  }
+
+  function onDragEnter(e) {
+    e.preventDefault();
+    if ([...(e.dataTransfer?.types || [])].includes('Files')) {
+      dragCounterRef.current++;
+      setIsDragging(true);
+    }
+  }
+
+  function onDragLeave(e) {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }
+
+  function onDragOver(e) {
+    e.preventDefault();
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    const f = e.dataTransfer?.files?.[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
   }
 
   useEffect(() => {
@@ -97,6 +129,10 @@ export default function ChatWindow() {
       className={`${styles.area} chat-area`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={goBack}>‹</button>
@@ -126,6 +162,18 @@ export default function ChatWindow() {
 
       <MessageList />
       <MessageInput />
+
+      {isDragging && (
+        <div className={styles.dropOverlay}>
+          <div className={styles.dropBox}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+            <div className={styles.dropTitle}>Отпустите файл</div>
+            <div className={styles.dropSub}>Изображение будет прикреплено к сообщению</div>
+          </div>
+        </div>
+      )}
 
       {showGroupInfo && (
         <GroupInfoModal onClose={() => setShowGroupInfo(false)} />

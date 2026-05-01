@@ -32,6 +32,8 @@ const useAppStore = create((set, get) => ({
       nextCursor: null,
       hasMore: false,
       inputRef: null,
+      pendingMedia: null,
+      isUploading: false,
     });
   },
 
@@ -152,6 +154,13 @@ const useAppStore = create((set, get) => ({
   // ── Input Ref ─────────────────────────────────────────
   inputRef: null,
   setInputRef: (inputRef) => set({ inputRef }),
+
+  // ── Pending Media ─────────────────────────────────────
+  pendingMedia: null,
+  isUploading: false,
+  setPendingMedia: (pendingMedia) => set({ pendingMedia }),
+  setIsUploading: (isUploading) => set({ isUploading }),
+  removePendingMedia: () => set({ pendingMedia: null, isUploading: false }),
 }));
 
 export default useAppStore;
