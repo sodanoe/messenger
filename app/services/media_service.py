@@ -94,8 +94,7 @@ class MediaService:
         filename = f"{uuid.uuid4().hex}{ext}"
         file_path = target_dir / filename
 
-        # ВАЖНО: храним путь БЕЗ лишнего /media/
-        relative_path = f"{date_path}/{filename}"
+        relative_path = f"/media/{date_path}/{filename}"
 
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(processed_content)
@@ -111,7 +110,7 @@ class MediaService:
 
         return {
             "id": media.id,
-            "url": f"/media/{relative_path}",
+            "url": relative_path,
             "original_name": media.original_name,
             "size": media.size,
         }
