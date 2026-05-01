@@ -43,12 +43,13 @@ async def _safe_send_json(ws: WebSocket, data: dict) -> bool:
     Возвращает True если отправка успешна.
     """
     try:
-        # Проверяем состояние перед отправкой
         from starlette.websockets import WebSocketState
+
         if ws.client_state != WebSocketState.CONNECTED:
             logger.debug(
                 "Skip send: socket state=%s data_type=%s",
-                ws.client_state, data.get("type")
+                ws.client_state,
+                data.get("type"),
             )
             return False
 
@@ -58,14 +59,10 @@ async def _safe_send_json(ws: WebSocket, data: dict) -> bool:
         logger.debug("Cannot send: client disconnected (type=%s)", data.get("type"))
         return False
     except RuntimeError as exc:
-        # "Cannot call 'send' once a close message has been sent"
         logger.debug("Cannot send: %s (type=%s)", exc, data.get("type"))
         return False
     except Exception as exc:
-        logger.warning(
-            "Unexpected error sending %s: %s",
-            data.get("type"), exc
-        )
+        logger.warning("Unexpected error sending %s: %s", data.get("type"), exc)
         return False
 
 
@@ -88,33 +85,26 @@ async def websocket_endpoint(
     await manager.connect(user_id, ws)
     await redis.set(f"user:online:{user_id}", "1", ex=30)
 
-    # Рассылаем контактам что мы онлайн
     await manager.send_to_many(
         contact_ids,
         {"type": "user_online", "user_id": user_id},
     )
 
-    # Отправляем себе статусы контактов которые уже онлайн
     online_contacts = []
     for contact_id in contact_ids:
         is_online = await redis.exists(f"user:online:{contact_id}")
         if is_online:
             online_contacts.append(contact_id)
 
-    # Отправляем одним сообщением вместо множества
     if online_contacts:
         success = await _safe_send_json(
-            ws,
-            {
-                "type": "contacts_online",
-                "user_ids": online_contacts
-            }
+            ws, {"type": "contacts_online", "user_ids": online_contacts}
         )
         if not success:
             logger.warning(
                 "Failed to send initial online contacts to user_id=%s, "
                 "connection might be unstable",
-                user_id
+                user_id,
             )
 
     logger.info("WS open  user_id=%s  contacts=%s", user_id, contact_ids)
@@ -124,25 +114,31 @@ async def websocket_endpoint(
         heartbeat_count = 0
         while True:
             try:
-                # Получаем любое сообщение (не только текст)
-                data = await asyncio.wait_for(ws.receive_text(), timeout=35.0)
+                message = await asyncio.wait_for(ws.receive(), timeout=35.0)
 
-                # Продлеваем TTL ключа онлайн-статуса
-                await redis.expire(f"user:online:{user_id}", 30)
-                heartbeat_count += 1
+                # Если клиент закрыл соединение
+                if message["type"] == "websocket.disconnect":
+                    logger.info("WS client disconnected user_id=%s", user_id)
+                    break
 
-                # Обновляем список контактов каждые 10 пингов (~3 минуты)
-                if heartbeat_count % 10 == 0:
-                    new_contact_ids = await _get_accepted_contact_ids(user_id)
-                    if set(new_contact_ids) != set(contact_ids):
-                        logger.info(
-                            "WS contacts changed user_id=%s old=%s new=%s",
-                            user_id, len(contact_ids), len(new_contact_ids)
-                        )
-                        contact_ids = new_contact_ids
+                # Нас интересует только факт получения (heartbeat)
+                if message["type"] == "websocket.receive":
+                    await redis.expire(f"user:online:{user_id}", 30)
+                    heartbeat_count += 1
+
+                    # Обновляем список контактов каждые 10 пингов (~3 минуты)
+                    if heartbeat_count % 10 == 0:
+                        new_contact_ids = await _get_accepted_contact_ids(user_id)
+                        if set(new_contact_ids) != set(contact_ids):
+                            logger.info(
+                                "WS contacts changed user_id=%s old=%s new=%s",
+                                user_id,
+                                len(contact_ids),
+                                len(new_contact_ids),
+                            )
+                            contact_ids = new_contact_ids
 
             except asyncio.TimeoutError:
-                # Клиент не прислал ping за 35 сек — считаем соединение мёртвым
                 logger.info("WS heartbeat timeout user_id=%s", user_id)
                 break
             except WebSocketDisconnect:
@@ -156,20 +152,17 @@ async def websocket_endpoint(
 
     # ── 4. Cleanup ─────────────────────────────────────────────────────────
     finally:
-        # Сначала удаляем из менеджера (async метод!)
         await manager.disconnect(user_id, ws)
-
-        # Удаляем ключ онлайн-статуса
         await redis.delete(f"user:online:{user_id}")
 
-        # Получаем свежий список контактов
         try:
             fresh_contact_ids = await _get_accepted_contact_ids(user_id)
         except Exception as exc:
-            logger.error("Failed to get contacts during cleanup user_id=%s: %s", user_id, exc)
-            fresh_contact_ids = contact_ids  # fallback на последний известный список
+            logger.error(
+                "Failed to get contacts during cleanup user_id=%s: %s", user_id, exc
+            )
+            fresh_contact_ids = contact_ids
 
-        # Уведомляем об офлайне (best effort)
         if fresh_contact_ids:
             await manager.send_to_many(
                 fresh_contact_ids,

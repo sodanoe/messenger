@@ -1,6 +1,6 @@
-import os
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,14 +8,17 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routers import (
+    admin,
     auth,
+    chat,
     contacts,
+    emojis,
+    media,
+    members,
+    messages,
+    reactions,
     users,
     ws,
-    media,
-    admin,
-    chat,
-    emojis,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,10 +66,14 @@ app.include_router(users.router)
 app.include_router(ws.router)
 app.include_router(media.router)
 app.include_router(admin.router)
-app.include_router(chat.router)
 app.include_router(emojis.router)
+# ── chat domain (все под /chats/...) ──────────
+app.include_router(chat.router)
+app.include_router(messages.router)
+app.include_router(members.router)
+app.include_router(reactions.router)
 
-# ── Static media ───────────────────────────────────────────────────────
+# ── Static media ──────────────────────────────
 os.makedirs("/app/media/emojis", exist_ok=True)
 os.makedirs("/app/media", exist_ok=True)
 app.mount("/media", StaticFiles(directory="/app/media"), name="media")

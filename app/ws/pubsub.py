@@ -45,8 +45,7 @@ async def start_listener() -> None:
                 success = await manager.send_to(user_id, payload)
                 if not success:
                     logger.debug(
-                        "User %s not connected to this worker, message skipped",
-                        user_id
+                        "User %s not connected to this worker, message skipped", user_id
                     )
 
             except json.JSONDecodeError as exc:

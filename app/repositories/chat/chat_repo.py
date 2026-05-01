@@ -38,7 +38,7 @@ class ChatRepo:
                 Chat,
                 ChatMessage.content_encrypted.label("last_msg_content"),
                 ChatMessage.created_at.label("last_msg_at"),
-                ChatMessage.media_id.label("last_msg_media_id")
+                ChatMessage.media_id.label("last_msg_media_id"),
             )
             .join(ChatMember, ChatMember.chat_id == Chat.id)
             .outerjoin(ChatMessage, ChatMessage.id == last_message_id_subquery)

@@ -6,7 +6,7 @@ thread-safe, coroutine-safe менеджер WebSocket соединений.
 
 import asyncio
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState, WebSocketDisconnect
@@ -96,16 +96,15 @@ class ConnectionManager:
             except (WebSocketDisconnect, RuntimeError) as exc:
                 # WebSocketDisconnect: клиент отключился
                 # RuntimeError: "Cannot call 'send' once a close message has been sent"
-                logger.debug(
-                    "send_to user_id=%s socket=%s: %s",
-                    user_id, id(ws), exc
-                )
+                logger.debug("send_to user_id=%s socket=%s: %s", user_id, id(ws), exc)
                 dead.add(ws)
             except Exception as exc:
                 # Неожиданная ошибка — логируем как ошибку
                 logger.error(
                     "send_to user_id=%s unexpected error: %s",
-                    user_id, exc, exc_info=True
+                    user_id,
+                    exc,
+                    exc_info=True,
                 )
                 dead.add(ws)
 
@@ -134,10 +133,7 @@ class ConnectionManager:
         # Логируем ошибки, если есть
         for uid, result in zip(user_ids, results):
             if isinstance(result, Exception):
-                logger.error(
-                    "send_to_many failed for user_id=%s: %s",
-                    uid, result
-                )
+                logger.error("send_to_many failed for user_id=%s: %s", uid, result)
 
     # ── helpers ───────────────────────────────────────────────────────
 

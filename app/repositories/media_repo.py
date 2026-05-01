@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from app.models.media_file import MediaFile
@@ -42,3 +42,15 @@ class MediaRepository:
 
     async def delete_media(self, media_id: int) -> None:
         await self.db.execute(delete(MediaFile).where(MediaFile.id == media_id))
+
+    async def get_all_ordered_by_date(self) -> list[MediaFile]:
+        """Возвращает все файлы, от самых старых к новым."""
+        result = await self.db.execute(
+            select(MediaFile).order_by(MediaFile.created_at.asc())
+        )
+        return list(result.scalars().all())
+
+    async def get_total_size(self) -> int:
+        """Возвращает суммарный размер всех файлов в байтах."""
+        result = await self.db.execute(select(func.sum(MediaFile.size)))
+        return result.scalar() or 0
