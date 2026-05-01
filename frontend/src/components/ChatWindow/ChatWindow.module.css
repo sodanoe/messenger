@@ -22,6 +22,7 @@
 .placeholderIcon { font-size: 48px; opacity: 0.4; }
 
 .header {
+  height: 62px;
   display: flex;
   align-items: center;
   gap: 12px;
