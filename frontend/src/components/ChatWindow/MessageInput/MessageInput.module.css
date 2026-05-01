@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   background: transparent;
-  padding: 8px 12px max(20px, calc(10px + env(safe-area-inset-bottom)));
+  padding: 8px 20px max(20px, calc(10px + env(safe-area-inset-bottom)));
   z-index: 10;
 }
 
