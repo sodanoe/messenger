@@ -16,13 +16,25 @@ function MembersIcon({ size = 18 }) {
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
       <circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="13" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M1 17c0-3 2.5-4.8 6-4.8h6c3.5 0 6 1.8 6 4.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M1 17c0-3 2.5-4.8 6-4.8h6c3.5 0 6 1.8 6 4.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 export default function ChatWindow() {
-  const { currentChat, clearCurrentChat, setMessages, me, chats, setCustomEmojis } = useAppStore();
+  const {
+    currentChat,
+    clearCurrentChat,
+    setMessages,
+    me,
+    chats,
+    setCustomEmojis,
+  } = useAppStore();
   const { handleFile } = useMediaUpload();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,9 +43,11 @@ export default function ChatWindow() {
   const touchStartY = useRef(null);
   const dragCounterRef = useRef(0);
 
-  const isOnline = currentChat?.type === 'direct'
-    ? chats?.find(c => c.id === currentChat.id)?.is_online ?? currentChat.is_online
-    : false;
+  const isOnline =
+    currentChat?.type === 'direct'
+      ? (chats?.find((c) => c.id === currentChat.id)?.is_online ??
+        currentChat.is_online)
+      : false;
 
   useEffect(() => {
     api('/emojis/', 'GET')
@@ -84,7 +98,8 @@ export default function ChatWindow() {
     dragCounterRef.current = 0;
     setIsDragging(false);
     const f = e.dataTransfer?.files?.[0];
-    if (f && f.type.startsWith('image/')) handleFile(f);
+    if (f && (f.type.startsWith('image/') || f.name.match(/\.(heic|heif)$/i)))
+      handleFile(f);
   }
 
   useEffect(() => {
@@ -94,7 +109,8 @@ export default function ChatWindow() {
   useEffect(() => {
     if (!currentChat) return;
     if (!me) return;
-    if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`) return;
+    if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`)
+      return;
     loadedChatId.current = `${currentChat.type}-${currentChat.id}`;
 
     async function loadMessages() {
@@ -135,17 +151,25 @@ export default function ChatWindow() {
       onDrop={onDrop}
     >
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={goBack}>‹</button>
+        <button className={styles.backBtn} onClick={goBack}>
+          ‹
+        </button>
         <div
           className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}
-          style={currentChat.type !== 'group' ? { background: getAvatarColor(currentChat.name) } : {}}
+          style={
+            currentChat.type !== 'group'
+              ? { background: getAvatarColor(currentChat.name) }
+              : {}
+          }
         >
           {currentChat.type === 'group' ? '#' : initials(currentChat.name)}
         </div>
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
           {currentChat.type === 'direct' && (
-            <div className={`${styles.status} ${isOnline ? styles.online : ''}`}>
+            <div
+              className={`${styles.status} ${isOnline ? styles.online : ''}`}
+            >
               {isOnline ? 'online' : 'offline'}
             </div>
           )}
@@ -154,7 +178,11 @@ export default function ChatWindow() {
           )}
         </div>
         {currentChat.type === 'group' && (
-          <button className={styles.membersBtn} onClick={() => setShowGroupInfo(true)} title="Участники">
+          <button
+            className={styles.membersBtn}
+            onClick={() => setShowGroupInfo(true)}
+            title="Участники"
+          >
             <MembersIcon />
           </button>
         )}
@@ -166,11 +194,22 @@ export default function ChatWindow() {
       {isDragging && (
         <div className={styles.dropOverlay}>
           <div className={styles.dropBox}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" />
             </svg>
             <div className={styles.dropTitle}>Отпустите файл</div>
-            <div className={styles.dropSub}>Изображение будет прикреплено к сообщению</div>
+            <div className={styles.dropSub}>
+              Изображение будет прикреплено к сообщению
+            </div>
           </div>
         </div>
       )}
