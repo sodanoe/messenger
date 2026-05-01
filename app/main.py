@@ -37,7 +37,7 @@ async def _media_cleanup_loop() -> None:
                 if deleted:
                     logger.info("Media cleanup: removed %s files", deleted)
         except Exception as exc:
-            logger.error("Media cleanup error: %s", exc)
+            logger.exception("Media cleanup error")
         await asyncio.sleep(86400)
 
 

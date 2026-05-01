@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     MEDIA_QUALITY: int = 55
 
-    MEDIA_TTL_DAYS: int = 30
+    MEDIA_TTL_DAYS: int = 365
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

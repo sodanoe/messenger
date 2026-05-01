@@ -71,7 +71,13 @@ async def login(
     redis = get_redis()
 
     # Rate limit: 5 попыток / 60 сек / IP
-    ip = request.client.host if request.client else "unknown"
+    # За nginx request.client.host всегда 127.0.0.1 — берём реальный IP
+    forwarded = request.headers.get("X-Forwarded-For")
+    ip = (
+        forwarded.split(",")[0].strip()
+        if forwarded
+        else (request.client.host if request.client else "unknown")
+    )
     rate_key = f"login:attempts:{ip}"
     attempts = await redis.incr(rate_key)
     if attempts == 1:

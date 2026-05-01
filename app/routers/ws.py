@@ -90,11 +90,16 @@ async def websocket_endpoint(
         {"type": "user_online", "user_id": user_id},
     )
 
+    # Один pipeline вместо N последовательных запросов к Redis
     online_contacts = []
-    for contact_id in contact_ids:
-        is_online = await redis.exists(f"user:online:{contact_id}")
-        if is_online:
-            online_contacts.append(contact_id)
+    if contact_ids:
+        pipe = redis.pipeline()
+        for cid in contact_ids:
+            pipe.exists(f"user:online:{cid}")
+        presences = await pipe.execute()
+        online_contacts = [
+            cid for cid, alive in zip(contact_ids, presences) if alive
+        ]
 
     if online_contacts:
         success = await _safe_send_json(

@@ -22,11 +22,22 @@ class ContactService:
         contact_ids = [c.contact_user_id for c in rows]
         users = {u.id: u for u in await self.users.get_by_ids(contact_ids)}
 
+        # Batch presence check — один pipeline вместо N запросов
+        online_ids: set[int] = set()
+        if rows:
+            pipe = redis.pipeline()
+            for c in rows:
+                pipe.exists(f"user:online:{c.contact_user_id}")
+            presences = await pipe.execute()
+            online_ids = {
+                c.contact_user_id
+                for c, alive in zip(rows, presences)
+                if alive
+            }
+
         result = []
         for c in rows:
-            is_online = await redis.exists(f"user:online:{c.contact_user_id}") == 1
             user = users.get(c.contact_user_id)
-
             result.append(
                 {
                     "id": c.id,
@@ -34,7 +45,7 @@ class ContactService:
                     "username": user.username if user else None,
                     "status": c.status,
                     "has_unread": c.has_unread,
-                    "is_online": is_online,
+                    "is_online": c.contact_user_id in online_ids,
                     "last_message": None,
                 }
             )

@@ -88,8 +88,6 @@ class ChatMessage(Base):
     )
 
     content_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
-    nonce: Mapped[str] = mapped_column(Text, nullable=False)
-    tag: Mapped[str] = mapped_column(Text, nullable=False)
 
     media_id: Mapped[int | None] = mapped_column(
         ForeignKey("media_files.id"),

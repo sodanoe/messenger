@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 
@@ -65,8 +66,7 @@ class EmojiService:
         ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "png"
         filename = f"{shortcode}_{uuid.uuid4().hex[:8]}.{ext}"
         filepath = os.path.join(EMOJI_DIR, filename)
-        with open(filepath, "wb") as f:
-            f.write(data)
+        await asyncio.to_thread(lambda: open(filepath, "wb").write(data))
 
         emoji = await self.repo.create(shortcode=shortcode, file_location=filepath)
         await self.db.commit()
