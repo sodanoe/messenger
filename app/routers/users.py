@@ -55,14 +55,18 @@ async def delete_account(
         select(MediaFile).where(MediaFile.uploader_id == current_user.id)
     )
     user_files = result.scalars().all()
-    for mf in user_files:
-        file_path = media_dir / mf.path[len("/media/") :]
-        if file_path.exists():
-            file_path.unlink()
+    # Собираем пути ДО удаления записей (после commit объекты могут быть detached)
+    file_paths = [media_dir / mf.path[len("/media/") :] for mf in user_files]
 
-    # Удаляем пользователя — CASCADE делает всё остальное в БД
+    # Сначала удаляем из БД — CASCADE чистит всё связанное
     repo = UserRepository(db)
     user = await repo.get_by_id(current_user.id)
     if user:
         await db.delete(user)
         await db.commit()
+
+    # Физические файлы удаляем ПОСЛЕ успешного commit
+    # Если unlink упадёт — сироты подберёт media cleanup задача
+    for file_path in file_paths:
+        if file_path.exists():
+            file_path.unlink()

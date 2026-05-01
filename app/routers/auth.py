@@ -79,9 +79,11 @@ async def login(
         else (request.client.host if request.client else "unknown")
     )
     rate_key = f"login:attempts:{ip}"
-    attempts = await redis.incr(rate_key)
-    if attempts == 1:
-        await redis.expire(rate_key, 60)
+    # incr + expire в одном pipeline — экономим round-trip
+    pipe = redis.pipeline()
+    pipe.incr(rate_key)
+    pipe.expire(rate_key, 60)  # expire идемпотентен — не сбрасывает счётчик
+    attempts, _ = await pipe.execute()
     if attempts > 5:
         ttl = await redis.ttl(rate_key)
         raise HTTPException(

@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crypto.service import decrypt_text
+from app.crypto.service import async_decrypt_text
 from app.models.chat import Chat, ChatMember, ChatRole, ChatType
 from app.models.contact import Contact
 from app.models.user import User
@@ -21,11 +21,33 @@ class ChatService:
         self.notifier = ChatNotifier()
 
     async def create_direct_chat(self, user_a_id: int, user_b_id: int) -> Chat:
-        user_chats = await self.chats.get_user_chats(user_a_id)
-        for chat in user_chats:
-            if chat.type == ChatType.direct:
-                if await self.members.is_member(chat.id, user_b_id):
-                    return chat
+        # Один JOIN вместо N запросов is_member
+        # Ищем direct-чат где оба пользователя уже являются участниками
+        member_b = ChatMember.__table__.alias("member_b")
+        stmt = (
+            select(Chat)
+            .join(
+                ChatMember,
+                and_(
+                    ChatMember.chat_id == Chat.id,
+                    ChatMember.user_id == user_a_id,
+                ),
+            )
+            .join(
+                member_b,
+                and_(
+                    member_b.c.chat_id == Chat.id,
+                    member_b.c.user_id == user_b_id,
+                ),
+            )
+            .where(Chat.type == ChatType.direct)
+            .limit(1)
+        )
+        result = await self.db.execute(stmt)
+        existing = result.scalar_one_or_none()
+        if existing:
+            return existing
+
         chat = await self.chats.create(ChatType.direct, None, user_a_id)
         await self.members.add(chat.id, user_a_id, ChatRole.member)
         await self.members.add(chat.id, user_b_id, ChatRole.member)
@@ -82,7 +104,7 @@ class ChatService:
 
             if row.last_msg_content:
                 try:
-                    last_msg = decrypt_text(row.last_msg_content)
+                    last_msg = await async_decrypt_text(row.last_msg_content)
                 except (ValueError, TypeError, UnicodeDecodeError):
                     last_msg = row.last_msg_content
             else:

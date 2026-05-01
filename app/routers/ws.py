@@ -158,17 +158,11 @@ async def websocket_endpoint(
         await manager.disconnect(user_id, ws)
         await redis.delete(f"user:online:{user_id}")
 
-        try:
-            fresh_contact_ids = await _get_accepted_contact_ids(user_id)
-        except Exception as exc:
-            logger.error(
-                "Failed to get contacts during cleanup user_id=%s: %s", user_id, exc
-            )
-            fresh_contact_ids = contact_ids
-
-        if fresh_contact_ids:
+        # Используем contact_ids из памяти (обновляется каждые 10 heartbeat).
+        # Лишний DB-запрос при disconnect не нужен — уведомляем тех кого знаем.
+        if contact_ids:
             await manager.send_to_many(
-                fresh_contact_ids,
+                contact_ids,
                 {"type": "user_offline", "user_id": user_id},
             )
 

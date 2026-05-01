@@ -12,6 +12,6 @@ def get_redis() -> aioredis.Redis:
         _pool = aioredis.ConnectionPool.from_url(
             settings.REDIS_URL,
             decode_responses=True,
-            max_connections=20,
+            max_connections=100,
         )
     return aioredis.Redis(connection_pool=_pool)

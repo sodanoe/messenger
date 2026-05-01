@@ -11,6 +11,7 @@ Storage format: base64(nonce[12] + ciphertext + tag[16])
 import base64
 import os
 from functools import lru_cache
+import asyncio as _asyncio
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -37,3 +38,20 @@ def decrypt_text(ciphertext: str) -> str:
     raw = base64.b64decode(ciphertext)
     nonce, ct = raw[:_NONCE_SIZE], raw[_NONCE_SIZE:]
     return AESGCM(_get_key()).decrypt(nonce, ct, None).decode()
+
+
+# ── Async обёртки ─────────────────────────────────────────────────────
+# Используй их в async-контексте (FastAPI handlers, services).
+# Синхронные версии оставлены для скриптов (migrate_to_gcm.py и т.д.).
+
+
+async def async_encrypt_text(text: str) -> str:
+    """Non-blocking encrypt: runs in thread pool to free event loop."""
+    return await _asyncio.get_event_loop().run_in_executor(None, encrypt_text, text)
+
+
+async def async_decrypt_text(ciphertext: str) -> str:
+    """Non-blocking decrypt: runs in thread pool to free event loop."""
+    return await _asyncio.get_event_loop().run_in_executor(
+        None, decrypt_text, ciphertext
+    )

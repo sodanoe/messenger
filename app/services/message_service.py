@@ -4,7 +4,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crypto.service import decrypt_text, encrypt_text
+from app.crypto.service import (
+    async_encrypt_text,
+    async_decrypt_text,
+)
 from app.models.chat import ChatType, CustomEmoji
 from app.models.contact import ContactStatus
 from app.models.media_file import MediaFile
@@ -90,7 +93,7 @@ class MessageService:
                     status_code=status.HTTP_403_FORBIDDEN, detail="You are blocked"
                 )
 
-        encrypted = encrypt_text(content)
+        encrypted = await async_encrypt_text(content)
 
         msg = await self.messages.create(
             chat_id=chat_id,
@@ -125,7 +128,7 @@ class MessageService:
             reply_to_obj = {
                 "id": orig.id,
                 "sender_id": orig.sender_id,
-                "content": decrypt_text(orig.content_encrypted)[:120],
+                "content": (await async_decrypt_text(orig.content_encrypted))[:120],
                 "media_url": media_map.get(orig.media_id) if orig.media_id else None,
             }
 
@@ -174,13 +177,16 @@ class MessageService:
 
         chat = await self.chats.get_by_id(chat_id)
 
-        # Сброс unread для direct чатов
+        # Сброс unread для direct чатов — только если has_unread == True
+        # Избегаем лишнего UPDATE на каждый GET /messages
         if chat.type == ChatType.direct:
             members = await self.members.get_members(chat_id)
             other_id = next((m.user_id for m in members if m.user_id != user_id), None)
             if other_id:
-                await self.contacts.set_unread(user_id, other_id, False)
-                await self.db.commit()
+                contact = await self.contacts.get(user_id, other_id)
+                if contact and contact.has_unread:
+                    await self.contacts.set_unread(user_id, other_id, False)
+                    await self.db.commit()
 
         # Используем новый метод с JOIN
         rows = await self.messages.get_history_with_details(chat_id, cursor)
@@ -229,7 +235,7 @@ class MessageService:
                     "id": row.reply_id,
                     "sender_id": row.reply_sender_id,
                     "sender_username": row.reply_sender_username,
-                    "content": decrypt_text(row.reply_content)[:120],
+                    "content": (await async_decrypt_text(row.reply_content))[:120],
                     "media_url": row.reply_media_path,
                 }
 
@@ -237,7 +243,7 @@ class MessageService:
                 "id": msg.id,
                 "sender_id": msg.sender_id,
                 "sender_username": sender_username,
-                "content": decrypt_text(msg.content_encrypted),
+                "content": await async_decrypt_text(msg.content_encrypted),
                 "created_at": msg.created_at,
                 "reactions": reactions_by_msg.get(msg.id, []),
                 "reply_to": reply_to_data,
@@ -284,7 +290,7 @@ class MessageService:
                 detail="Нельзя редактировать чужое сообщение",
             )
 
-        encrypted = encrypt_text(new_content)
+        encrypted = await async_encrypt_text(new_content)
 
         await self.messages.update_content(msg.id, encrypted)
         await self.db.commit()
