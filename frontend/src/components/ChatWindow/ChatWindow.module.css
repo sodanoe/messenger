@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 10px 20px;
   background: var(--bg2);
   flex-shrink: 0;
   z-index: 5;
@@ -50,24 +50,25 @@
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--accent-gradient);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
+
 .groupAvatar {
   background: var(--bg3);
   border: 1px solid var(--border);
   color: var(--text2);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .headerInfo { flex: 1; min-width: 0; }
@@ -95,8 +96,6 @@
   flex-shrink: 0;
 }
 .membersBtn:hover { background: var(--bg3); color: var(--text); }
-
-/* DRAG OVERLAY */
 
 .dropOverlay {
   position: absolute;
