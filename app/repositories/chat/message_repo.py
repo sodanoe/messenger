@@ -1,7 +1,8 @@
 from sqlalchemy import select, update
-
-from app.models import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import User, MediaFile
+from app.models.chat import ChatMessage
 
 
 class MessageRepo:
@@ -59,6 +60,46 @@ class MessageRepo:
         q = q.order_by(ChatMessage.id.desc()).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().all())
+
+    async def get_history_with_details(
+        self, chat_id: int, cursor: int | None, limit: int = 50
+    ):
+        """Получает историю сообщений со всеми связанными данными за 1 запрос (через JOIN)"""
+
+        # Алиасы для reply-таблиц
+        ReplyMessage = ChatMessage.__table__.alias("reply_msg")
+        ReplyUser = User.__table__.alias("reply_user")
+        ReplyMedia = MediaFile.__table__.alias("reply_media")
+
+        query = (
+            select(
+                ChatMessage,
+                User.username.label("sender_username"),
+                MediaFile.path.label("media_path"),
+                ReplyMessage.c.id.label("reply_id"),
+                ReplyMessage.c.content_encrypted.label("reply_content"),
+                ReplyMessage.c.sender_id.label("reply_sender_id"),
+                ReplyUser.c.username.label("reply_sender_username"),
+                ReplyMedia.c.path.label("reply_media_path"),
+            )
+            .outerjoin(User, ChatMessage.sender_id == User.id)
+            .outerjoin(MediaFile, ChatMessage.media_id == MediaFile.id)
+            .outerjoin(ReplyMessage, ChatMessage.reply_to_id == ReplyMessage.c.id)
+            .outerjoin(ReplyUser, ReplyMessage.c.sender_id == ReplyUser.c.id)
+            .outerjoin(ReplyMedia, ReplyMessage.c.media_id == ReplyMedia.c.id)
+            .where(
+                ChatMessage.chat_id == chat_id,
+                ChatMessage.is_deleted.is_(False),
+            )
+        )
+
+        if cursor is not None:
+            query = query.where(ChatMessage.id < cursor)
+
+        query = query.order_by(ChatMessage.id.desc()).limit(limit)
+
+        result = await self.db.execute(query)
+        return result.all()
 
     async def soft_delete(self, message_id: int) -> None:
         await self.db.execute(

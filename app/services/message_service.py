@@ -168,6 +168,7 @@ class MessageService:
         }
 
     async def get_history(self, chat_id: int, user_id: int, cursor: int | None) -> dict:
+        # Проверка членства
         if not await self.members.is_member(chat_id, user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
@@ -175,6 +176,7 @@ class MessageService:
 
         chat = await self.chats.get_by_id(chat_id)
 
+        # Сброс unread для direct чатов
         if chat.type == ChatType.direct:
             members = await self.members.get_members(chat_id)
             other_id = next((m.user_id for m in members if m.user_id != user_id), None)
@@ -182,19 +184,19 @@ class MessageService:
                 await self.contacts.set_unread(user_id, other_id, False)
                 await self.db.commit()
 
-        msgs = await self.messages.get_history(chat_id, cursor)
-        if not msgs:
+        # Используем новый метод с JOIN
+        rows = await self.messages.get_history_with_details(chat_id, cursor)
+
+        if not rows:
             return {"messages": [], "next_cursor": None}
 
-        next_cursor = msgs[-1].id if len(msgs) == PAGE_SIZE else None
+        next_cursor = rows[-1][0].id if len(rows) == PAGE_SIZE else None
 
-        # --- reactions ---
-        msg_ids = [m.id for m in msgs]
+        # --- реакции (как в оригинале) ---
+        msg_ids = [row[0].id for row in rows]
         all_reactions = await self.reactions.get_by_messages(msg_ids)
 
-        custom_emoji_ids = [
-            r.custom_emoji_id for r in all_reactions if r.custom_emoji_id
-        ]
+        custom_emoji_ids = [r.custom_emoji_id for r in all_reactions if r.custom_emoji_id]
         custom_emoji_map: dict[int, str] = {}
 
         if custom_emoji_ids:
@@ -213,58 +215,34 @@ class MessageService:
                 item["custom_emoji_url"] = custom_emoji_map[r.custom_emoji_id]
             reactions_by_msg.setdefault(r.message_id, []).append(item)
 
-        # --- replies ---
-        reply_ids = [m.reply_to_id for m in msgs if m.reply_to_id]
-        reply_map = {m.id: m for m in await self.messages.get_by_ids(reply_ids)}
-
-        # --- users ---
-        user_ids = {m.sender_id for m in msgs}
-        users_res = await self.db.execute(
-            select(User.id, User.username).where(User.id.in_(user_ids))
-        )
-        username_map = {u.id: u.username for u in users_res.all()}
-
-        # --- media ---
-        all_media_ids: set[int] = set()
-        for m in msgs:
-            if m.media_id:
-                all_media_ids.add(m.media_id)
-        for orig in reply_map.values():
-            if orig.media_id:
-                all_media_ids.add(orig.media_id)
-
-        media_map: dict[int, str] = {}
-        if all_media_ids:
-            media_res = await self.db.execute(
-                select(MediaFile).where(MediaFile.id.in_(all_media_ids))
-            )
-            for mf in media_res.scalars().all():
-                media_map[mf.id] = mf.path
-
-        # --- build response ---
+        # --- сборка ответа ---
         messages = []
-        for m in msgs:
-            msg_data = {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "sender_username": username_map.get(m.sender_id),
-                "content": decrypt_text(m.content_encrypted),
-                "created_at": m.created_at,
-                "reactions": reactions_by_msg.get(m.id, []),
-                "reply_to": None,
-                "media_url": media_map.get(m.media_id) if m.media_id else None,
-            }
+        for row in rows:
+            msg = row[0]
+            sender_username = row.sender_username
+            media_path = row.media_path
 
-            if m.reply_to_id and m.reply_to_id in reply_map:
-                orig = reply_map[m.reply_to_id]
-                msg_data["reply_to"] = {
-                    "id": orig.id,
-                    "sender_id": orig.sender_id,
-                    "content": decrypt_text(orig.content_encrypted)[:120],
-                    "media_url": media_map.get(orig.media_id)
-                    if orig.media_id
-                    else None,
+            # Reply данные
+            reply_to_data = None
+            if row.reply_id:
+                reply_to_data = {
+                    "id": row.reply_id,
+                    "sender_id": row.reply_sender_id,
+                    "sender_username": row.reply_sender_username,
+                    "content": decrypt_text(row.reply_content)[:120],
+                    "media_url": row.reply_media_path,
                 }
+
+            msg_data = {
+                "id": msg.id,
+                "sender_id": msg.sender_id,
+                "sender_username": sender_username,
+                "content": decrypt_text(msg.content_encrypted),
+                "created_at": msg.created_at,
+                "reactions": reactions_by_msg.get(msg.id, []),
+                "reply_to": reply_to_data,
+                "media_url": media_path,
+            }
 
             messages.append(msg_data)
 
