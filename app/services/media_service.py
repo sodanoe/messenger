@@ -39,15 +39,33 @@ class MediaService:
         self.media_dir = Path(settings.MEDIA_DIR)
 
     async def _get_setting(self, key: str, default: int) -> int:
+        """Одиночный get (оставлен для обратной совместимости)."""
         try:
             from app.core.redis_client import get_redis
-
-            redis = get_redis()
-            val = await redis.get(f"admin:media:{key}")
+            val = await get_redis().get(f"admin:media:{key}")
             return int(val) if val else default
         except Exception as e:
             logger.warning(f"Redis unavailable for {key}: {e}")
             return default
+
+    async def _get_settings_bulk(
+        self,
+        keys_defaults: dict[str, int],
+    ) -> dict[str, int]:
+        """Один mget вместо N последовательных get."""
+        keys = list(keys_defaults.keys())
+        try:
+            from app.core.redis_client import get_redis
+            values = await get_redis().mget(
+                *[f"admin:media:{k}" for k in keys]
+            )
+            return {
+                k: (int(v) if v else keys_defaults[k])
+                for k, v in zip(keys, values)
+            }
+        except Exception as e:
+            logger.warning(f"Redis unavailable for bulk settings: {e}")
+            return dict(keys_defaults)
 
     async def upload(self, user_id: int, file: UploadFile) -> dict:
         content = await file.read()
@@ -66,9 +84,15 @@ class MediaService:
                 detail="Only images (JPEG, PNG, GIF, WebP, HEIC) are allowed",
             )
 
-        max_size = await self._get_setting("max_size", settings.MEDIA_MAX_SIZE)
-        colors = await self._get_setting("colors", settings.MEDIA_COLORS)
-        quality = await self._get_setting("quality", settings.MEDIA_QUALITY)
+        # Один mget вместо 3 последовательных get
+        _s = await self._get_settings_bulk({
+            "max_size": settings.MEDIA_MAX_SIZE,
+            "colors":   settings.MEDIA_COLORS,
+            "quality":  settings.MEDIA_QUALITY,
+        })
+        max_size = _s["max_size"]
+        colors   = _s["colors"]
+        quality  = _s["quality"]
 
         try:
             loop = asyncio.get_running_loop()

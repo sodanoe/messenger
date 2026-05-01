@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, delete, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from app.models.media_file import MediaFile
@@ -29,10 +29,12 @@ class MediaRepository:
         return result.scalar_one_or_none()
 
     async def assign_to_message(self, media_id: int, message_id: int) -> None:
-        media = await self.get_by_id(media_id)
-        if media:
-            media.message_id = message_id
-            await self.db.flush()
+        # Прямой UPDATE без предварительного SELECT
+        await self.db.execute(
+            update(MediaFile)
+            .where(MediaFile.id == media_id)
+            .values(message_id=message_id)
+        )
 
     async def delete_old_files(self, cutoff: datetime) -> list[MediaFile]:
         result = await self.db.execute(

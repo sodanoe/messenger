@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import HTTPException, status
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -98,17 +99,22 @@ class ChatService:
             for row in contacts_res.all():
                 unread_map[row.contact_user_id] = row.has_unread
 
-        result = []
-        for row in chats_data:
-            chat = row.Chat
+        # Параллельный decrypt всех last_message через asyncio.gather
+        async def _decrypt_safe(content: str | None) -> str:
+            if not content:
+                return ""
+            try:
+                return await async_decrypt_text(content)
+            except (ValueError, TypeError, UnicodeDecodeError):
+                return content
 
-            if row.last_msg_content:
-                try:
-                    last_msg = await async_decrypt_text(row.last_msg_content)
-                except (ValueError, TypeError, UnicodeDecodeError):
-                    last_msg = row.last_msg_content
-            else:
-                last_msg = ""
+        decrypted = await asyncio.gather(
+            *[_decrypt_safe(row.last_msg_content) for row in chats_data]
+        )
+
+        result = []
+        for row, last_msg in zip(chats_data, decrypted):
+            chat = row.Chat
 
             chat_info = {
                 "id": chat.id,

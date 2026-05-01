@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.contact import Contact, ContactStatus
@@ -90,21 +90,26 @@ class ContactService:
         await self.db.commit()
 
     async def search_users(self, me: int, q: str) -> list[dict]:
-        result_i_blocked = await self.db.execute(
-            select(Contact.contact_user_id).where(
-                Contact.user_id == me,
+        # Один запрос вместо двух: ищем все заблокированные связи
+        # в обе стороны через OR
+        blocked_res = await self.db.execute(
+            select(
+                Contact.contact_user_id,
+                Contact.user_id,
+            ).where(
                 Contact.status == ContactStatus.blocked,
+                or_(
+                    Contact.user_id == me,
+                    Contact.contact_user_id == me,
+                ),
             )
         )
-        result_blocked_me = await self.db.execute(
-            select(Contact.user_id).where(
-                Contact.contact_user_id == me,
-                Contact.status == ContactStatus.blocked,
+        blocked_ids: set[int] = set()
+        for row in blocked_res.all():
+            # Добавляем того, кто не является нами
+            blocked_ids.add(
+                row.contact_user_id if row.user_id == me else row.user_id
             )
-        )
-        blocked_ids = {row for row in result_i_blocked.scalars().all()} | {
-            row for row in result_blocked_me.scalars().all()
-        }
 
         result = await self.db.execute(
             select(User).where(

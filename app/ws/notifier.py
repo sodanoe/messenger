@@ -1,4 +1,4 @@
-from app.ws.pubsub import publish, publish_to_many
+from app.ws.pubsub import publish_to_many
 
 
 class ChatNotifier:
@@ -11,9 +11,9 @@ class ChatNotifier:
         sender_id: int,
         payload: dict,
     ) -> None:
-        for uid in member_ids:
-            if uid != sender_id:
-                await publish(uid, payload)
+        # Параллельная рассылка через publish_to_many (asyncio.gather внутри)
+        recipients = [uid for uid in member_ids if uid != sender_id]
+        await publish_to_many(recipients, payload)
 
     async def message_deleted(
         self,

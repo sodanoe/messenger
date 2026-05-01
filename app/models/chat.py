@@ -11,7 +11,8 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -54,6 +55,18 @@ class Chat(Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
+    # ORM relationships
+    members: Mapped[list["ChatMember"]] = relationship(
+        back_populates="chat",
+        lazy="raise",
+        cascade="all, delete-orphan",
+    )
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="chat",
+        lazy="raise",
+        cascade="all, delete-orphan",
+    )
+
 
 class ChatMember(Base):
     __tablename__ = "chat_members"
@@ -71,6 +84,14 @@ class ChatMember(Base):
     __table_args__ = (
         UniqueConstraint("chat_id", "user_id", name="uq_chat_member"),
         Index("ix_chat_members_user_id", "user_id"),
+    )
+
+    # ORM relationships
+    chat: Mapped["Chat"] = relationship(
+        back_populates="members", lazy="raise"
+    )
+    user: Mapped["User"] = relationship(
+        foreign_keys=[user_id], lazy="raise"
     )
 
 
@@ -111,6 +132,24 @@ class ChatMessage(Base):
     )
 
     is_deleted: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+    # ORM relationships
+    # lazy='raise' — защита от случайного N+1 в async контексте.
+    # Всегда используй joinedload() / selectinload() явно в запросе.
+    chat: Mapped["Chat"] = relationship(
+        back_populates="messages", lazy="raise"
+    )
+    sender: Mapped["User"] = relationship(
+        foreign_keys=[sender_id], lazy="raise"
+    )
+    media: Mapped[Optional["MediaFile"]] = relationship(
+        foreign_keys=[media_id], lazy="raise"
+    )
+    reply_to: Mapped[Optional["ChatMessage"]] = relationship(
+        foreign_keys=[reply_to_id],
+        remote_side="ChatMessage.id",
+        lazy="raise",
+    )
 
     __table_args__ = (Index("ix_chat_messages_chat_id", "chat_id"),)
 
