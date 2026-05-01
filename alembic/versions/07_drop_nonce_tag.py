@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "07_drop_nonce_tag"
-down_revision = "2f049a81d7a4"
+down_revision = "372c8dfa1eee"
 branch_labels = None
 depends_on = None
 
