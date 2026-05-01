@@ -142,7 +142,6 @@ class ConnectionManager:
         async with self._lock:
             return bool(self._connections.get(user_id))
 
-    @property
     async def online_user_ids(self) -> list[int]:
         """Thread-safe список онлайн пользователей."""
         async with self._lock:

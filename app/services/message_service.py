@@ -96,8 +96,6 @@ class MessageService:
             chat_id=chat_id,
             sender_id=sender_id,
             content_encrypted=encrypted,
-            nonce="",
-            tag="",
             media_id=media_id,
             reply_to_id=reply_to_id,
         )
@@ -286,7 +284,7 @@ class MessageService:
 
         encrypted = encrypt_text(new_content)
 
-        await self.messages.update_content(msg.id, encrypted, "", "")
+        await self.messages.update_content(msg.id, encrypted)
         await self.db.commit()
 
         members = await self.members.get_members(msg.chat_id)

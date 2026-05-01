@@ -179,10 +179,11 @@ class MediaService:
 
     async def cleanup_old_files(self) -> int:
         deleted_count = 0
-        MAX_DISK_SIZE_BYTES = 2 * 1024 * 1024 * 1024
-        ONE_YEAR_DAYS = 365
+        # Берём из settings (а не хардкод 2GB / 365 дней)
+        max_disk_bytes = settings.MEDIA_STORAGE_LIMIT_MB * 1024 * 1024
+        ttl_days = settings.MEDIA_TTL_DAYS
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=ONE_YEAR_DAYS)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=ttl_days)
         expired_files = await self.repo.delete_old_files(cutoff)
 
         for media in expired_files:
@@ -191,7 +192,7 @@ class MediaService:
 
         current_total_size = await self.repo.get_total_size()
 
-        if current_total_size > MAX_DISK_SIZE_BYTES:
+        if current_total_size > max_disk_bytes:
             all_files = await self.repo.get_all_ordered_by_date()
 
             for media in all_files:

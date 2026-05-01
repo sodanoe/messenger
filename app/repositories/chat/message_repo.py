@@ -14,8 +14,6 @@ class MessageRepo:
         chat_id: int,
         sender_id: int,
         content_encrypted: str,
-        nonce: str,
-        tag: str,
         media_id: int | None = None,
         reply_to_id: int | None = None,
     ) -> ChatMessage:
@@ -23,8 +21,6 @@ class MessageRepo:
             chat_id=chat_id,
             sender_id=sender_id,
             content_encrypted=content_encrypted,
-            nonce=nonce,
-            tag=tag,
             media_id=media_id,
             reply_to_id=reply_to_id,
         )
@@ -108,9 +104,9 @@ class MessageRepo:
             .values(is_deleted=True)
         )
 
-    async def update_content(self, message_id, content_encrypted, nonce, tag) -> None:
+    async def update_content(self, message_id, content_encrypted) -> None:
         await self.db.execute(
             update(ChatMessage)
             .where(ChatMessage.id == message_id)
-            .values(content_encrypted=content_encrypted, nonce=nonce, tag=tag)
+            .values(content_encrypted=content_encrypted)
         )
