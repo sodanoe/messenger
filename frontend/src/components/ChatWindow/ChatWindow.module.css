@@ -28,7 +28,6 @@
   padding: 12px 20px;
   background: var(--bg2);
   flex-shrink: 0;
-  /* box-shadow: var(--shadow-sm); */
   z-index: 5;
 }
 
@@ -96,3 +95,46 @@
   flex-shrink: 0;
 }
 .membersBtn:hover { background: var(--bg3); color: var(--text); }
+
+/* DRAG OVERLAY */
+
+.dropOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dropBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 48px;
+  border-radius: 20px;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  text-align: center;
+}
+
+.dropTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dropSub {
+  font-size: 13px;
+  opacity: 0.6;
+}
