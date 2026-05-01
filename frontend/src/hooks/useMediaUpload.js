@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 export function useMediaUpload() {
   const [pendingMedia, setPendingMedia] = useState(null);
-  // pendingMedia: { id, url, previewUrl } | null
+  const [isUploading, setIsUploading] = useState(false);
 
   const currentChat = useAppStore((s) => s.currentChat);
 
@@ -20,20 +20,26 @@ export function useMediaUpload() {
       r.onload = (e) => res(e.target.result);
       r.readAsDataURL(file);
     });
+
+    setIsUploading(true);
+    setPendingMedia({ id: null, url: null, previewUrl });
+
     try {
       const data = await uploadMedia(file);
       setPendingMedia({ id: data.id, url: data.url, previewUrl });
-      toast.success('Картинка готова — нажми отправить');
     } catch (e) {
       toast.error('Ошибка загрузки: ' + e.message);
+      setPendingMedia(null);
+    } finally {
+      setIsUploading(false);
     }
   }
 
   function removePending() {
     setPendingMedia(null);
+    setIsUploading(false);
   }
 
-  // Paste
   useEffect(() => {
     function onPaste(e) {
       if (!currentChat) return;
@@ -52,5 +58,5 @@ export function useMediaUpload() {
     return () => document.removeEventListener('paste', onPaste);
   }, [currentChat]);
 
-  return { pendingMedia, handleFile, removePending };
+  return { pendingMedia, isUploading, handleFile, removePending };
 }
