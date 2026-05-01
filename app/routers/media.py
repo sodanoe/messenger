@@ -8,7 +8,14 @@ from app.services.media_service import MediaService
 router = APIRouter(prefix="/media", tags=["media"])
 
 
-_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"}
+_ALLOWED_MIME = {
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+}
 
 
 @router.post("/upload")

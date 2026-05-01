@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.models import MediaFile
 from app.repositories.media_repo import MediaRepository
 
-# Регистрируем HEIC/HEIF поддержку
+# HEIC support
 register_heif_opener()
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,7 @@ class MediaService:
                 detail=f"Invalid image: {str(e)}",
             )
 
+        # путь по дате
         date_path = datetime.now().strftime("%Y/%m/%d")
         target_dir = self.media_dir / date_path
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -94,6 +95,7 @@ class MediaService:
         filename = f"{uuid.uuid4().hex}{ext}"
         file_path = target_dir / filename
 
+        # В БД и API — с /media
         relative_path = f"/media/{date_path}/{filename}"
 
         async with aiofiles.open(file_path, "wb") as f:
@@ -125,7 +127,7 @@ class MediaService:
     ) -> tuple[bytes, str]:
         img = Image.open(io.BytesIO(content))
 
-        # авто-ориентация (очень важно для HEIC и iPhone)
+        # фикс поворота (iPhone / HEIC)
         img = ImageOps.exif_transpose(img)
 
         if mime_type == "image/gif":
@@ -204,7 +206,9 @@ class MediaService:
         return deleted_count
 
     async def _remove_media_from_disk_and_db(self, media: MediaFile) -> None:
-        file_path = self.media_dir / media.path
+        # убираем /media/
+        relative_path = media.path.replace("/media/", "")
+        file_path = self.media_dir / relative_path
 
         try:
             if file_path.exists():
