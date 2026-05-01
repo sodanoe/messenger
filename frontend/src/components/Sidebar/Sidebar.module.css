@@ -6,7 +6,6 @@
   background: var(--bg2);
   height: 100dvh;
   overflow: hidden;
-  box-shadow: 2px 0 16px rgba(0,0,0,0.3);
   z-index: 10;
 }
 
