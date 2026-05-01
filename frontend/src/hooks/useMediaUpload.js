@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { uploadMedia } from '../services/api';
 import useAppStore from '../store/useAppStore';
 import toast from 'react-hot-toast';
 
 export function useMediaUpload() {
-  const [pendingMedia, setPendingMedia] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-
   const currentChat = useAppStore((s) => s.currentChat);
+  const pendingMedia = useAppStore((s) => s.pendingMedia);
+  const isUploading = useAppStore((s) => s.isUploading);
+  const setPendingMedia = useAppStore((s) => s.setPendingMedia);
+  const setIsUploading = useAppStore((s) => s.setIsUploading);
+  const removePendingMedia = useAppStore((s) => s.removePendingMedia);
 
   async function handleFile(file) {
     if (!file) return;
@@ -29,15 +31,10 @@ export function useMediaUpload() {
       setPendingMedia({ id: data.id, url: data.url, previewUrl });
     } catch (e) {
       toast.error('Ошибка загрузки: ' + e.message);
-      setPendingMedia(null);
+      removePendingMedia();
     } finally {
       setIsUploading(false);
     }
-  }
-
-  function removePending() {
-    setPendingMedia(null);
-    setIsUploading(false);
   }
 
   useEffect(() => {
@@ -58,5 +55,5 @@ export function useMediaUpload() {
     return () => document.removeEventListener('paste', onPaste);
   }, [currentChat]);
 
-  return { pendingMedia, isUploading, handleFile, removePending };
+  return { pendingMedia, isUploading, handleFile, removePending: removePendingMedia };
 }
