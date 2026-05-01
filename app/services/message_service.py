@@ -194,7 +194,9 @@ class MessageService:
         msg_ids = [row[0].id for row in rows]
         all_reactions = await self.reactions.get_by_messages(msg_ids)
 
-        custom_emoji_ids = [r.custom_emoji_id for r in all_reactions if r.custom_emoji_id]
+        custom_emoji_ids = [
+            r.custom_emoji_id for r in all_reactions if r.custom_emoji_id
+        ]
         custom_emoji_map: dict[int, str] = {}
 
         if custom_emoji_ids:

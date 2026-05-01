@@ -196,7 +196,7 @@ class MediaService:
             all_files = await self.repo.get_all_ordered_by_date()
 
             for media in all_files:
-                if current_total_size <= MAX_DISK_SIZE_BYTES:
+                if current_total_size <= max_disk_bytes:
                     break
 
                 await self._remove_media_from_disk_and_db(media)

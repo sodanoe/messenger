@@ -36,7 +36,7 @@ async def _media_cleanup_loop() -> None:
                 deleted = await MediaService(db).cleanup_old_files()
                 if deleted:
                     logger.info("Media cleanup: removed %s files", deleted)
-        except Exception as exc:
+        except Exception:
             logger.exception("Media cleanup error")
         await asyncio.sleep(86400)
 

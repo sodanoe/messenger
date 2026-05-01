@@ -97,9 +97,7 @@ async def websocket_endpoint(
         for cid in contact_ids:
             pipe.exists(f"user:online:{cid}")
         presences = await pipe.execute()
-        online_contacts = [
-            cid for cid, alive in zip(contact_ids, presences) if alive
-        ]
+        online_contacts = [cid for cid, alive in zip(contact_ids, presences) if alive]
 
     if online_contacts:
         success = await _safe_send_json(

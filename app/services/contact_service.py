@@ -30,9 +30,7 @@ class ContactService:
                 pipe.exists(f"user:online:{c.contact_user_id}")
             presences = await pipe.execute()
             online_ids = {
-                c.contact_user_id
-                for c, alive in zip(rows, presences)
-                if alive
+                c.contact_user_id for c, alive in zip(rows, presences) if alive
             }
 
         result = []
