@@ -17,12 +17,22 @@ export default function MessageList() {
   const isLoadingRef = useRef(false);
   const prevLengthRef = useRef(0);
 
+  // Сброс prevLength при смене чата
+  useEffect(() => {
+    prevLengthRef.current = 0;
+  }, [currentChat?.id]);
+
   // Скролл вниз только при новых сообщениях в конце (не при prepend)
   useEffect(() => {
     const prevLength = prevLengthRef.current;
     prevLengthRef.current = messages.length;
     if (messages.length > prevLength && !isLoadingRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+        }, 100);
+      });
     }
   }, [messages.length]);
 
@@ -66,11 +76,6 @@ export default function MessageList() {
     wrap.addEventListener('scroll', onScroll);
     return () => wrap.removeEventListener('scroll', onScroll);
   }, [loadMore]);
-
-  // Сброс prevLength при смене чата
-  useEffect(() => {
-    prevLengthRef.current = 0;
-  }, [currentChat?.id]);
 
   const grouped = [];
   let lastDay = null;
