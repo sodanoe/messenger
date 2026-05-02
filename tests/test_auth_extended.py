@@ -48,7 +48,6 @@ def test_refresh_without_cookie_returns_401(client):
     assert resp.status_code == 401
 
 
-@pytest.mark.serial
 def test_login_rate_limit(client, make_user):
     """
     6+ неверных попыток с одного IP → 429 Too Many Requests.
