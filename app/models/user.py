@@ -28,4 +28,5 @@ class User(Base):
         foreign_keys="ChatMessage.sender_id",
         back_populates="sender",
         lazy="raise",
+        passive_deletes=True,
     )
