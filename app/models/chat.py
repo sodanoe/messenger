@@ -141,7 +141,7 @@ class ChatMessage(Base):
     chat: Mapped["Chat"] = relationship(back_populates="messages", lazy="raise")
     sender: Mapped["User"] = relationship(foreign_keys=[sender_id], lazy="raise")
     media: Mapped[Optional["MediaFile"]] = relationship(
-        foreign_keys=[media_id], lazy="raise", back_populates="message"
+        foreign_keys=[media_id], lazy="raise"
     )
     reply_to: Mapped[Optional["ChatMessage"]] = relationship(
         foreign_keys=[reply_to_id],

@@ -30,7 +30,6 @@ class MediaFile(Base):
     # ORM relationship
     message: Mapped["ChatMessage | None"] = relationship(
         foreign_keys=[message_id],
-        back_populates="media",
         lazy="raise",
         viewonly=True,
     )
