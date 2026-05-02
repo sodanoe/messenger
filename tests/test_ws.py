@@ -3,11 +3,13 @@
 
 Требует: pip install websockets
 """
+
 import pytest
 
 try:
     import websockets
     import websockets.sync.client as ws_sync
+
     HAS_WEBSOCKETS = True
 except ImportError:
     HAS_WEBSOCKETS = False
@@ -33,7 +35,7 @@ def test_ws_bad_ticket_closes_1008(client, make_user):
         pytest.fail("Соединение должно было быть закрыто")
     except websockets.exceptions.ConnectionClosedError as e:
         assert e.code == 1008, f"Ожидали код 1008, получили {e.code}"
-    except Exception as e:
+    except Exception:
         # Некоторые реализации закрывают до handshake
         pass
 

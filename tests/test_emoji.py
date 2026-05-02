@@ -1,6 +1,7 @@
 """
 Тесты: custom emoji — загрузка, список, дубли, валидация shortcode, удаление.
 """
+
 import io
 import uuid
 
@@ -8,6 +9,7 @@ import pytest
 
 try:
     from PIL import Image
+
     HAS_PILLOW = True
 except ImportError:
     HAS_PILLOW = False

@@ -34,7 +34,9 @@ def test_deleted_user_removed_from_contacts(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
 
     contacts = client.get("/contacts", headers=auth(alice["token"])).json()
     assert any(c["contact_user_id"] == bob["id"] for c in contacts)
@@ -65,17 +67,23 @@ def test_cascade_chat_access_after_member_deletion(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
     chat = client.post(
         "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
     ).json()
     chat_id = chat["id"]
 
     client.post(
-        f"/chats/{chat_id}/messages", json={"content": "Hi"}, headers=auth(alice["token"])
+        f"/chats/{chat_id}/messages",
+        json={"content": "Hi"},
+        headers=auth(alice["token"]),
     )
     client.post(
-        f"/chats/{chat_id}/messages", json={"content": "Hi back"}, headers=auth(bob["token"])
+        f"/chats/{chat_id}/messages",
+        json={"content": "Hi back"},
+        headers=auth(bob["token"]),
     )
 
     # Bob удаляет аккаунт

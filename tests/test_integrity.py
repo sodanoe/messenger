@@ -1,7 +1,6 @@
 """
 Тесты: целостность данных — replies, реакции, пагинация, пустые сообщения.
 """
-import pytest
 
 
 def auth(token):
@@ -9,8 +8,12 @@ def auth(token):
 
 
 def _make_dm(client, alice, bob):
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
-    resp = client.post("/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
+    resp = client.post(
+        "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
+    )
     assert resp.status_code == 201
     return resp.json()["id"]
 
@@ -115,9 +118,7 @@ def test_whitespace_only_message_rejected(client, make_user):
         json={"content": "   "},
         headers=auth(alice["token"]),
     )
-    assert resp.status_code in (400, 422), (
-        "Сообщение из пробелов должно отклоняться"
-    )
+    assert resp.status_code in (400, 422), "Сообщение из пробелов должно отклоняться"
 
 
 def test_pagination_messages(client, make_user):

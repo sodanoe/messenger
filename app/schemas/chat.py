@@ -1,5 +1,5 @@
 from typing import Annotated
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, StringConstraints
 
 
 class CreateDirectChatRequest(BaseModel):

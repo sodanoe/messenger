@@ -28,8 +28,12 @@ def test_add_contact_duplicate(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
-    resp = client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
+    resp = client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
     assert resp.status_code == 409
 
 
@@ -63,7 +67,9 @@ def test_block_contact(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
 
     resp = client.post(f"/contacts/{bob['id']}/block", headers=auth(alice["token"]))
     assert resp.status_code == 204
@@ -73,7 +79,9 @@ def test_delete_contact(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
 
     resp = client.delete(f"/contacts/{bob['id']}", headers=auth(alice["token"]))
     assert resp.status_code == 204

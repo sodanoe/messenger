@@ -1,6 +1,7 @@
 """
 Тесты: безопасность — 401/403, изоляция данных, права доступа.
 """
+
 import pytest
 
 
@@ -9,10 +10,10 @@ def auth(token):
 
 
 PROTECTED_ENDPOINTS = [
-    ("GET",  "/users/me"),
-    ("GET",  "/contacts"),
-    ("GET",  "/chats/"),
-    ("GET",  "/users/search?q=test"),
+    ("GET", "/users/me"),
+    ("GET", "/contacts"),
+    ("GET", "/chats/"),
+    ("GET", "/users/search?q=test"),
 ]
 
 
@@ -26,7 +27,9 @@ def test_no_token_returns_401(client, method, path):
 
 @pytest.mark.parametrize("method,path", PROTECTED_ENDPOINTS)
 def test_bad_token_returns_401(client, method, path):
-    resp = client.request(method, path, headers={"Authorization": "Bearer bad.token.here"})
+    resp = client.request(
+        method, path, headers={"Authorization": "Bearer bad.token.here"}
+    )
     assert resp.status_code in (401, 403), (
         f"{method} {path}: ожидали 401/403, получили {resp.status_code}"
     )
@@ -44,7 +47,9 @@ def test_message_isolation(client, make_user):
     bob = make_user()
     carol = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
     chat = client.post(
         "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
     ).json()
@@ -57,7 +62,9 @@ def test_blocked_user_cannot_message(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
     chat = client.post(
         "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
     ).json()

@@ -2,7 +2,6 @@
 Тесты: бизнес-логика — блокировка, повторное добавление контакта,
 двойное удаление аккаунта, выход из группы.
 """
-import pytest
 
 
 def auth(token):
@@ -10,8 +9,12 @@ def auth(token):
 
 
 def _make_dm(client, alice, bob):
-    client.post("/contacts", json={"username": bob["username"]}, headers=auth(alice["token"]))
-    resp = client.post("/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"]))
+    client.post(
+        "/contacts", json={"username": bob["username"]}, headers=auth(alice["token"])
+    )
+    resp = client.post(
+        "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
+    )
     return resp.json()["id"]
 
 
@@ -41,7 +44,10 @@ def test_block_is_mutual(client, make_user):
         json={"content": "alice tries to write"},
         headers=auth(alice["token"]),
     )
-    assert alice_resp.status_code == 403, "После блокировки инициатор тоже не может писать"
+    assert alice_resp.status_code == 403, (
+        "После блокировки инициатор тоже не может писать"
+    )
+
 
 def test_readd_contact_after_delete(client, make_user):
     """Удалить контакт → добавить снова → успех (не 409)."""

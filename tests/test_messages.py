@@ -107,7 +107,9 @@ def test_add_and_remove_reaction(client, make_user):
     )
     assert add.status_code == 201
 
-    history = client.get(f"/chats/{chat_id}/messages", headers=auth(alice["token"])).json()
+    history = client.get(
+        f"/chats/{chat_id}/messages", headers=auth(alice["token"])
+    ).json()
     found = next(m for m in history["messages"] if m["id"] == msg_id)
     assert any(r["emoji"] == "❤️" for r in found["reactions"])
 

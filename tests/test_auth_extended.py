@@ -1,7 +1,6 @@
 """
 Тесты: logout (refresh-токен), rate limiting, WS-тикет.
 """
-import time
 
 import pytest
 
@@ -49,6 +48,7 @@ def test_refresh_without_cookie_returns_401(client):
     assert resp.status_code == 401
 
 
+@pytest.mark.serial
 def test_login_rate_limit(client, make_user):
     """
     6+ неверных попыток с одного IP → 429 Too Many Requests.
@@ -69,9 +69,7 @@ def test_login_rate_limit(client, make_user):
         if resp.status_code == 429:
             break
 
-    assert last_status == 429, (
-        f"Ожидали 429 после 6 попыток, получили {last_status}"
-    )
+    assert last_status == 429, f"Ожидали 429 после 6 попыток, получили {last_status}"
 
 
 def test_ws_ticket_requires_auth(client):

@@ -1,9 +1,8 @@
 """
 Тесты: аутентификация, инвайты, регистрация.
 """
-import uuid
 
-import pytest
+import uuid
 
 
 def auth(token):
@@ -16,7 +15,9 @@ def test_admin_login(client, admin_token):
 
 
 def test_login_bad_password(client):
-    resp = client.post("/auth/login", json={"username": "admin", "password": "totally_wrong"})
+    resp = client.post(
+        "/auth/login", json={"username": "admin", "password": "totally_wrong"}
+    )
     assert resp.status_code == 401
 
 
@@ -41,7 +42,11 @@ def test_register_duplicate_username(client, make_user, admin_token):
     code = inv.json()["code"]
     resp = client.post(
         "/auth/register",
-        json={"username": user["username"], "password": "pass123!", "invite_code": code},
+        json={
+            "username": user["username"],
+            "password": "pass123!",
+            "invite_code": code,
+        },
     )
     assert resp.status_code == 409
 

@@ -1,12 +1,14 @@
 """
 Тесты: загрузка медиафайлов — тип, размер, магические байты.
 """
+
 import io
 
 import pytest
 
 try:
     from PIL import Image
+
     HAS_PILLOW = True
 except ImportError:
     HAS_PILLOW = False
@@ -52,7 +54,9 @@ def test_upload_forbidden_mime(client, make_user):
     exe_content = b"MZ\x90\x00" + b"\x00" * 100  # PE-заголовок
     resp = client.post(
         "/media/upload",
-        files={"file": ("virus.exe", io.BytesIO(exe_content), "application/octet-stream")},
+        files={
+            "file": ("virus.exe", io.BytesIO(exe_content), "application/octet-stream")
+        },
         headers=auth(alice["token"]),
     )
     assert resp.status_code == 415
@@ -87,7 +91,9 @@ def test_upload_spoofed_content_type(client, make_user):
         files={"file": ("evil.jpg", io.BytesIO(html), "image/jpeg")},
         headers=auth(alice["token"]),
     )
-    assert resp.status_code in (400, 415), "Файл с поддельным content-type должен быть отклонён"
+    assert resp.status_code in (400, 415), (
+        "Файл с поддельным content-type должен быть отклонён"
+    )
 
 
 def test_upload_too_large(client, make_user):

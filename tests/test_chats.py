@@ -27,8 +27,12 @@ def test_create_direct_chat_idempotent(client, make_user):
     alice = make_user()
     bob = make_user()
 
-    r1 = client.post("/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"]))
-    r2 = client.post("/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"]))
+    r1 = client.post(
+        "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
+    )
+    r2 = client.post(
+        "/chats/direct", json={"user_id": bob["id"]}, headers=auth(alice["token"])
+    )
     assert r1.status_code == 201
     assert r2.status_code == 201
     assert r1.json()["id"] == r2.json()["id"]
