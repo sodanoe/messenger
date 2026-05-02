@@ -270,8 +270,7 @@ class MessageService:
         await self.messages.soft_delete(msg.id)
         await self.db.commit()
 
-        members = await self.members.get_members(msg.chat_id)
-        member_ids = [m.user_id for m in members]
+        member_ids = await self.members.get_member_ids(msg.chat_id)
 
         await self.notifier.message_deleted(member_ids, msg.chat_id, message_id)
 
@@ -295,7 +294,6 @@ class MessageService:
         await self.messages.update_content(msg.id, encrypted)
         await self.db.commit()
 
-        members = await self.members.get_members(msg.chat_id)
-        member_ids = [m.user_id for m in members]
+        member_ids = await self.members.get_member_ids(msg.chat_id)
 
         await self.notifier.message_edited(member_ids, message_id)

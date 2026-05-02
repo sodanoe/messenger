@@ -1,6 +1,13 @@
 import enum
 from datetime import datetime
 
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.media_file import MediaFile
+
+
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -11,7 +18,6 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -87,12 +93,8 @@ class ChatMember(Base):
     )
 
     # ORM relationships
-    chat: Mapped["Chat"] = relationship(
-        back_populates="members", lazy="raise"
-    )
-    user: Mapped["User"] = relationship(
-        foreign_keys=[user_id], lazy="raise"
-    )
+    chat: Mapped["Chat"] = relationship(back_populates="members", lazy="raise")
+    user: Mapped["User"] = relationship(foreign_keys=[user_id], lazy="raise")
 
 
 class ChatMessage(Base):
@@ -136,14 +138,10 @@ class ChatMessage(Base):
     # ORM relationships
     # lazy='raise' — защита от случайного N+1 в async контексте.
     # Всегда используй joinedload() / selectinload() явно в запросе.
-    chat: Mapped["Chat"] = relationship(
-        back_populates="messages", lazy="raise"
-    )
-    sender: Mapped["User"] = relationship(
-        foreign_keys=[sender_id], lazy="raise"
-    )
+    chat: Mapped["Chat"] = relationship(back_populates="messages", lazy="raise")
+    sender: Mapped["User"] = relationship(foreign_keys=[sender_id], lazy="raise")
     media: Mapped[Optional["MediaFile"]] = relationship(
-        foreign_keys=[media_id], lazy="raise"
+        foreign_keys=[media_id], lazy="raise", back_populates="message"
     )
     reply_to: Mapped[Optional["ChatMessage"]] = relationship(
         foreign_keys=[reply_to_id],

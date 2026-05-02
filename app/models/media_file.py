@@ -3,6 +3,11 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.chat import ChatMessage
+
 
 class MediaFile(Base):
     __tablename__ = "media_files"
@@ -23,8 +28,8 @@ class MediaFile(Base):
     )
 
     # ORM relationship
-    message: Mapped["ChatMessage | None"] = relationship(  # noqa: F821
+    message: Mapped["ChatMessage | None"] = relationship(
         foreign_keys=[message_id],
-        back_populates="media",
+        back_populates="ChatMessage.media",
         lazy="raise",
     )

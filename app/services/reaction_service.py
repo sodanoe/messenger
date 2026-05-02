@@ -48,8 +48,7 @@ class ReactionService:
             await self.db.rollback()
             return
 
-        members = await self.members.get_members(msg.chat_id)
-        member_ids = [m.user_id for m in members]
+        member_ids = await self.members.get_member_ids(msg.chat_id)
         reactions = await self.reactions.get_by_message(msg.id)
         reactions_data = await self._build_reactions_data(reactions)
         await self.notifier.reaction_update(
@@ -66,8 +65,7 @@ class ReactionService:
         await self.reactions.remove(msg.id, user_id, emoji)
         await self.db.commit()
 
-        members = await self.members.get_members(msg.chat_id)
-        member_ids = [m.user_id for m in members]
+        member_ids = await self.members.get_member_ids(msg.chat_id)
         reactions = await self.reactions.get_by_message(msg.id)
         reactions_data = await self._build_reactions_data(reactions)
         await self.notifier.reaction_update(

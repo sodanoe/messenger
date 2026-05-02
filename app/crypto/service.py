@@ -47,11 +47,21 @@ def decrypt_text(ciphertext: str) -> str:
 
 async def async_encrypt_text(text: str) -> str:
     """Non-blocking encrypt: runs in thread pool to free event loop."""
-    return await _asyncio.get_event_loop().run_in_executor(None, encrypt_text, text)
+    return await _asyncio.get_running_loop().run_in_executor(None, encrypt_text, text)
 
 
 async def async_decrypt_text(ciphertext: str) -> str:
     """Non-blocking decrypt: runs in thread pool to free event loop."""
-    return await _asyncio.get_event_loop().run_in_executor(
+    return await _asyncio.get_running_loop().run_in_executor(
         None, decrypt_text, ciphertext
     )
+
+
+async def async_decrypt_safe(ciphertext: str | None) -> str:
+    """Decrypt with fallback: возвращает '' для None, исходник при ошибке."""
+    if not ciphertext:
+        return ""
+    try:
+        return await async_decrypt_text(ciphertext)
+    except (ValueError, TypeError, UnicodeDecodeError):
+        return ciphertext

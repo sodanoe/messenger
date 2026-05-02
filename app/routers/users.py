@@ -1,11 +1,13 @@
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.models import MediaFile
 from app.models.user import User
 from app.repositories.user_repo import UserRepository
 from app.services.contact_service import ContactService
@@ -48,9 +50,6 @@ async def delete_account(
     media_dir = Path(settings.MEDIA_DIR)
 
     # Удаляем физические файлы пользователя с диска
-    from sqlalchemy import select
-    from app.models.media_file import MediaFile
-
     result = await db.execute(
         select(MediaFile).where(MediaFile.uploader_id == current_user.id)
     )

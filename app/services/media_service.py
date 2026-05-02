@@ -42,6 +42,7 @@ class MediaService:
         """Одиночный get (оставлен для обратной совместимости)."""
         try:
             from app.core.redis_client import get_redis
+
             val = await get_redis().get(f"admin:media:{key}")
             return int(val) if val else default
         except Exception as e:
@@ -56,12 +57,10 @@ class MediaService:
         keys = list(keys_defaults.keys())
         try:
             from app.core.redis_client import get_redis
-            values = await get_redis().mget(
-                *[f"admin:media:{k}" for k in keys]
-            )
+
+            values = await get_redis().mget(*[f"admin:media:{k}" for k in keys])
             return {
-                k: (int(v) if v else keys_defaults[k])
-                for k, v in zip(keys, values)
+                k: (int(v) if v else keys_defaults[k]) for k, v in zip(keys, values)
             }
         except Exception as e:
             logger.warning(f"Redis unavailable for bulk settings: {e}")
@@ -85,14 +84,16 @@ class MediaService:
             )
 
         # Один mget вместо 3 последовательных get
-        _s = await self._get_settings_bulk({
-            "max_size": settings.MEDIA_MAX_SIZE,
-            "colors":   settings.MEDIA_COLORS,
-            "quality":  settings.MEDIA_QUALITY,
-        })
+        _s = await self._get_settings_bulk(
+            {
+                "max_size": settings.MEDIA_MAX_SIZE,
+                "colors": settings.MEDIA_COLORS,
+                "quality": settings.MEDIA_QUALITY,
+            }
+        )
         max_size = _s["max_size"]
-        colors   = _s["colors"]
-        quality  = _s["quality"]
+        colors = _s["colors"]
+        quality = _s["quality"]
 
         try:
             loop = asyncio.get_running_loop()

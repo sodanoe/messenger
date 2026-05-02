@@ -9,7 +9,7 @@ from app.models.chat import (
     ChatMessage,
     ChatMessageReaction,
     CustomEmoji,
-)  # ← добавь
+)
 
 __all__ = [
     "Base",

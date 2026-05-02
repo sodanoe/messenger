@@ -107,9 +107,7 @@ class ContactService:
         blocked_ids: set[int] = set()
         for row in blocked_res.all():
             # Добавляем того, кто не является нами
-            blocked_ids.add(
-                row.contact_user_id if row.user_id == me else row.user_id
-            )
+            blocked_ids.add(row.contact_user_id if row.user_id == me else row.user_id)
 
         result = await self.db.execute(
             select(User).where(

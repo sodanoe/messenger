@@ -49,8 +49,7 @@ class MemberService:
         }
 
     async def add_member(self, chat_id: int, user_id: int, adder_id: int) -> None:
-        members = await self.members.get_members(chat_id)
-        adder = next((m for m in members if m.user_id == adder_id), None)
+        adder = await self.members.get_single_member(chat_id, adder_id)
         if not adder or adder.role != ChatRole.admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -63,8 +62,7 @@ class MemberService:
 
     async def remove_member(self, chat_id: int, user_id: int, remover_id: int) -> None:
         if user_id != remover_id:
-            members = await self.members.get_members(chat_id)
-            remover = next((m for m in members if m.user_id == remover_id), None)
+            remover = await self.members.get_single_member(chat_id, remover_id)
             if not remover or remover.role != ChatRole.admin:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

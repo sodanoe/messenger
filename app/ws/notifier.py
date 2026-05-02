@@ -1,4 +1,4 @@
-from app.ws.pubsub import publish_to_many
+from app.ws.pubsub import publish_to_many, publish
 
 
 class ChatNotifier:

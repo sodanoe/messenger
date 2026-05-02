@@ -3,10 +3,8 @@ import os
 import uuid
 
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import CustomEmoji
 from app.repositories.emoji_repo import EmojiRepo
 
 EMOJI_DIR = "/app/media/emojis"
@@ -93,7 +91,4 @@ class EmojiService:
 
     async def get_by_shortcode(self, shortcode: str):
         """Получить эмодзи по shortcode"""
-        result = await self.db.execute(
-            select(CustomEmoji).where(CustomEmoji.shortcode == shortcode)
-        )
-        return result.scalar_one_or_none()
+        return await self.repo.get_by_shortcode(shortcode)

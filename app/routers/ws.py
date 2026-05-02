@@ -17,6 +17,7 @@ import logging
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.ws.manager import manager
+from app.ws.pubsub import publish_to_many
 from app.core.database import AsyncSessionLocal
 from app.core.redis_client import get_redis
 from app.models.contact import ContactStatus
@@ -161,7 +162,7 @@ async def websocket_endpoint(
         # Используем contact_ids из памяти (обновляется каждые 10 heartbeat).
         # Лишний DB-запрос при disconnect не нужен — уведомляем тех кого знаем.
         if contact_ids:
-            await manager.send_to_many(
+            await publish_to_many(
                 contact_ids,
                 {"type": "user_offline", "user_id": user_id},
             )

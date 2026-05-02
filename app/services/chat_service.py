@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crypto.service import async_decrypt_text
+from app.crypto.service import async_decrypt_safe
 from app.models.chat import Chat, ChatMember, ChatRole, ChatType
 from app.models.contact import Contact
 from app.models.user import User
@@ -22,7 +22,7 @@ class ChatService:
         self.notifier = ChatNotifier()
 
     async def create_direct_chat(self, user_a_id: int, user_b_id: int) -> Chat:
-        # Один JOIN вместо N запросов is_member
+        # Один JOIN вместо N запросов is_member.
         # Ищем direct-чат где оба пользователя уже являются участниками
         member_b = ChatMember.__table__.alias("member_b")
         stmt = (
@@ -100,16 +100,8 @@ class ChatService:
                 unread_map[row.contact_user_id] = row.has_unread
 
         # Параллельный decrypt всех last_message через asyncio.gather
-        async def _decrypt_safe(content: str | None) -> str:
-            if not content:
-                return ""
-            try:
-                return await async_decrypt_text(content)
-            except (ValueError, TypeError, UnicodeDecodeError):
-                return content
-
         decrypted = await asyncio.gather(
-            *[_decrypt_safe(row.last_msg_content) for row in chats_data]
+            *[async_decrypt_safe(row.last_msg_content) for row in chats_data]
         )
 
         result = []
@@ -144,8 +136,7 @@ class ChatService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Чат не найден"
             )
-        members = await self.members.get_members(chat_id)
-        requester = next((m for m in members if m.user_id == user_id), None)
+        requester = await self.members.get_single_member(chat_id, user_id)
         if not requester:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
@@ -155,7 +146,7 @@ class ChatService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins can delete group",
             )
-        member_ids = [m.user_id for m in members]
+        member_ids = await self.members.get_member_ids(chat_id)
         await self.db.delete(chat)
         await self.db.commit()
         await self.notifier.chat_deleted(member_ids, chat_id)
