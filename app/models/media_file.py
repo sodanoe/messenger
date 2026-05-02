@@ -18,7 +18,7 @@ class MediaFile(Base):
     )
     message_id: Mapped[int | None] = mapped_column(
         ForeignKey("chat_messages.id", ondelete="SET NULL"),
-        nullable=True,  # ← ИСПРАВИТЬ
+        nullable=True,
     )
     path: Mapped[str] = mapped_column(String(512), nullable=False)
     original_name: Mapped[str] = mapped_column(String(256), nullable=False)
@@ -30,6 +30,6 @@ class MediaFile(Base):
     # ORM relationship
     message: Mapped["ChatMessage | None"] = relationship(
         foreign_keys=[message_id],
-        back_populates="ChatMessage.media",
+        back_populates="media",
         lazy="raise",
     )
