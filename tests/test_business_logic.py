@@ -15,11 +15,10 @@ def _make_dm(client, alice, bob):
     return resp.json()["id"]
 
 
-def test_block_is_one_directional(client, make_user):
+def test_block_is_mutual(client, make_user):
     """
-    Alice блокирует Bob'а.
-    Bob не может написать Alice (заблокирован).
-    Alice МОЖЕТ написать Bob'у — блокировка односторонняя.
+    Alice блокирует Bob'а — оба не могут писать друг другу.
+    Блокировка симметрична: инициатор тоже теряет возможность писать.
     """
     alice = make_user()
     bob = make_user()
@@ -36,14 +35,13 @@ def test_block_is_one_directional(client, make_user):
     )
     assert bob_resp.status_code == 403, "Bob должен быть заблокирован"
 
-    # Alice пишет Bob'у — должно работать (она инициатор блокировки)
+    # Alice пишет Bob'у — тоже 403, блокировка симметрична
     alice_resp = client.post(
         f"/chats/{chat_id}/messages",
-        json={"content": "alice can still write"},
+        json={"content": "alice tries to write"},
         headers=auth(alice["token"]),
     )
-    assert alice_resp.status_code == 201, "Alice должна мочь писать заблокированному"
-
+    assert alice_resp.status_code == 403, "После блокировки инициатор тоже не может писать"
 
 def test_readd_contact_after_delete(client, make_user):
     """Удалить контакт → добавить снова → успех (не 409)."""

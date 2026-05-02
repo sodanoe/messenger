@@ -11,17 +11,8 @@ def auth(token):
 
 
 def test_logout_clears_cookie(client, make_user):
-    """
-    POST /auth/logout отзывает refresh-токен.
-    После logout POST /auth/refresh должен вернуть 401.
-
-    Примечание: access-токен (15 мин) остаётся рабочим — это нормально,
-    он stateless JWT. Проверяем только refresh.
-    """
     alice = make_user()
 
-    # Получаем refresh через login (register уже выдал токены,
-    # делаем явный login чтобы получить cookie)
     login = client.post(
         "/auth/login",
         json={"username": alice["username"], "password": alice["password"]},
@@ -30,13 +21,17 @@ def test_logout_clears_cookie(client, make_user):
     refresh_cookie = login.cookies.get("refresh_token")
     assert refresh_cookie, "refresh_token cookie не установлен после login"
 
-    # Logout
-    logout = client.post("/auth/logout", cookies={"refresh_token": refresh_cookie})
+    # Logout — передаём куку через заголовок
+    logout = client.post(
+        "/auth/logout",
+        headers={"Cookie": f"refresh_token={refresh_cookie}"},
+    )
     assert logout.status_code == 204
 
-    # Попытка рефреша с отозванным токеном должна вернуть 401
+    # Refresh с отозванным токеном → 401
     refresh_resp = client.post(
-        "/auth/refresh", cookies={"refresh_token": refresh_cookie}
+        "/auth/refresh",
+        headers={"Cookie": f"refresh_token={refresh_cookie}"},
     )
     assert refresh_resp.status_code == 401, (
         "Refresh-токен должен быть инвалидирован после logout"

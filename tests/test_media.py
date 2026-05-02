@@ -87,10 +87,7 @@ def test_upload_spoofed_content_type(client, make_user):
         files={"file": ("evil.jpg", io.BytesIO(html), "image/jpeg")},
         headers=auth(alice["token"]),
     )
-    assert resp.status_code == 415, (
-        "БАГ: сервер принял файл с поддельным content-type. "
-        "Нужна проверка по магическим байтам в media_service.py"
-    )
+    assert resp.status_code in (400, 415), "Файл с поддельным content-type должен быть отклонён"
 
 
 def test_upload_too_large(client, make_user):

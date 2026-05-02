@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from typing import Annotated
+from pydantic import BaseModel, Field, StringConstraints
 
 
 class CreateDirectChatRequest(BaseModel):
@@ -11,7 +12,7 @@ class CreateGroupChatRequest(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
     media_id: int | None = None
     reply_to_id: int | None = None
 
