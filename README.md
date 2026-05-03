@@ -1,14 +1,90 @@
-# messenger-backend
+# messenger
 
-Самохостящийся мессенджер в стиле ICQ. FastAPI + PostgreSQL + Redis + WebSockets.
+Самохостящийся мессенджер. Монорепо: FastAPI бэкенд + React фронтенд.
+
+---
 
 ## Стек
 
-- **Backend**: Python 3.12, FastAPI, SQLAlchemy (async), Alembic
-- **БД**: PostgreSQL 16
-- **Кэш / Pub-Sub**: Redis 7
-- **Frontend**: Vanilla JS (single-page, встроен в бэкенд)
-- **Деплой**: Docker Compose + nginx + certbot
+### Бэкенд
+| | |
+|---|---|
+| Runtime | Python 3.12 |
+| Фреймворк | FastAPI |
+| ORM | SQLAlchemy (async) + Alembic |
+| БД | PostgreSQL 16 |
+| Кэш / Pub-Sub | Redis 7 |
+| Авторизация | JWT (access + refresh токены) |
+| Шифрование | AES-256-GCM (серверное) |
+| Realtime | WebSockets + Redis Pub/Sub |
+| Образ | Python 3.12 Alpine, multi-stage build |
+
+### Фронтенд
+| | |
+|---|---|
+| Фреймворк | React 19 + Vite |
+| Состояние | Zustand |
+| Роутинг | React Router v7 |
+| Emoji | emoji-mart |
+| 3D | Three.js + React Three Fiber |
+| Уведомления | react-hot-toast |
+| PWA | Web App Manifest + Service Worker |
+
+---
+
+## Функциональность
+
+**Чаты**
+- Личные и групповые чаты
+- Ответы на сообщения (reply)
+- Emoji-реакции на сообщения
+- Доставка в реальном времени через WebSocket + Redis Pub/Sub (multi-worker)
+
+**Медиа**
+- Загрузка изображений (сжатие на сервере через Pillow, лимит 20 МБ)
+- Автоматическая очистка файлов старше `MEDIA_TTL_DAYS` дней
+
+**Пользователи**
+- Регистрация по инвайт-кодам (инвайты создаёт администратор)
+- Контакты с блокировкой
+- Поиск пользователей
+
+**Безопасность**
+- Шифрование сообщений AES-256-GCM
+- Rate limiting на авторизацию
+- WebSocket-подключение через одноразовые тикеты
+
+**Администрирование**
+- Панель администратора
+- Управление инвайт-кодами и пользователями
+
+---
+
+## Структура репозитория
+
+```
+├── app/                    # Бэкенд
+│   ├── core/               # Конфиг, БД, JWT, Redis
+│   ├── models/             # SQLAlchemy модели
+│   ├── repositories/       # Слой доступа к БД
+│   ├── services/           # Бизнес-логика
+│   ├── routers/            # FastAPI эндпоинты
+│   ├── ws/                 # WebSocket менеджер + Redis Pub/Sub
+│   └── crypto/             # AES-GCM шифрование
+├── alembic/                # Миграции БД
+├── tests/                  # pytest: auth, chats, ws, media, security...
+├── frontend/               # Фронтенд
+│   └── src/
+│       ├── components/     # ChatWindow, Sidebar, MessageItem...
+│       ├── pages/          # ChatPage, GroupsPage, ContactsPage, LoginPage
+│       ├── services/       # API-клиент
+│       ├── store/          # Zustand store
+│       └── hooks/          # useWebSocket, useMediaUpload, useNotifications
+├── deploy/                 # nginx конфиг и скрипт деплоя
+├── Dockerfile              # Multi-stage, Alpine
+├── docker-compose.yml      # Локальная разработка
+└── docker-compose.prod.yml # Продакшн
+```
 
 ---
 
@@ -18,57 +94,58 @@
 bash setup_local.sh
 ```
 
-Скрипт сам создаст `.env`, сгенерирует секреты, поднимет БД и Redis в Docker,
-накатит миграции и запустит uvicorn.
+Скрипт: создаст `.env`, сгенерирует секреты, поднимет PostgreSQL и Redis в Docker, накатит миграции, запустит uvicorn с hot reload.
 
-Открыть: http://localhost:8000
+Бэкенд: http://localhost:8000  
+Swagger: http://localhost:8000/docs
+
+Фронтенд (отдельно):
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173
+```
+
+По умолчанию фронт смотрит на `http://localhost:8000`. Переопределяется через:
+```bash
+VITE_API_URL=http://localhost:8000
+```
 
 ---
 
-## Деплой на VPS
+## Переменные окружения
 
-### 1. Что поправить перед деплоем
-
-**`deploy/deploy.sh`** — настройки подключения к серверу:
-```bash
-REMOTE_USER="your_vps_user"                 # ← пользователь на VPS
-REMOTE_HOST="your.vps.ip"                   # ← IP адрес VPS
-REMOTE_DIR="/home/your_vps_user/messenger"  # ← путь на сервере
-SSH_KEY="$HOME/.ssh/your_key"               # ← путь к SSH ключу
-DOMAIN="your-domain.example.com"            # ← твой домен
-```
-
-**`deploy/nginx_vps.conf`** — три места с доменом и путём к медиафайлам:
-```nginx
-server_name your-domain.example.com;
-ssl_certificate /etc/letsencrypt/live/your-domain.example.com/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/your-domain.example.com/privkey.pem;
-alias /home/your_vps_user/messenger/media/;
-```
-
-**`.env`** на сервере — создать из примера и заполнить:
 ```bash
 cp .env.example .env
-# Минимум поменять: POSTGRES_PASSWORD, JWT_SECRET, CRYPTO_KEY
 ```
 
-> JWT_SECRET и CRYPTO_KEY можно сгенерировать командой: `openssl rand -hex 32`
+| Переменная | Обязательно | Описание |
+|---|---|---|
+| `DATABASE_URL` | ✓ | PostgreSQL async URL |
+| `POSTGRES_USER` | ✓ | Пользователь БД |
+| `POSTGRES_PASSWORD` | ✓ | Пароль БД |
+| `POSTGRES_DB` | ✓ | Имя БД |
+| `JWT_SECRET` | ✓ | Секрет подписи токенов |
+| `JWT_EXPIRE_MINUTES` | — | TTL access-токена (по умолчанию: 60) |
+| `CRYPTO_KEY` | ✓ | 32 байта в hex (64 символа) для AES-GCM |
+| `CRYPTO_BACKEND` | — | Бэкенд шифрования (по умолчанию: `aes`) |
+| `ADMIN_USERNAME` | — | Логин администратора (по умолчанию: `admin`) |
+| `REDIS_URL` | — | URL Redis (по умолчанию: `redis://localhost:6379`) |
+| `MEDIA_DIR` | — | Путь к медиахранилищу (по умолчанию: `/app/media`) |
+| `MEDIA_MAX_UPLOAD_MB` | — | Максимальный размер загрузки (по умолчанию: 20) |
+| `MEDIA_TTL_DAYS` | — | Дней до удаления старых медиафайлов (по умолчанию: 365) |
 
-### 2. Запустить деплой
-
+Сгенерировать секреты:
 ```bash
-bash deploy/deploy.sh
+openssl rand -hex 32  # для JWT_SECRET и CRYPTO_KEY
 ```
-
-Скрипт соберёт Docker-образ, загрузит на сервер, запустит контейнеры,
-накатит миграции, настроит nginx и выпустит SSL-сертификат через certbot.
 
 ---
 
 ## Миграции
 
 ```bash
-# Создать новую миграцию
+# Создать
 alembic revision --autogenerate -m "описание"
 
 # Применить
@@ -77,17 +154,38 @@ alembic upgrade head
 
 ---
 
-## Структура проекта
+## Тесты
 
+```bash
+pytest
 ```
-app/
-├── core/          # конфиг, БД, JWT, Redis
-├── models/        # SQLAlchemy модели
-├── repositories/  # работа с БД
-├── services/      # бизнес-логика
-├── routers/       # FastAPI эндпоинты
-├── crypto/        # шифрование сообщений
-└── static/        # фронтенд (vanilla JS)
-alembic/           # миграции БД
-deploy/            # скрипты деплоя и nginx конфиг
+
+Покрытие: авторизация и refresh-токены, регистрация и инвайты, чаты (личные и групповые), сообщения, контакты и блокировки, медиафайлы и очистка, emoji, WebSocket-тикеты, rate limiting, целостность данных при удалении пользователей.
+
+---
+
+## Деплой на VPS
+
+> ⚠️ Процесс деплоя в процессе переработки.
+
+Текущая схема: сборка Docker-образа локально → rsync архива на VPS → рестарт стека.
+
+Настрой `deploy/deploy.sh`:
+```bash
+REMOTE_USER="your_vps_user"
+REMOTE_HOST="your.vps.ip"
+REMOTE_DIR="/home/your_vps_user/messenger"
+SSH_KEY="$HOME/.ssh/your_key"
+DOMAIN="your-domain.example.com"
 ```
+
+```bash
+bash deploy/deploy.sh             # полный деплой (сборка + загрузка + рестарт)
+bash deploy/deploy.sh --no-build  # только рестарт
+```
+
+---
+
+## Лицензия
+
+MIT
