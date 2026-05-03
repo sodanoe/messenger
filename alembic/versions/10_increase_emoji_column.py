@@ -1,7 +1,7 @@
 """increase_emoji_column_size
 
-Revision ID: 372c8dfa1eee
-Revises: 2f049a81d7a4
+Revision ID: 10_increase_emoji_column
+Revises: 09_fix_media_files_fk
 Create Date: 2026-04-19 13:32:21.254169
 
 """
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "372c8dfa1eee"
-down_revision: Union[str, None] = "2f049a81d7a4"
+revision: str = "10_increase_emoji_column"
+down_revision: Union[str, None] = "09_fix_media_files_fk"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

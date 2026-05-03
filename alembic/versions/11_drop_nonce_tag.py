@@ -1,7 +1,7 @@
 """drop nonce and tag columns from chat_messages
 
-Revision ID: 07_drop_nonce_tag
-Revises: 06_indexes
+Revision ID: 11_drop_nonce_tag
+Revises: 10_increase_emoji_column
 Create Date: 2025-01-01 00:00:00.000000
 
 ВАЖНО: перед применением проверь что down_revision — актуальный HEAD:
@@ -12,8 +12,8 @@ Create Date: 2025-01-01 00:00:00.000000
 import sqlalchemy as sa
 from alembic import op
 
-revision = "07_drop_nonce_tag"
-down_revision = "372c8dfa1eee"
+revision = "11_drop_nonce_tag"
+down_revision = "10_increase_emoji_column"
 branch_labels = None
 depends_on = None
 

@@ -1,7 +1,7 @@
 """add_reactions_and_replies
 
-Revision ID: add_reactions_replies
-Revises: add_media_files
+Revision ID: 02_reactions_and_replies
+Revises: 01_media_files
 Create Date: 2026-03-27
 """
 

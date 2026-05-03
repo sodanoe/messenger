@@ -1,6 +1,6 @@
 """add_media_files
 
-Revision ID: add_media_files
+Revision ID: 01_media_files
 Revises:
 Create Date: 2026-03-24
 """

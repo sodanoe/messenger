@@ -1,7 +1,7 @@
 """group media reactions and replies
 
-Revision ID: 20260404_group_media_reactions
-Revises: 20260327_add_reactions_and_replies
+Revision ID: 03_group_media_reactions
+Revises: 02_reactions_and_replies
 Create Date: 2026-04-04
 """
 

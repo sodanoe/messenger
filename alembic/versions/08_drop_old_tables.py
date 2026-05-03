@@ -1,7 +1,7 @@
 """drop_old_tables
 
-Revision ID: 69a62152b62f
-Revises: 5a78c4bc5b71
+Revision ID: 08_drop_old_tables
+Revises: 07_add_chat_models
 Create Date: 2026-04-19 09:33:07.876533
 
 """
@@ -12,8 +12,8 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "69a62152b62f"
-down_revision: Union[str, None] = "5a78c4bc5b71"
+revision: str = "08_drop_old_tables"
+down_revision: Union[str, None] = "07_add_chat_models"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

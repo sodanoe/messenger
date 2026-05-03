@@ -1,6 +1,6 @@
 """add_chat_models
 
-Revision ID: 5a78c4bc5b71
+Revision ID: 07_add_chat_models
 Revises: 06_indexes
 Create Date: 2026-04-18 06:15:57.021064
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "5a78c4bc5b71"
+revision: str = "07_add_chat_models"
 down_revision: Union[str, None] = "06_indexes"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
