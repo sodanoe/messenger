@@ -156,8 +156,31 @@ class MediaService:
         img = ImageOps.exif_transpose(img)
 
         if mime_type == "image/gif":
+            frames = []
+            # Проходим по всем кадрам
+            for frame in ImageSequence.Iterator(img):
+                # Копируем кадр, иначе при закрытии исходного файла данные пропадут
+                curr = frame.copy()
+                
+                # Если нужен ресайз, делаем его для каждого кадра
+                if max_size and max(curr.size) > max_size:
+                    ratio = max_size / max(curr.size)
+                    new_size = (int(curr.size[0] * ratio), int(curr.size[1] * ratio))
+                    curr = curr.resize(new_size, Image.Resampling.LANCZOS)
+                    
+                frames.append(curr)
+        
             output = io.BytesIO()
-            img.save(output, format="GIF", save_all=True, optimize=True)
+            # Берем первый кадр и «прицепом» сохраняем остальные
+            frames[0].save(
+                output,
+                format="GIF",
+                save_all=True,
+                append_images=frames[1:],
+                optimize=True,
+                loop=0, # 0 — бесконечный цикл
+                duration=img.info.get("duration", 100) # сохраняем скорость
+            )
             return output.getvalue(), ".gif"
 
         # нормализация цвета
