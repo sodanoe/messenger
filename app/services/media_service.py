@@ -7,7 +7,7 @@ import logging
 import aiofiles
 from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageSequence
 import io
 
 from pillow_heif import register_heif_opener
