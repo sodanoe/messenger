@@ -152,55 +152,64 @@ class MediaService:
     ) -> tuple[bytes, str]:
         img = Image.open(io.BytesIO(content))
 
-        # фикс поворота (iPhone / HEIC)
-        img = ImageOps.exif_transpose(img)
-
+        # 1. ОБРАБОТКА GIF (отдельная логика для сохранения анимации)
         if mime_type == "image/gif":
             frames = []
-            # Проходим по всем кадрам
+            # Сохраняем длительность кадров из оригинала
+            duration = img.info.get("duration", 100)
+            
             for frame in ImageSequence.Iterator(img):
-                # Копируем кадр, иначе при закрытии исходного файла данные пропадут
+                # Копируем кадр, так как Iterator меняет состояние объекта img
                 curr = frame.copy()
                 
-                # Если нужен ресайз, делаем его для каждого кадра
+                # Ресайз кадра, если он превышает лимит
                 if max_size and max(curr.size) > max_size:
                     ratio = max_size / max(curr.size)
                     new_size = (int(curr.size[0] * ratio), int(curr.size[1] * ratio))
                     curr = curr.resize(new_size, Image.Resampling.LANCZOS)
-                    
+                
                 frames.append(curr)
         
+            if not frames:
+                raise ValueError("Empty GIF")
+
             output = io.BytesIO()
-            # Берем первый кадр и «прицепом» сохраняем остальные
+            # Сохраняем как анимированный GIF
             frames[0].save(
                 output,
                 format="GIF",
                 save_all=True,
                 append_images=frames[1:],
                 optimize=True,
-                loop=0, # 0 — бесконечный цикл
-                duration=img.info.get("duration", 100) # сохраняем скорость
+                loop=0,  # Бесконечный цикл
+                duration=duration
             )
             return output.getvalue(), ".gif"
 
-        # нормализация цвета
+        # 2. ОБРАБОТКА СТАТИЧНЫХ ИЗОБРАЖЕНИЙ (JPEG, PNG, WEBP, HEIC)
+        # Применяем поворот на основе EXIF (для iPhone) только здесь
+        img = ImageOps.exif_transpose(img)
+
+        # Нормализация цвета (удаление прозрачности для JPEG)
         if img.mode in ("RGBA", "LA", "P"):
             background = Image.new("RGB", img.size, (255, 255, 255))
             if img.mode == "P":
                 img = img.convert("RGBA")
-            background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+            
+            # Используем альфа-канал как маску, если он есть
+            mask = img.split()[-1] if img.mode == "RGBA" else None
+            background.paste(img, mask=mask)
             img = background
         elif img.mode != "RGB":
             img = img.convert("RGB")
 
-        # ресайз
+        # Ресайз статики
         if max_size and max(img.size) > max_size:
             ratio = max_size / max(img.size)
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
             img = img.resize(new_size, Image.Resampling.LANCZOS)
 
         output = io.BytesIO()
-
         img.save(
             output,
             format="JPEG",
@@ -211,6 +220,7 @@ class MediaService:
         )
 
         return output.getvalue(), ".jpg"
+
 
     def _guess_mime(self, header: bytes) -> str:
         if header.startswith(b"\xff\xd8\xff"):
