@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAppStore } from '../../../store/useAppStore';
+import useAppStore from '../../../store/useAppStore';
 import { api } from '../../../services/api';
 import { initials } from '../../../utils/format';
 import { getAvatarColor } from '../../../utils/avatarColor';
