@@ -9,10 +9,8 @@ import { useMediaUpload } from '../../hooks/useMediaUpload';
 import MessageList from './MessageList/MessageList';
 import MessageInput from './MessageInput/MessageInput';
 import GroupInfoModal from '../RightPanel/GroupInfoModal/GroupInfoModal';
-import ContactPanel from '../RightPanel/ContactPanel/ContactPanel';
 import styles from './ChatWindow.module.css';
 
-// ─── Иконки ───────────────────────────────────────────────
 function SearchIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -58,7 +56,12 @@ function ChevronDown() {
   );
 }
 
-export default function ChatWindow() {
+export default function ChatWindow({
+  showContactPanel,
+  setShowContactPanel,
+  searchOpen,
+  setSearchOpen,
+}) {
   const {
     currentChat,
     clearCurrentChat,
@@ -72,11 +75,7 @@ export default function ChatWindow() {
   const { handleFile } = useMediaUpload();
 
   const [showGroupInfo, setShowGroupInfo] = useState(false);
-  const [showContactPanel, setShowContactPanel] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Поиск по сообщениям
-  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchIndex, setSearchIndex] = useState(0);
@@ -92,14 +91,12 @@ export default function ChatWindow() {
       ? (chats?.find((c) => c.id === currentChat.id)?.is_online ?? currentChat.is_online)
       : false;
 
-  // Загрузка эмодзи
   useEffect(() => {
     api('/emojis/', 'GET')
       .then((data) => setCustomEmojis(data.emojis || []))
       .catch(() => {});
   }, []);
 
-  // Сброс при смене чата
   useEffect(() => {
     loadedChatId.current = null;
     setSearchOpen(false);
@@ -109,12 +106,10 @@ export default function ChatWindow() {
     setShowGroupInfo(false);
   }, [currentChat?.type, currentChat?.id]);
 
-  // Загрузка сообщений
   useEffect(() => {
     if (!currentChat || !me) return;
     if (loadedChatId.current === `${currentChat.type}-${currentChat.id}`) return;
     loadedChatId.current = `${currentChat.type}-${currentChat.id}`;
-
     async function loadMessages() {
       try {
         const data = currentChat.type === 'direct'
@@ -126,13 +121,8 @@ export default function ChatWindow() {
     loadMessages();
   }, [currentChat?.type, currentChat?.id, me?.id]);
 
-  // Поиск по сообщениям
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setSearchIndex(0);
-      return;
-    }
+    if (!searchQuery.trim()) { setSearchResults([]); setSearchIndex(0); return; }
     const q = searchQuery.toLowerCase();
     const found = (messages || [])
       .map((m, i) => ({ ...m, _idx: i }))
@@ -141,7 +131,6 @@ export default function ChatWindow() {
     setSearchIndex(0);
   }, [searchQuery, messages]);
 
-  // Скролл к результату поиска
   useEffect(() => {
     if (!searchResults.length) return;
     const msg = searchResults[searchIndex];
@@ -153,14 +142,10 @@ export default function ChatWindow() {
     setTimeout(() => el.classList.remove(styles.highlight), 1000);
   }, [searchIndex, searchResults]);
 
-  // Открытие поиска — фокус на инпут
   useEffect(() => {
-    if (searchOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    }
+    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
   }, [searchOpen]);
 
-  // Esc закрывает поиск
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape' && searchOpen) closeSearch();
@@ -175,8 +160,6 @@ export default function ChatWindow() {
     setSearchResults([]);
   }
 
-  // Три точки — тоггл панели контакта,
-  // при открытии закрывает поиск и наоборот
   function handleDotsClick() {
     if (showContactPanel) {
       setShowContactPanel(false);
@@ -197,7 +180,6 @@ export default function ChatWindow() {
 
   function goBack() { clearCurrentChat(); }
 
-  // Touch свайп назад
   function handleTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -212,7 +194,6 @@ export default function ChatWindow() {
     touchStartY.current = null;
   }
 
-  // Drag & drop
   function onDragEnter(e) {
     e.preventDefault();
     if ([...(e.dataTransfer?.types || [])].includes('Files')) {
@@ -238,7 +219,6 @@ export default function ChatWindow() {
       handleFile(f);
   }
 
-  // ─── Плейсхолдер ────────────────────────────────────────
   if (!currentChat) {
     return (
       <div className={`${styles.area} chat-area`}>
@@ -250,7 +230,6 @@ export default function ChatWindow() {
     );
   }
 
-  // ─── Чат ────────────────────────────────────────────────
   return (
     <div
       className={`${styles.area} chat-area`}
@@ -261,17 +240,14 @@ export default function ChatWindow() {
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {/* ─── Хедер ─── */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={goBack}>‹</button>
-
         <div
           className={`${styles.avatar} ${currentChat.type === 'group' ? styles.groupAvatar : ''}`}
           style={currentChat.type !== 'group' ? { background: getAvatarColor(currentChat.name) } : {}}
         >
           {currentChat.type === 'group' ? '#' : initials(currentChat.name)}
         </div>
-
         <div className={styles.headerInfo}>
           <div className={styles.chatName}>{currentChat.name}</div>
           {currentChat.type === 'direct' && (
@@ -283,9 +259,7 @@ export default function ChatWindow() {
             <div className={styles.status}>групповой чат</div>
           )}
         </div>
-
         <div className={styles.headerActions}>
-          {/* Лупа — поиск по сообщениям */}
           <button
             className={`${styles.headerBtn} ${searchOpen ? styles.active : ''}`}
             onClick={handleSearchClick}
@@ -293,8 +267,6 @@ export default function ChatWindow() {
           >
             <SearchIcon />
           </button>
-
-          {/* Три точки (директ) / участники (группа) */}
           {currentChat.type === 'group' ? (
             <button
               className={`${styles.headerBtn} ${showGroupInfo ? styles.active : ''}`}
@@ -315,7 +287,6 @@ export default function ChatWindow() {
         </div>
       </div>
 
-      {/* ─── Поисковый бар ─── */}
       {searchOpen && (
         <div className={styles.searchBar}>
           <input
@@ -353,7 +324,6 @@ export default function ChatWindow() {
       <MessageList />
       <MessageInput />
 
-      {/* ─── Drag & drop оверлей ─── */}
       {isDragging && (
         <div className={styles.dropOverlay}>
           <div className={styles.dropBox}>
@@ -366,19 +336,8 @@ export default function ChatWindow() {
         </div>
       )}
 
-      {/* ─── Модалки ─── */}
       {showGroupInfo && (
         <GroupInfoModal onClose={() => setShowGroupInfo(false)} />
-      )}
-
-      {showContactPanel && currentChat.type === 'direct' && (
-        <ContactPanel
-          onClose={() => setShowContactPanel(false)}
-          onOpenSearch={() => {
-            setShowContactPanel(false);
-            setSearchOpen(true);
-          }}
-        />
       )}
     </div>
   );

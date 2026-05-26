@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import useAppStore from '../../store/useAppStore';
 import { api } from '../../services/api';
 import ChatList from './ChatList/ChatList';
@@ -9,7 +9,6 @@ import { createGroup } from '../../services/groups';
 import toast from 'react-hot-toast';
 import styles from './Sidebar.module.css';
 
-// ─── Иконки ───────────────────────────────────────────────
 function SearchIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -35,22 +34,18 @@ function ChevronLeft() {
   );
 }
 
-// ─── Подэкраны ────────────────────────────────────────────
-
-
 export default function Sidebar() {
   const { me, isAdmin, chats, setChats, contacts, setContacts, logout, lastInvite, setLastInvite } = useAppStore();
 
   const [screen, setScreen] = useState('chats');
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
-  // Редактирование профиля
+  // ─── Тема: читаем из localStorage, по умолчанию system ───
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
+
   const [editName, setEditName] = useState('');
   const [editStatus, setEditStatus] = useState('');
-
-  // Конфиденциальность
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -58,23 +53,20 @@ export default function Sidebar() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Загрузка чатов
   useEffect(() => {
     api('/chats/', 'GET')
       .then(data => setChats(data?.chats || []))
       .catch(() => setChats([]));
   }, [setChats]);
 
-  // Загрузка контактов при открытии поиска
   useEffect(() => {
     if (screen === 'search' && (!contacts || contacts.length === 0)) {
       getContacts()
-        .then(data => setContacts(data))
+        .then(data => setContacts(Array.isArray(data) ? data : data?.contacts || []))
         .catch(() => {});
     }
   }, [screen]);
 
-  // Esc закрывает панели
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape' && screen !== 'chats') setScreen('chats');
@@ -83,13 +75,17 @@ export default function Sidebar() {
     return () => document.removeEventListener('keydown', onKey);
   }, [screen]);
 
-  // Применение темы
+  // ─── Применение темы: system удаляет data-theme ──────────
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    if (theme === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.removeItem('theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
   }, [theme]);
 
-  // Открыть редактирование — подставить текущие данные
   function openEditProfile() {
     setEditName(me?.username || '');
     setEditStatus(me?.status || '');
@@ -149,7 +145,6 @@ export default function Sidebar() {
     !searchQuery || (c.username || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ─── Хедер ──────────────────────────────────────────────
   function renderHeader() {
     return (
       <div className={styles.header}>
@@ -162,10 +157,8 @@ export default function Sidebar() {
           <SearchIcon />
         </button>
         <button
-          className={`${styles.myAvatarBtn} ${screen === 'profile' || screen === 'editProfile' || screen === 'settings' || screen === 'privacy' || screen === 'favorites' ? styles.active : ''}`}
-          onClick={() => setScreen(
-            screen === 'chats' || screen === 'search' ? 'profile' : 'chats'
-          )}
+          className={`${styles.myAvatarBtn} ${['profile','editProfile','settings','privacy','favorites'].includes(screen) ? styles.active : ''}`}
+          onClick={() => setScreen(['chats','search'].includes(screen) ? 'profile' : 'chats')}
           title="Профиль"
         >
           <div
@@ -179,7 +172,6 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: список чатов ─────────────────────────────────
   if (screen === 'chats') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
@@ -191,7 +183,6 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: поиск + контакты ─────────────────────────────
   if (screen === 'search') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
@@ -206,11 +197,7 @@ export default function Sidebar() {
               autoFocus
             />
           </div>
-
-          <div
-            className={styles.createGroupRow}
-            onClick={handleCreateGroup}
-          >
+          <div className={styles.createGroupRow} onClick={handleCreateGroup}>
             <span className={styles.createGroupIcon}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -220,33 +207,40 @@ export default function Sidebar() {
             <span className={styles.createGroupLabel}>Создать группу</span>
             <span className={styles.createGroupChevron}><ChevronRight /></span>
           </div>
-
           <div className={styles.sectionLabel}>Контакты</div>
           <div className={styles.contactsList}>
-            {filteredContacts.map(c => (
-              <div key={c.id || c.contact_user_id} className={styles.contactRow}>
-                <div
-                  className={styles.contactAvatar}
-                  style={{ background: getAvatarColor(c.username) }}
-                >
-                  {initials(c.username || '?')}
-                </div>
-                <div>
-                  <div className={styles.contactName}>{c.username}</div>
-                  <div className={styles.contactUsername}>@{c.username}</div>
-                </div>
-                <span className={c.is_online ? styles.contactStatusOn : styles.contactStatusOff}>
-                  {c.is_online ? 'в сети' : 'не в сети'}
-                </span>
+            {filteredContacts.length === 0 && (
+              <div style={{ padding: '16px', color: 'var(--text2)', fontSize: 13, textAlign: 'center' }}>
+                Контакты не найдены
               </div>
-            ))}
+            )}
+            {filteredContacts.map(c => {
+              const name = c.username || c.name || '?';
+              const online = c.is_online ?? false;
+              return (
+                <div key={c.id || c.contact_user_id} className={styles.contactRow}>
+                  <div
+                    className={styles.contactAvatar}
+                    style={{ background: getAvatarColor(name) }}
+                  >
+                    {initials(name)}
+                  </div>
+                  <div>
+                    <div className={styles.contactName}>{name}</div>
+                    <div className={styles.contactUsername}>@{name}</div>
+                  </div>
+                  <span className={online ? styles.contactStatusOn : styles.contactStatusOff}>
+                    {online ? 'в сети' : 'не в сети'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </aside>
     );
   }
 
-  // ─── Экран: профиль ──────────────────────────────────────
   if (screen === 'profile') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
@@ -265,46 +259,34 @@ export default function Sidebar() {
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>
           </div>
-
           <div className={styles.profileMenu}>
             <div className={styles.profileSection}>
               <div className={styles.menuRow} onClick={openEditProfile}>
-                <span className={styles.menuRowIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </span>
+                <span className={styles.menuRowIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
                 <div className={styles.menuRowBody}>
                   <div className={styles.menuRowLabel}>Редактировать профиль</div>
                   <div className={styles.menuRowSub}>Имя, статус</div>
                 </div>
                 <span className={styles.menuRowChevron}><ChevronRight /></span>
               </div>
-
               <div className={styles.menuRow} onClick={() => setScreen('settings')}>
-                <span className={styles.menuRowIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </span>
+                <span className={styles.menuRowIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
                 <div className={styles.menuRowBody}>
                   <div className={styles.menuRowLabel}>Настройки</div>
                   <div className={styles.menuRowSub}>Тема, уведомления, язык</div>
                 </div>
                 <span className={styles.menuRowChevron}><ChevronRight /></span>
               </div>
-
               <div className={styles.menuRow} onClick={() => setScreen('favorites')}>
-                <span className={styles.menuRowIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                </span>
+                <span className={styles.menuRowIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
                 <div className={styles.menuRowBody}>
                   <div className={styles.menuRowLabel}>Избранное</div>
                   <div className={styles.menuRowSub}>Сохранённые сообщения</div>
                 </div>
                 <span className={styles.menuRowChevron}><ChevronRight /></span>
               </div>
-
               <div className={styles.menuRow} onClick={() => setScreen('privacy')}>
-                <span className={styles.menuRowIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                </span>
+                <span className={styles.menuRowIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
                 <div className={styles.menuRowBody}>
                   <div className={styles.menuRowLabel}>Конфиденциальность</div>
                   <div className={styles.menuRowSub}>Сменить пароль</div>
@@ -312,13 +294,10 @@ export default function Sidebar() {
                 <span className={styles.menuRowChevron}><ChevronRight /></span>
               </div>
             </div>
-
             {isAdmin && (
               <div className={styles.profileSection}>
                 <div className={styles.menuRow}>
-                  <span className={styles.menuRowIcon} style={{ color: '#F2D900' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 5-4-7-4 7-6-5zm3 16h14"/></svg>
-                  </span>
+                  <span className={styles.menuRowIcon} style={{ color: '#F2D900' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 5-4-7-4 7-6-5zm3 16h14"/></svg></span>
                   <div className={styles.menuRowBody}>
                     <div className={styles.menuRowLabel}>Админ-панель</div>
                     <div className={styles.menuRowSub}>Управление пользователями</div>
@@ -327,32 +306,20 @@ export default function Sidebar() {
                 </div>
                 <div className={styles.menuRow} onClick={genInvite}>
                   <span className={styles.menuRowIcon}>🔗</span>
-                  <div className={styles.menuRowBody}>
-                    <div className={styles.menuRowLabel}>Создать инвайт</div>
-                  </div>
+                  <div className={styles.menuRowBody}><div className={styles.menuRowLabel}>Создать инвайт</div></div>
                 </div>
                 {lastInvite && (
                   <div className={styles.menuRow} onClick={copyInvite}>
                     <span className={styles.menuRowIcon}>📋</span>
-                    <div className={styles.menuRowBody}>
-                      <div className={styles.menuRowLabel}>Скопировать: {lastInvite}</div>
-                    </div>
+                    <div className={styles.menuRowBody}><div className={styles.menuRowLabel}>Скопировать: {lastInvite}</div></div>
                   </div>
                 )}
               </div>
             )}
-
             <div className={styles.profileSection}>
-              <div
-                className={`${styles.menuRow} ${styles.menuRowDanger}`}
-                onClick={() => { logout(); setScreen('chats'); }}
-              >
-                <span className={styles.menuRowIcon}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </span>
-                <div className={styles.menuRowBody}>
-                  <div className={styles.menuRowLabel}>Выйти из аккаунта</div>
-                </div>
+              <div className={`${styles.menuRow} ${styles.menuRowDanger}`} onClick={() => { logout(); setScreen('chats'); }}>
+                <span className={styles.menuRowIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+                <div className={styles.menuRowBody}><div className={styles.menuRowLabel}>Выйти из аккаунта</div></div>
                 <span className={styles.menuRowChevron}><ChevronRight /></span>
               </div>
             </div>
@@ -362,17 +329,13 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: редактирование профиля ──────────────────────
   if (screen === 'editProfile') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-            >
+            <div className={styles.profileAvatar} style={{ background: getAvatarColor(me?.username) }}>
               {initials(me?.username || '?')}
               <div className={styles.profileEditBadge}>✎</div>
             </div>
@@ -388,27 +351,15 @@ export default function Sidebar() {
             <div className={styles.subContent}>
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Имя</label>
-                <input
-                  className={styles.fieldInput}
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  placeholder="Введи имя"
-                />
+                <input className={styles.fieldInput} value={editName} onChange={e => setEditName(e.target.value)} placeholder="Введи имя" />
                 <span className={styles.fieldHint}>Видно всем пользователям</span>
               </div>
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Статус</label>
-                <input
-                  className={styles.fieldInput}
-                  value={editStatus}
-                  onChange={e => setEditStatus(e.target.value)}
-                  placeholder="Что делаешь?"
-                />
+                <input className={styles.fieldInput} value={editStatus} onChange={e => setEditStatus(e.target.value)} placeholder="Что делаешь?" />
                 <span className={styles.fieldHint}>Видно всем пользователям</span>
               </div>
-              <button className={styles.saveBtn} onClick={saveProfile}>
-                Сохранить
-              </button>
+              <button className={styles.saveBtn} onClick={saveProfile}>Сохранить</button>
             </div>
           </div>
         </div>
@@ -416,7 +367,6 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: настройки ────────────────────────────────────
   if (screen === 'settings') {
     const themes = [
       { id: 'system', label: 'Системная', color: '#888' },
@@ -453,36 +403,25 @@ export default function Sidebar() {
                       >
                         {theme === t.id && <div className={styles.themeCheck}>✓</div>}
                       </div>
-                      <span className={`${styles.themeLabel} ${theme === t.id ? styles.selected : ''}`}>
-                        {t.label}
-                      </span>
+                      <span className={`${styles.themeLabel} ${theme === t.id ? styles.selected : ''}`}>{t.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className={styles.fieldGroup}>
                 <div className={styles.fieldLabel}>Уведомления</div>
                 <div className={styles.settingRow}>
-                  <span className={styles.settingIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                  </span>
+                  <span className={styles.settingIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                   <span className={styles.settingLabel}>Уведомления</span>
-                  <button
-                    className={`${styles.toggle} ${notifications ? styles.on : styles.off}`}
-                    onClick={() => setNotifications(v => !v)}
-                  >
+                  <button className={`${styles.toggle} ${notifications ? styles.on : styles.off}`} onClick={() => setNotifications(v => !v)}>
                     <div className={styles.toggleKnob} />
                   </button>
                 </div>
               </div>
-
               <div className={styles.fieldGroup}>
                 <div className={styles.fieldLabel}>Язык</div>
                 <div className={styles.menuRow} style={{ padding: '8px 0', borderRadius: 8 }}>
-                  <span className={styles.settingIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                  </span>
+                  <span className={styles.settingIcon}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
                   <span className={styles.settingLabel}>Русский</span>
                   <span className={styles.menuRowChevron}><ChevronRight /></span>
                 </div>
@@ -494,7 +433,6 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: конфиденциальность ───────────────────────────
   if (screen === 'privacy') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
@@ -514,59 +452,28 @@ export default function Sidebar() {
               <span className={styles.subHeaderTitle}>Конфиденциальность</span>
             </div>
             <div className={styles.subContent}>
-              <div className={styles.fieldLabel} style={{ marginBottom: 8 }}>Сменить пароль</div>
-
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Введите старый пароль</label>
                 <div className={styles.passwordWrap}>
-                  <input
-                    className={styles.fieldInput}
-                    type={showOld ? 'text' : 'password'}
-                    value={oldPass}
-                    onChange={e => setOldPass(e.target.value)}
-                    placeholder="••••••"
-                  />
-                  <button className={styles.eyeBtn} onClick={() => setShowOld(v => !v)}>
-                    {showOld ? '🙈' : '👁'}
-                  </button>
+                  <input className={styles.fieldInput} type={showOld ? 'text' : 'password'} value={oldPass} onChange={e => setOldPass(e.target.value)} placeholder="••••••" />
+                  <button className={styles.eyeBtn} onClick={() => setShowOld(v => !v)}>{showOld ? '🙈' : '👁'}</button>
                 </div>
               </div>
-
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Введите новый пароль</label>
                 <div className={styles.passwordWrap}>
-                  <input
-                    className={styles.fieldInput}
-                    type={showNew ? 'text' : 'password'}
-                    value={newPass}
-                    onChange={e => setNewPass(e.target.value)}
-                    placeholder="••••••"
-                  />
-                  <button className={styles.eyeBtn} onClick={() => setShowNew(v => !v)}>
-                    {showNew ? '🙈' : '👁'}
-                  </button>
+                  <input className={styles.fieldInput} type={showNew ? 'text' : 'password'} value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="••••••" />
+                  <button className={styles.eyeBtn} onClick={() => setShowNew(v => !v)}>{showNew ? '🙈' : '👁'}</button>
                 </div>
               </div>
-
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Повторите новый пароль</label>
                 <div className={styles.passwordWrap}>
-                  <input
-                    className={styles.fieldInput}
-                    type={showConfirm ? 'text' : 'password'}
-                    value={confirmPass}
-                    onChange={e => setConfirmPass(e.target.value)}
-                    placeholder="••••••"
-                  />
-                  <button className={styles.eyeBtn} onClick={() => setShowConfirm(v => !v)}>
-                    {showConfirm ? '🙈' : '👁'}
-                  </button>
+                  <input className={styles.fieldInput} type={showConfirm ? 'text' : 'password'} value={confirmPass} onChange={e => setConfirmPass(e.target.value)} placeholder="••••••" />
+                  <button className={styles.eyeBtn} onClick={() => setShowConfirm(v => !v)}>{showConfirm ? '🙈' : '👁'}</button>
                 </div>
               </div>
-
-              <button className={styles.saveBtn} onClick={savePassword}>
-                Сохранить
-              </button>
+              <button className={styles.saveBtn} onClick={savePassword}>Сохранить</button>
             </div>
           </div>
         </div>
@@ -574,7 +481,6 @@ export default function Sidebar() {
     );
   }
 
-  // ─── Экран: избранное ────────────────────────────────────
   if (screen === 'favorites') {
     return (
       <aside className={`${styles.sidebar} sidebar`}>
@@ -594,7 +500,6 @@ export default function Sidebar() {
               <span className={styles.subHeaderTitle}>Избранное</span>
             </div>
             <div className={styles.mediaGrid}>
-              {/* сюда придут реальные медиа из API */}
               <div style={{ padding: '20px 16px', color: 'var(--text2)', fontSize: 13 }}>
                 Нет сохранённых сообщений
               </div>

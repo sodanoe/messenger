@@ -9,7 +9,6 @@
   overflow: hidden;
 }
 
-/* ─── Плейсхолдер (нет активного чата) ─── */
 .placeholder {
   flex: 1;
   display: flex;
@@ -21,12 +20,8 @@
   font-size: 14px;
 }
 
-.placeholderIcon {
-  font-size: 48px;
-  opacity: 0.3;
-}
+.placeholderIcon { font-size: 48px; opacity: 0.3; }
 
-/* ─── Хедер чата ─── */
 .header {
   height: 62px;
   display: flex;
@@ -39,7 +34,6 @@
   z-index: 5;
 }
 
-/* ─── Кнопка назад (мобайл) ─── */
 .backBtn {
   display: none;
   background: none;
@@ -59,30 +53,26 @@
   .backBtn { display: block; }
 }
 
-/* ─── Аватар в хедере ─── */
+/* ─── Аватар в хедере — 32px как в сайдбаре (баг 3) ─── */
 .avatar {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .groupAvatar {
   background: var(--avatar-purple);
-  font-size: 16px;
+  font-size: 14px;
 }
 
-/* ─── Инфо о чате ─── */
-.headerInfo {
-  flex: 1;
-  min-width: 0;
-}
+.headerInfo { flex: 1; min-width: 0; }
 
 .chatName {
   font-size: 15px;
@@ -93,14 +83,9 @@
   white-space: nowrap;
 }
 
-.status {
-  font-size: 12px;
-  color: var(--text2);
-}
-
+.status { font-size: 12px; color: var(--text2); }
 .status.online { color: var(--green); }
 
-/* ─── Иконки справа в хедере ─── */
 .headerActions {
   display: flex;
   align-items: center;
@@ -123,15 +108,8 @@
   flex-shrink: 0;
 }
 
-.headerBtn:hover {
-  background: var(--bg2);
-  color: var(--text);
-}
-
-/* Активная лупа — синий цвет иконки */
+.headerBtn:hover { background: var(--bg2); color: var(--text); }
 .headerBtn.active { color: var(--accent); }
-
-/* Активные три точки */
 .headerBtn.menuActive { color: var(--accent); }
 
 .membersBtn {
@@ -148,7 +126,7 @@
 
 .membersBtn:hover { background: var(--bg2); color: var(--text); }
 
-/* ─── Поисковый бар (под хедером) ─── */
+/* ─── Поисковый бар ─── */
 .searchBar {
   display: flex;
   align-items: center;
@@ -181,19 +159,9 @@
 .searchBarInput:focus { border-color: var(--accent); }
 .searchBarInput::placeholder { color: var(--text2); opacity: 0.6; }
 
-.searchBarCount {
-  font-size: 12px;
-  color: var(--text2);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.searchBarCount { font-size: 12px; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
 
-.searchBarNav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
+.searchBarNav { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
 .searchNavBtn {
   width: 28px;
@@ -231,7 +199,7 @@
 
 .searchCloseBtn:hover { background: var(--bg2); color: var(--text); }
 
-/* ─── Дроп-оверлей (drag & drop) ─── */
+/* ─── Drag & drop ─── */
 .dropOverlay {
   position: absolute;
   inset: 0;
@@ -263,12 +231,16 @@
   text-align: center;
 }
 
-.dropTitle {
-  font-size: 18px;
-  font-weight: 600;
+.dropTitle { font-size: 18px; font-weight: 600; }
+.dropSub   { font-size: 13px; color: var(--text2); }
+
+/* ─── Highlight найденного сообщения ─── */
+@keyframes highlightFade {
+  0%   { background: var(--accent-muted); }
+  100% { background: transparent; }
 }
 
-.dropSub {
-  font-size: 13px;
-  color: var(--text2);
+.highlight {
+  animation: highlightFade 1s ease-out;
+  border-radius: 12px;
 }

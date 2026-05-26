@@ -10,7 +10,7 @@
   border-right: 1px solid var(--border);
 }
 
-/* ─── Хедер ─── */
+/* ─── Хедер — без border-bottom (баг 4) ─── */
 .header {
   height: 62px;
   display: flex;
@@ -18,7 +18,6 @@
   gap: 10px;
   padding: 0 16px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
   background: var(--bg);
 }
 
@@ -29,7 +28,6 @@
   flex: 1;
 }
 
-/* ─── Кнопка поиска (лупа) ─── */
 .searchBtn {
   width: 32px;
   height: 32px;
@@ -47,11 +45,8 @@
 }
 
 .searchBtn:hover { color: var(--text); }
-
-/* Активная лупа — синий контур самой иконки */
 .searchBtn.active { color: var(--accent); }
 
-/* ─── Кнопка аватара ─── */
 .myAvatarBtn {
   border: none;
   background: none;
@@ -80,13 +75,11 @@
   transition: outline 0.15s;
 }
 
-/* Активный аватар — синий бордер вокруг круга */
 .myAvatarBtn.active .myAvatar {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* ─── Бургер-кнопка (действия) ─── */
 .actionsWrap {
   position: relative;
   flex-shrink: 0;
@@ -109,7 +102,6 @@
 .menuBtn:hover { background: var(--bg3); color: var(--text); }
 .menuBtn.active { background: var(--bg3); color: var(--text); }
 
-/* ─── Дропдаун действий ─── */
 .menuActions {
   position: absolute;
   top: calc(100% + 8px);
@@ -147,7 +139,6 @@
 .menuItem:hover { background: var(--bg3); }
 .menuItem.danger { color: var(--danger); }
 
-/* ─── Список чатов ─── */
 .chatListContainer {
   flex: 1;
   overflow: hidden;
@@ -156,7 +147,6 @@
   min-height: 0;
 }
 
-/* ─── Панель (профиль / поиск) — заменяет список ─── */
 .panel {
   flex: 1;
   overflow-y: auto;
@@ -171,7 +161,6 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ─── Профиль: карточка ─── */
 .profileCard {
   display: flex;
   flex-direction: column;
@@ -219,10 +208,7 @@
   margin-top: 6px;
 }
 
-.profileUsername {
-  font-size: 13px;
-  color: var(--text2);
-}
+.profileUsername { font-size: 13px; color: var(--text2); }
 
 .profileOnlineBadge {
   font-size: 11px;
@@ -233,7 +219,6 @@
   margin-top: 2px;
 }
 
-/* ─── Профиль: меню ─── */
 .profileMenu {
   display: flex;
   flex-direction: column;
@@ -268,7 +253,6 @@
 }
 
 .menuRowDanger .menuRowIcon { color: var(--red); }
-
 .menuRowBody { flex: 1; min-width: 0; }
 
 .menuRowLabel {
@@ -285,12 +269,8 @@
   margin-top: 1px;
 }
 
-.menuRowChevron {
-  font-size: 14px;
-  color: var(--text2);
-}
+.menuRowChevron { font-size: 14px; color: var(--text2); }
 
-/* ─── Подэкраны (редактирование, настройки…) ─── */
 .subScreen {
   flex: 1;
   display: flex;
@@ -309,11 +289,7 @@
 }
 
 .subHeader:hover { background: var(--bg2); }
-
-.subHeaderBack {
-  font-size: 16px;
-  color: var(--text2);
-}
+.subHeaderBack { font-size: 16px; color: var(--text2); }
 
 .subHeaderTitle {
   font-size: 11px;
@@ -332,7 +308,6 @@
   gap: 16px;
 }
 
-/* ─── Поля формы ─── */
 .fieldGroup {
   display: flex;
   flex-direction: column;
@@ -362,12 +337,7 @@
 
 .fieldInput:focus { border-color: var(--accent); }
 .fieldInput::placeholder { color: var(--text2); opacity: 0.6; }
-
-.fieldHint {
-  font-size: 11px;
-  color: var(--text2);
-  opacity: 0.7;
-}
+.fieldHint { font-size: 11px; color: var(--text2); opacity: 0.7; }
 
 .passwordWrap { position: relative; }
 .passwordWrap .fieldInput { padding-right: 42px; }
@@ -390,7 +360,6 @@
 
 .eyeBtn:hover { color: var(--text); }
 
-/* ─── Кнопка сохранить ─── */
 .saveBtn {
   width: 100%;
   padding: 13px;
@@ -407,7 +376,6 @@
 
 .saveBtn:hover { background: var(--accent-hover); }
 
-/* ─── Настройки: выбор темы ─── */
 .themeRow {
   display: flex;
   gap: 12px;
@@ -459,7 +427,6 @@
 
 .themeLabel.selected { color: var(--accent); }
 
-/* ─── Настройки: строка с тогглом ─── */
 .settingRow {
   display: flex;
   align-items: center;
@@ -509,7 +476,6 @@
 .toggle.on  .toggleKnob { left: 21px; }
 .toggle.off .toggleKnob { left: 3px; }
 
-/* ─── Поиск контактов ─── */
 .searchPanel {
   display: flex;
   flex-direction: column;
@@ -591,12 +557,7 @@
   color: var(--text);
 }
 
-.contactUsername {
-  font-size: 12px;
-  color: var(--text2);
-  margin-top: 1px;
-}
-
+.contactUsername { font-size: 12px; color: var(--text2); margin-top: 1px; }
 .contactStatusOn  { font-size: 11px; color: var(--green); }
 .contactStatusOff { font-size: 11px; color: var(--text2); }
 
@@ -626,23 +587,15 @@
   color: var(--accent);
 }
 
-.createGroupChevron {
-  font-size: 14px;
-  color: var(--text2);
-}
+.createGroupChevron { font-size: 14px; color: var(--text2); }
 
-/* ─── Медиа-сетка (избранное) ─── */
 .mediaGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
 }
 
-.mediaCell {
-  aspect-ratio: 1;
-  overflow: hidden;
-  cursor: pointer;
-}
+.mediaCell { aspect-ratio: 1; overflow: hidden; cursor: pointer; }
 
 .mediaCell img {
   width: 100%;
@@ -654,7 +607,6 @@
 
 .mediaCell img:hover { opacity: 0.85; }
 
-/* ─── Адаптив ─── */
 @media (max-width: 767px) {
   .sidebar { width: 100%; }
 }

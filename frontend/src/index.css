@@ -13,23 +13,18 @@
   --bg2:           #F0F4F8;
   --bg3:           #EEF6FE;
   --bg-input:      #F0F4F8;
-
   --text:          #1B3550;
   --text2:         #8FA8C0;
   --text3:         #2B5278;
-
   --accent:        #779FEC;
   --accent-hover:  #3B6CC9;
   --accent-muted:  rgba(119, 159, 236, 0.3);
   --accent-soft:   rgba(119, 159, 236, 0.6);
   --accent-gradient: linear-gradient(135deg, #2A5298, #3B6CC9);
-
   --border:        #D1DCE8;
   --border2:       rgba(27, 53, 80, 0.12);
-
   --bubble-out:    #2A5298;
   --bubble-in:     #FFFFFF;
-
   --green:         #00E435;
   --green-bg:      rgba(0, 228, 53, 0.15);
   --green-dark:    #00BF2C;
@@ -37,12 +32,10 @@
   --red-muted:     rgba(250, 73, 73, 0.6);
   --danger:        #FA4949;
   --yellow:        #FFF064;
-
   --avatar-green:  #4A7A5A;
   --avatar-purple: #6A3A6A;
   --avatar-brown:  #8A5A3A;
   --avatar-teal:   #3B6D8A;
-
   --shadow-sm:     0 1px 4px rgba(27, 53, 80, 0.10);
   --shadow-md:     0 4px 16px rgba(27, 53, 80, 0.14);
   --shadow-lg:     0 8px 32px rgba(27, 53, 80, 0.18);
@@ -55,23 +48,18 @@
   --bg2:           #1A1A1A;
   --bg3:           #252525;
   --bg-input:      #2A2A2A;
-
   --text:          #FFFFFF;
   --text2:         rgba(255, 255, 255, 0.5);
   --text3:         rgba(255, 255, 255, 0.7);
-
   --accent:        #779FEC;
   --accent-hover:  #3B6CC9;
   --accent-muted:  rgba(119, 159, 236, 0.3);
   --accent-soft:   rgba(119, 159, 236, 0.6);
   --accent-gradient: linear-gradient(135deg, #2A5298, #3B6CC9);
-
   --border:        #2A2A2A;
   --border2:       rgba(255, 255, 255, 0.06);
-
   --bubble-out:    #2A5298;
   --bubble-in:     #252525;
-
   --green:         #00E435;
   --green-bg:      rgba(0, 228, 53, 0.15);
   --green-dark:    #00BF2C;
@@ -79,12 +67,10 @@
   --red-muted:     rgba(250, 73, 73, 0.6);
   --danger:        #FA4949;
   --yellow:        #FFF064;
-
   --avatar-green:  #4A7A5A;
   --avatar-purple: #6A3A6A;
   --avatar-brown:  #8A5A3A;
   --avatar-teal:   #3B6D8A;
-
   --shadow-sm:     0 1px 4px rgba(0, 0, 0, 0.4);
   --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-lg:     0 8px 32px rgba(0, 0, 0, 0.6);
@@ -110,7 +96,9 @@
   --bubble-in:     #252030;
   --green:         #00E435;
   --green-bg:      rgba(0, 228, 53, 0.15);
+  --green-dark:    #00BF2C;
   --red:           #FA4949;
+  --red-muted:     rgba(250, 73, 73, 0.6);
   --danger:        #FA4949;
   --shadow-sm:     0 1px 4px rgba(0,0,0,0.4);
   --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
@@ -118,9 +106,9 @@
   --vh: 1vh;
 }
 
-/* ─── Системная тема ─── */
+/* ─── Системная тема — только когда нет явного выбора ─── */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]):not([data-theme="dark"]):not([data-theme="purple"]) {
     --bg:            #111111;
     --bg2:           #1A1A1A;
     --bg3:           #252525;
@@ -139,7 +127,9 @@
     --bubble-in:     #252525;
     --green:         #00E435;
     --green-bg:      rgba(0, 228, 53, 0.15);
+    --green-dark:    #00BF2C;
     --red:           #FA4949;
+    --red-muted:     rgba(250, 73, 73, 0.6);
     --danger:        #FA4949;
     --shadow-sm:     0 1px 4px rgba(0,0,0,0.4);
     --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
