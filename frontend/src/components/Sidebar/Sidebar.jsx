@@ -36,7 +36,7 @@ function ChevronLeft() {
 }
 
 // ─── Подэкраны ────────────────────────────────────────────
-type Screen = 'chats' | 'search' | 'profile' | 'editProfile' | 'settings' | 'privacy' | 'favorites';
+
 
 export default function Sidebar() {
   const { me, isAdmin, chats, setChats, contacts, setContacts, logout, lastInvite, setLastInvite } = useAppStore();
