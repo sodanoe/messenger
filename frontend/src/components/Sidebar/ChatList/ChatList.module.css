@@ -5,24 +5,19 @@
   flex-direction: column;
   padding: 6px 8px 10px;
   gap: 2px;
-  background: #1C1C1E;
+  background: var(--bg);
 }
 
-@media (prefers-color-scheme: light) {
-  .list {
-    background: #edf3f9;
-  }
-}
-
-.list::-webkit-scrollbar { width: 6px; }
+.list::-webkit-scrollbar { width: 4px; }
 
 .list::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.08);
-  border-radius: 4px;
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.15);
+  background: var(--text2);
+  opacity: 0.3;
 }
 
 .empty {

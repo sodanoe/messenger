@@ -4,10 +4,11 @@
   left: 0;
   right: 0;
   background: transparent;
-  padding: 8px 20px max(20px, calc(10px + env(safe-area-inset-bottom)));
+  padding: 8px 16px max(16px, calc(8px + env(safe-area-inset-bottom)));
   z-index: 10;
 }
 
+/* ─── Превью ответа ─── */
 .replyPreview {
   display: flex;
   align-items: center;
@@ -16,12 +17,15 @@
   margin-bottom: 8px;
   border-radius: 10px;
   background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   font-size: 13px;
   color: var(--text2);
-  border-left: 3px solid var(--accent);
 }
-.replyIcon { color: var(--text2); flex-shrink: 0; }
-.replyText { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.replyIcon  { color: var(--text2); flex-shrink: 0; }
+.replyText  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .replyClose {
   background: none;
   border: none;
@@ -33,24 +37,29 @@
   border-radius: 4px;
   transition: color 0.15s;
 }
+
 .replyClose:hover { color: var(--text); }
 
+/* ─── Превью медиа ─── */
 .mediaPreview {
   position: relative;
   display: inline-block;
   margin-bottom: 8px;
 }
+
 .mediaPreview img {
   height: 80px;
   border-radius: 10px;
   display: block;
   object-fit: cover;
-  transition: opacity 0.2s;
 }
+
 .removeMedia {
   position: absolute;
-  top: -6px; right: -6px;
-  width: 20px; height: 20px;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--danger);
   border: none;
@@ -60,7 +69,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.15s;
 }
+
+.removeMedia:hover { opacity: 0.85; }
 
 .uploadingOverlay {
   position: absolute;
@@ -69,7 +81,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .spinner {
@@ -85,6 +97,7 @@
   to { transform: rotate(360deg); }
 }
 
+/* ─── Строка ввода ─── */
 .row {
   display: flex;
   align-items: flex-end;
@@ -93,10 +106,11 @@
 
 .attachBtn {
   cursor: pointer;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--bg3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   color: var(--text2);
   display: flex;
   align-items: center;
@@ -104,22 +118,31 @@
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
 }
-.attachBtn:hover { background: var(--border); color: var(--text); }
 
+.attachBtn:hover { background: var(--bg3); color: var(--text); }
+
+/* ─── Поле ввода ─── */
 .inputArea {
   flex: 1;
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  background: var(--bg3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
   border-radius: 22px;
   padding: 6px 6px 6px 14px;
-  transition: box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+
 .inputArea:focus-within {
-  box-shadow: 0 0 0 2px rgba(43, 82, 120, 0.4);
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
-.inputArea.dragOver { box-shadow: 0 0 0 2px rgba(43, 82, 120, 0.6); }
+
+.inputArea.dragOver {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
 
 .textarea {
   flex: 1;
@@ -138,8 +161,11 @@
   scrollbar-width: none;
   align-self: center;
 }
-.textarea::-webkit-scrollbar { display: none; }
 
+.textarea::-webkit-scrollbar { display: none; }
+.textarea::placeholder { color: var(--text2); opacity: 0.6; }
+
+/* ─── Кнопка эмодзи ─── */
 .emojiBtn {
   background: none;
   border: none;
@@ -155,24 +181,26 @@
   align-self: flex-end;
   margin-bottom: 3px;
 }
+
 .emojiBtn:hover { color: var(--text); }
 
+/* ─── Кнопка отправки ─── */
 .sendBtn {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-gradient);
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 0;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s;
   box-shadow: var(--shadow-sm);
   padding: 0;
 }
-.sendBtn:hover { opacity: 0.9; transform: scale(1.05); }
-.sendBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.sendBtn:hover { background: var(--accent-hover); transform: scale(1.05); }
+.sendBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }

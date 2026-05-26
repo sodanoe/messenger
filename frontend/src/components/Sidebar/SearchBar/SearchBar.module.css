@@ -22,8 +22,8 @@
 }
 
 .input::placeholder {
-  color: var(--text);
-  opacity: 0.45;
+  color: var(--text2);
+  opacity: 0.7;
 }
 
 .clear {
@@ -40,12 +40,13 @@
 
 .clear:hover { color: var(--text); }
 
+/* ─── Результаты поиска ─── */
 .results {
   position: absolute;
-  top: calc(100% + 16px);
+  top: calc(100% + 10px);
   left: -48px;
   right: -60px;
-  background: var(--bg3);
+  background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow-md);
@@ -69,15 +70,15 @@
   transition: background 0.1s;
   border-radius: 8px;
   margin: 4px;
+  cursor: pointer;
 }
 
-.item:hover { background: var(--bg2); }
+.item:hover { background: var(--bg3); }
 
 .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--accent-gradient);
   color: #fff;
   display: flex;
   align-items: center;
@@ -95,7 +96,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--green, #22c55e);
+  background: var(--green);
   border: 1.5px solid var(--bg2);
 }
 
@@ -104,12 +105,18 @@
 .name {
   font-size: 13px;
   font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.status { font-size: 11px; color: var(--text2); }
+.status {
+  font-size: 11px;
+  color: var(--text2);
+}
+
+.status.online { color: var(--green); }
 
 .actions { display: flex; gap: 6px; align-items: center; }
 
@@ -117,7 +124,7 @@
   padding: 4px 10px;
   border-radius: 8px;
   border: none;
-  background: var(--bg2);
+  background: var(--bg3);
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
@@ -127,11 +134,11 @@
 .actionBtn:hover { background: var(--border); }
 
 .actionBtn.add {
-  background: rgba(43, 82, 120, 0.2);
+  background: var(--accent-muted);
   color: var(--text);
 }
 
-.actionBtn.add:hover { background: rgba(43, 82, 120, 0.35); }
+.actionBtn.add:hover { background: var(--accent-soft); }
 
 .alreadyBtn {
   font-size: 11px;

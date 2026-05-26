@@ -4,11 +4,12 @@
   flex-direction: column;
   min-width: 0;
   height: calc(var(--vh, 1vh) * 100);
-  background: var(--bg);
+  background: var(--bg2);
   position: relative;
   overflow: hidden;
 }
 
+/* ─── Плейсхолдер (нет активного чата) ─── */
 .placeholder {
   flex: 1;
   display: flex;
@@ -19,19 +20,26 @@
   color: var(--text2);
   font-size: 14px;
 }
-.placeholderIcon { font-size: 48px; opacity: 0.4; }
 
+.placeholderIcon {
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+/* ─── Хедер чата ─── */
 .header {
   height: 62px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10.5px 20px;
-  background: var(--bg2);
+  padding: 0 16px 0 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 5;
 }
 
+/* ─── Кнопка назад (мобайл) ─── */
 .backBtn {
   display: none;
   background: none;
@@ -44,17 +52,18 @@
   flex-shrink: 0;
   transition: color 0.15s;
 }
+
 .backBtn:hover { color: var(--text); }
 
 @media (max-width: 767px) {
   .backBtn { display: block; }
 }
 
+/* ─── Аватар в хедере ─── */
 .avatar {
-  width: 39px;
-  height: 39px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: var(--accent-gradient);
   color: #fff;
   display: flex;
   align-items: center;
@@ -62,28 +71,68 @@
   font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
 }
 
 .groupAvatar {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text2);
+  background: var(--avatar-purple);
   font-size: 16px;
 }
 
-.headerInfo { flex: 1; min-width: 0; }
+/* ─── Инфо о чате ─── */
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+}
 
 .chatName {
   font-size: 15px;
   font-weight: 600;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.status { font-size: 12px; color: var(--text2); }
+.status {
+  font-size: 12px;
+  color: var(--text2);
+}
+
 .status.online { color: var(--green); }
+
+/* ─── Иконки справа в хедере ─── */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.headerBtn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text2);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.headerBtn:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+/* Активная лупа — синий цвет иконки */
+.headerBtn.active { color: var(--accent); }
+
+/* Активные три точки */
+.headerBtn.menuActive { color: var(--accent); }
 
 .membersBtn {
   background: none;
@@ -96,12 +145,97 @@
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
-.membersBtn:hover { background: var(--bg3); color: var(--text); }
 
+.membersBtn:hover { background: var(--bg2); color: var(--text); }
+
+/* ─── Поисковый бар (под хедером) ─── */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  animation: slideDown 0.18s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.searchBarInput {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.searchBarInput:focus { border-color: var(--accent); }
+.searchBarInput::placeholder { color: var(--text2); opacity: 0.6; }
+
+.searchBarCount {
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.searchBarNav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.searchNavBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 16px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.searchNavBtn:hover { background: var(--bg2); color: var(--text); }
+.searchNavBtn:disabled { opacity: 0.3; cursor: default; }
+
+.searchCloseBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 14px;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.searchCloseBtn:hover { background: var(--bg2); color: var(--text); }
+
+/* ─── Дроп-оверлей (drag & drop) ─── */
 .dropOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 50;
@@ -113,7 +247,7 @@
 
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 .dropBox {
@@ -123,9 +257,9 @@
   gap: 12px;
   padding: 40px 48px;
   border-radius: 20px;
-  border: 2px dashed rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  border: 2px dashed var(--accent-soft);
+  background: var(--accent-muted);
+  color: var(--text);
   text-align: center;
 }
 
@@ -136,5 +270,5 @@
 
 .dropSub {
   font-size: 13px;
-  opacity: 0.6;
+  color: var(--text2);
 }

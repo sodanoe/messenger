@@ -2,35 +2,37 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.12s, transform 0.06s;
 }
 
-.item:hover { background: var(--bg3); }
-.item.active { background: rgba(43, 82, 120, 0.25); }
+.item:hover { background: var(--bg2); }
+.item.active { background: var(--accent-muted); }
 .item:active { transform: scale(0.98); }
 
+/* ─── Аватар ─── */
 .avatarWrap {
   position: relative;
   flex-shrink: 0;
 }
 
 .avatar {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: rgba(43, 82, 120, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   font-weight: 600;
-  color: var(--text);
+  color: #fff;
 }
 
-.avatar.group { background: rgba(120, 80, 160, 0.35); }
+.avatar.group {
+  background: var(--avatar-purple);
+}
 
 .onlineDot {
   position: absolute;
@@ -38,11 +40,12 @@
   bottom: 1px;
   width: 11px;
   height: 11px;
-  background: #4ade80;
+  background: var(--green);
   border-radius: 50%;
-  border: 2px solid var(--bg2);
+  border: 2px solid var(--bg);
 }
 
+/* ─── Контент ─── */
 .info {
   flex: 1;
   min-width: 0;
@@ -59,7 +62,7 @@
 }
 
 .name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -68,27 +71,14 @@
 }
 
 .sub {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text2);
-  opacity: 0.85;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.time {
-  font-size: 13px;
-  color: var(--text2);
-  flex-shrink: 0;
-}
-
-.unreadDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
+/* ─── Мета (время + бейдж) ─── */
 .meta {
   display: flex;
   align-items: center;
@@ -96,5 +86,20 @@
   flex-shrink: 0;
 }
 
+.time {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ─── Непрочитанное ─── */
 .item.unread .name { font-weight: 600; }
-.item.unread .sub { color: var(--text); opacity: 1; }
+.item.unread .sub  { color: var(--text); }
+.item.unread .time { color: var(--accent); font-weight: 500; }

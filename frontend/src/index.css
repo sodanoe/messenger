@@ -6,42 +6,148 @@
   padding: 0;
 }
 
-:root {
-  --bg: #141414;
-  --bg2: #000000;
-  --bg3: #2C2C2E;
-  --text: #ffffff;
-  --text2: rgba(235, 235, 245, 0.6);
-  --border: #38383A;
-  --border2: #000000;
-  --accent: #2b5278;
-  --accent2: #1e3a5f;
-  --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
-  --green: #32d74b;
-  --danger: #ff453a;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+/* ─── Светлая тема (по умолчанию) ─── */
+:root,
+[data-theme="light"] {
+  --bg:            #FFFFFF;
+  --bg2:           #F0F4F8;
+  --bg3:           #EEF6FE;
+  --bg-input:      #F0F4F8;
+
+  --text:          #1B3550;
+  --text2:         #8FA8C0;
+  --text3:         #2B5278;
+
+  --accent:        #779FEC;
+  --accent-hover:  #3B6CC9;
+  --accent-muted:  rgba(119, 159, 236, 0.3);
+  --accent-soft:   rgba(119, 159, 236, 0.6);
+  --accent-gradient: linear-gradient(135deg, #2A5298, #3B6CC9);
+
+  --border:        #D1DCE8;
+  --border2:       rgba(27, 53, 80, 0.12);
+
+  --bubble-out:    #2A5298;
+  --bubble-in:     #FFFFFF;
+
+  --green:         #00E435;
+  --green-bg:      rgba(0, 228, 53, 0.15);
+  --green-dark:    #00BF2C;
+  --red:           #FA4949;
+  --red-muted:     rgba(250, 73, 73, 0.6);
+  --danger:        #FA4949;
+  --yellow:        #FFF064;
+
+  --avatar-green:  #4A7A5A;
+  --avatar-purple: #6A3A6A;
+  --avatar-brown:  #8A5A3A;
+  --avatar-teal:   #3B6D8A;
+
+  --shadow-sm:     0 1px 4px rgba(27, 53, 80, 0.10);
+  --shadow-md:     0 4px 16px rgba(27, 53, 80, 0.14);
+  --shadow-lg:     0 8px 32px rgba(27, 53, 80, 0.18);
   --vh: 1vh;
 }
 
-@media (prefers-color-scheme: light) {
+/* ─── Тёмная тема ─── */
+[data-theme="dark"] {
+  --bg:            #111111;
+  --bg2:           #1A1A1A;
+  --bg3:           #252525;
+  --bg-input:      #2A2A2A;
+
+  --text:          #FFFFFF;
+  --text2:         rgba(255, 255, 255, 0.5);
+  --text3:         rgba(255, 255, 255, 0.7);
+
+  --accent:        #779FEC;
+  --accent-hover:  #3B6CC9;
+  --accent-muted:  rgba(119, 159, 236, 0.3);
+  --accent-soft:   rgba(119, 159, 236, 0.6);
+  --accent-gradient: linear-gradient(135deg, #2A5298, #3B6CC9);
+
+  --border:        #2A2A2A;
+  --border2:       rgba(255, 255, 255, 0.06);
+
+  --bubble-out:    #2A5298;
+  --bubble-in:     #252525;
+
+  --green:         #00E435;
+  --green-bg:      rgba(0, 228, 53, 0.15);
+  --green-dark:    #00BF2C;
+  --red:           #FA4949;
+  --red-muted:     rgba(250, 73, 73, 0.6);
+  --danger:        #FA4949;
+  --yellow:        #FFF064;
+
+  --avatar-green:  #4A7A5A;
+  --avatar-purple: #6A3A6A;
+  --avatar-brown:  #8A5A3A;
+  --avatar-teal:   #3B6D8A;
+
+  --shadow-sm:     0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md:     0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg:     0 8px 32px rgba(0, 0, 0, 0.6);
+  --vh: 1vh;
+}
+
+/* ─── Пурпурная тема (заглушка) ─── */
+[data-theme="purple"] {
+  --bg:            #0A0A0A;
+  --bg2:           #1A1520;
+  --bg3:           #252030;
+  --bg-input:      #2A2535;
+  --text:          #FFFFFF;
+  --text2:         rgba(255, 255, 255, 0.5);
+  --accent:        #826FBB;
+  --accent-hover:  #5A4A8A;
+  --accent-muted:  rgba(130, 111, 187, 0.3);
+  --accent-soft:   rgba(130, 111, 187, 0.6);
+  --accent-gradient: linear-gradient(135deg, #5A4A8A, #826FBB);
+  --border:        rgba(130, 111, 187, 0.2);
+  --border2:       rgba(130, 111, 187, 0.1);
+  --bubble-out:    #5A4A8A;
+  --bubble-in:     #252030;
+  --green:         #00E435;
+  --green-bg:      rgba(0, 228, 53, 0.15);
+  --red:           #FA4949;
+  --danger:        #FA4949;
+  --shadow-sm:     0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+  --vh: 1vh;
+}
+
+/* ─── Системная тема ─── */
+@media (prefers-color-scheme: dark) {
   :root {
-    --bg: #e8f0f7;
-    --bg2: #ffffff;
-    --bg3: #f5f7fa;
-    --text: #0f1f2e;
-    --text2: #4a6275;
-    --border: #dce6f0;
-    --accent: #2b5278;
-    --accent2: #1e3a5f;
-    --accent-gradient: linear-gradient(135deg, #2b5278, #254769);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+    --bg:            #111111;
+    --bg2:           #1A1A1A;
+    --bg3:           #252525;
+    --bg-input:      #2A2A2A;
+    --text:          #FFFFFF;
+    --text2:         rgba(255, 255, 255, 0.5);
+    --text3:         rgba(255, 255, 255, 0.7);
+    --accent:        #779FEC;
+    --accent-hover:  #3B6CC9;
+    --accent-muted:  rgba(119, 159, 236, 0.3);
+    --accent-soft:   rgba(119, 159, 236, 0.6);
+    --accent-gradient: linear-gradient(135deg, #2A5298, #3B6CC9);
+    --border:        #2A2A2A;
+    --border2:       rgba(255, 255, 255, 0.06);
+    --bubble-out:    #2A5298;
+    --bubble-in:     #252525;
+    --green:         #00E435;
+    --green-bg:      rgba(0, 228, 53, 0.15);
+    --red:           #FA4949;
+    --danger:        #FA4949;
+    --shadow-sm:     0 1px 4px rgba(0,0,0,0.4);
+    --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
+    --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
   }
 }
 
+/* ─── База ─── */
 html, body, #root {
   height: calc(var(--vh, 1vh) * 100);
   overscroll-behavior: none;
@@ -50,51 +156,39 @@ html, body, #root {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   color: var(--text);
+  background: var(--bg);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background: #000000;
-}
-
-@media (prefers-color-scheme: light) {
-  body {
-    background: linear-gradient(135deg, #8fa8c0 0%, #a0b8cc 40%, #90a8bc 100%);
-    background-size: 200% 200%;
-    animation: psBreathe 8s ease-in-out infinite;
-  }
-}
-
-@keyframes psBreathe {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 }
 
 button { font-family: inherit; }
 textarea { font-family: inherit; }
-input { font-family: inherit; }
+input { font-family: inherit; font-size: 16px !important; }
+select { font-family: inherit; }
+textarea { font-size: 16px !important; }
 
+/* ─── Скроллбар ─── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* ─── Emoji picker ─── */
 em-emoji-picker {
-  --rgb-background: 0, 0, 0;
-  --rgb-input: 44, 44, 46;
-  --rgb-color: 255, 255, 255;
-  --rgb-accent: 43, 82, 120;
   --border-radius: 12px;
   --shadow: none;
 }
 
-@media (prefers-color-scheme: light) {
-  em-emoji-picker {
-    --rgb-background: 255, 255, 255;
-    --rgb-input: 245, 247, 250;
-    --rgb-color: 15, 31, 46;
-    --rgb-accent: 43, 82, 120;
-  }
+[data-theme="light"] em-emoji-picker {
+  --rgb-background: 255, 255, 255;
+  --rgb-input: 240, 244, 248;
+  --rgb-color: 27, 53, 80;
+  --rgb-accent: 119, 159, 236;
 }
 
-input, textarea, select {
-  font-size: 16px !important;
+[data-theme="dark"] em-emoji-picker,
+[data-theme="purple"] em-emoji-picker {
+  --rgb-background: 26, 26, 26;
+  --rgb-input: 37, 37, 37;
+  --rgb-color: 255, 255, 255;
+  --rgb-accent: 119, 159, 236;
 }

@@ -3,7 +3,7 @@
   margin-bottom: 16px;
   position: relative;
 }
-.row.me { justify-content: flex-end; }
+.row.me    { justify-content: flex-end; }
 .row.other { justify-content: flex-start; }
 
 .bubbleWrap {
@@ -17,6 +17,7 @@
   display: inline-flex;
 }
 
+/* ─── Пузырь ─── */
 .bubble {
   padding: 8px 11px;
   border-radius: 12px;
@@ -26,37 +27,46 @@
   word-break: break-word;
   width: 100%;
 }
+
 .me .bubble {
-  background: var(--accent-gradient);
+  background: var(--bubble-out);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
+
 .other .bubble {
-  background: var(--bg2);
+  background: var(--bubble-in);
   color: var(--text);
   border-bottom-left-radius: 4px;
+  border: 1px solid var(--border);
 }
 
 .mediaBubble {
   padding: 0 !important;
   overflow: hidden;
+  border: none !important;
 }
 
+/* ─── Одиночный эмодзи ─── */
 .singleEmoji {
   background: transparent !important;
+  border: none !important;
   padding: 4px 0;
   box-shadow: none !important;
 }
+
 .singleEmoji .text {
   font-size: 48px;
   line-height: 1.1;
 }
+
 .singleEmoji .inlineEmoji {
   width: 48px;
   height: 48px;
   margin: 0;
 }
 
+/* ─── Кнопка ответа ─── */
 .replyBtn {
   position: absolute;
   top: 50%;
@@ -74,22 +84,24 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s, background 0.15s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   z-index: 2;
 }
-.me .replyBtn { left: -36px; }
+
+.me .replyBtn    { left: -36px; }
 .other .replyBtn { right: -36px; }
 .row:hover .replyBtn { opacity: 1; }
 .replyBtn:hover { background: var(--accent); color: #fff; }
 
+/* ─── Кнопка реакции ─── */
 .reactBtn {
   position: absolute;
   bottom: -8px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1.5px solid var(--bg);
-  background: var(--bg2);
+  border: 1.5px solid var(--bg2);
+  background: var(--bg3);
   color: var(--text2);
   font-size: 10px;
   cursor: pointer;
@@ -98,23 +110,26 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s, background 0.15s, transform 0.1s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   z-index: 2;
   line-height: 1;
   padding: 0;
 }
-.me .reactBtn { left: -8px; }
+
+.me .reactBtn    { left: -8px; }
 .other .reactBtn { right: -8px; }
 .row:hover .reactBtn { opacity: 1; }
 .reactBtn:hover { background: var(--accent); color: #fff; transform: scale(1.1); }
 
+/* ─── Имя отправителя (группы) ─── */
 .senderName {
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent2);
+  color: var(--accent);
   margin-bottom: 3px;
 }
 
+/* ─── Цитата (ответ) ─── */
 .replyQuote {
   display: flex;
   gap: 8px;
@@ -122,15 +137,34 @@
   border-radius: 6px;
   margin-bottom: 5px;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.1);
-  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.12);
+  border-left: 2px solid rgba(255, 255, 255, 0.4);
 }
-.other .replyQuote { background: var(--bg); border-left-color: var(--accent); }
-.replyInner { flex: 1; min-width: 0; }
-.replyAuthor { font-size: 11px; font-weight: 600; display: block; opacity: 0.9; }
-.replyContent { font-size: 12px; opacity: 0.75; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.replyThumb { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
 
+.other .replyQuote {
+  background: var(--bg2);
+  border-left-color: var(--accent);
+}
+
+.replyInner  { flex: 1; min-width: 0; }
+.replyAuthor { font-size: 11px; font-weight: 600; display: block; opacity: 0.9; }
+.replyContent {
+  font-size: 12px;
+  opacity: 0.75;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.replyThumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ─── Медиа ─── */
 .media {
   position: relative;
   margin-bottom: 4px;
@@ -141,11 +175,8 @@
   justify-content: center;
 }
 
-.mediaOnly {
-  margin: 0;
-  border-radius: 12px;
-}
-.me .mediaOnly { border-bottom-right-radius: 4px; }
+.mediaOnly { margin: 0; border-radius: 12px; }
+.me .mediaOnly    { border-bottom-right-radius: 4px; }
 .other .mediaOnly { border-bottom-left-radius: 4px; }
 
 .mediaBlur {
@@ -170,6 +201,15 @@
   border-radius: 0;
 }
 
+/* ─── Мета (время + статус) ─── */
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 3px;
+}
+
 .metaOverlay {
   position: absolute;
   bottom: 6px;
@@ -179,8 +219,17 @@
   padding: 2px 6px;
 }
 
+.time   { font-size: 10px; opacity: 0.6; }
+.status { font-size: 11px; opacity: 0.7; }
+
+/* Прочитано — голубые галочки */
+.status.read        { color: var(--accent-soft); opacity: 1; }
+.me .status.read    { color: var(--accent-soft); }
+
+/* ─── Текст ─── */
 .text { white-space: pre-wrap; }
 
+/* ─── Реакции ─── */
 .reactions {
   display: flex;
   flex-wrap: wrap;
@@ -188,7 +237,8 @@
   margin-top: 6px;
   padding: 0 2px;
 }
-.me .reactions { justify-content: flex-end; }
+
+.me .reactions    { justify-content: flex-end; }
 .other .reactions { justify-content: flex-start; }
 
 .pill {
@@ -202,12 +252,17 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   transition: background 0.15s;
+  color: var(--text);
 }
+
+.pill:hover { background: var(--bg3); }
+
 .pill.mine {
-  background: rgba(59, 130, 246, 0.2);
+  background: var(--accent-muted);
   border-color: var(--accent);
 }
-.count { font-size: 11px; }
+
+.count  { font-size: 11px; }
 
 .inlineEmoji {
   height: 20px;
@@ -216,6 +271,7 @@
   object-fit: contain;
   margin: 0 2px;
 }
+
 .pillImg {
   height: 16px;
   width: 16px;
@@ -223,28 +279,18 @@
   vertical-align: middle;
 }
 
-.meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 3px;
-}
-.time { font-size: 10px; opacity: 0.65; }
-.status { font-size: 11px; opacity: 0.7; }
-.status.read { color: #a5f3fc; opacity: 1; }
-.me .status.read { color: #a5f3fc; }
-
+/* ─── Лайтбокс ─── */
 .lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.88);
   z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: zoom-out;
 }
+
 .lightbox img {
   max-width: 92vw;
   max-height: 92vh;
@@ -252,21 +298,28 @@
   object-fit: contain;
   cursor: default;
 }
+
 .lightboxClose {
   position: absolute;
-  top: 16px; right: 16px;
+  top: 16px;
+  right: 16px;
   background: rgba(255, 255, 255, 0.15);
   border: none;
   color: #fff;
   font-size: 20px;
-  width: 36px; height: 36px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.15s;
 }
 
+.lightboxClose:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* ─── Эмодзи-кнопка ─── */
 .emojiBtn {
   background: none;
   border: none;
@@ -277,15 +330,12 @@
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.emojiBtn:hover { background: var(--bg); }
 
-@media (max-width: 768px) {
-  .bubbleWrap { max-width: 88%; }
-  .media img { max-width: 100%; }
-}
+.emojiBtn:hover { background: var(--bg2); }
 
+/* ─── Анимации ─── */
 @keyframes highlightFade {
-  0% { background: rgba(99, 102, 241, 0.3); }
+  0%   { background: var(--accent-muted); }
   100% { background: transparent; }
 }
 
@@ -300,4 +350,10 @@
   font-size: 12px;
   color: var(--text2);
   opacity: 0.6;
+}
+
+/* ─── Адаптив ─── */
+@media (max-width: 768px) {
+  .bubbleWrap { max-width: 88%; }
+  .media img  { max-width: 100%; }
 }
