@@ -9,10 +9,21 @@ import styles from './MessageInput.module.css';
 
 export default function MessageInput() {
   const inputRef = useRef(null);
-  const { currentChat, me, replyTo, clearReplyTo, addMessage, updateChatLastMessage, customEmojis, setInputRef } = useAppStore();
-  const { pendingMedia, isUploading, handleFile, removePending } = useMediaUpload();
+  const {
+    currentChat,
+    me,
+    replyTo,
+    clearReplyTo,
+    addMessage,
+    updateChatLastMessage,
+    customEmojis,
+    setInputRef,
+  } = useAppStore();
+  const { pendingMedia, isUploading, handleFile, removePending } =
+    useMediaUpload();
   const [emojiBarOpen, setEmojiBarOpen] = useState(false);
   const [emojiBarPos, setEmojiBarPos] = useState({ top: 0, left: 0 });
+  const [isDragOver, setIsDragOver] = useState(false); // ← фикс
 
   useEffect(() => {
     setInputRef(inputRef);
@@ -34,7 +45,20 @@ export default function MessageInput() {
         const code = part.slice(1, -1);
         const found = customEmojis.find((e) => e.shortcode === code);
         if (found) {
-          return <img key={i} src={found.url} style={{ height: 16, width: 16, verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} alt={part} />;
+          return (
+            <img
+              key={i}
+              src={found.url}
+              style={{
+                height: 16,
+                width: 16,
+                verticalAlign: 'middle',
+                objectFit: 'contain',
+                margin: '0 1px',
+              }}
+              alt={part}
+            />
+          );
         }
       }
       return part;
@@ -46,7 +70,6 @@ export default function MessageInput() {
     const pickerWidth = 352;
     const margin = 16;
     const isMobile = window.innerWidth < 768;
-
     if (isMobile) {
       setEmojiBarPos({
         top: (window.innerHeight - pickerHeight) / 2,
@@ -56,7 +79,8 @@ export default function MessageInput() {
       const rect = e.currentTarget.getBoundingClientRect();
       let top = rect.top - pickerHeight - margin;
       let left = rect.left + rect.width / 2 - pickerWidth / 2;
-      if (left + pickerWidth > window.innerWidth - margin) left = window.innerWidth - pickerWidth - margin;
+      if (left + pickerWidth > window.innerWidth - margin)
+        left = window.innerWidth - pickerWidth - margin;
       if (left < margin) left = margin;
       setEmojiBarPos({ top, left });
     }
@@ -94,9 +118,19 @@ export default function MessageInput() {
     try {
       let result;
       if (currentChat.type === 'dm') {
-        result = await sendDM(currentChat.id, content, sentMedia?.id || null, sentReplyTo?.id || null);
+        result = await sendDM(
+          currentChat.id,
+          content,
+          sentMedia?.id || null,
+          sentReplyTo?.id || null,
+        );
       } else {
-        result = await sendGroupMessage(currentChat.id, content, sentMedia?.id || null, sentReplyTo?.id || null);
+        result = await sendGroupMessage(
+          currentChat.id,
+          content,
+          sentMedia?.id || null,
+          sentReplyTo?.id || null,
+        );
       }
 
       if (result) {
@@ -139,31 +173,46 @@ export default function MessageInput() {
     e.target.value = '';
   }
 
+  // ← фикс: используем стейт вместо classList
   function onDragOver(e) {
     e.preventDefault();
     if ([...(e.dataTransfer?.types || [])].includes('Files'))
-      e.currentTarget.classList.add(styles.dragOver);
+      setIsDragOver(true);
   }
+
   function onDragLeave(e) {
     if (e.currentTarget.contains(e.relatedTarget)) return;
-    e.currentTarget.classList.remove(styles.dragOver);
+    setIsDragOver(false);
   }
+
   function onDrop(e) {
     e.preventDefault();
-    e.currentTarget.classList.remove(styles.dragOver);
+    setIsDragOver(false);
     const f = e.dataTransfer?.files?.[0];
     if (f && f.type.startsWith('image/')) handleFile(f);
   }
 
   return (
-    <div className={styles.wrap} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+    <div
+      className={styles.wrap}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {replyTo && (
         <div className={styles.replyPreview}>
           <span className={styles.replyIcon}>↩</span>
           <span className={styles.replyText}>
-            {replyTo.senderName}: {replyTo.content ? formatSnippet(replyTo.content) : replyTo.mediaUrl ? '📷 Фото' : '—'}
+            {replyTo.senderName}:{' '}
+            {replyTo.content
+              ? formatSnippet(replyTo.content)
+              : replyTo.mediaUrl
+                ? '📷 Фото'
+                : '—'}
           </span>
-          <button className={styles.replyClose} onClick={clearReplyTo}>✕</button>
+          <button className={styles.replyClose} onClick={clearReplyTo}>
+            ✕
+          </button>
         </div>
       )}
 
@@ -179,20 +228,39 @@ export default function MessageInput() {
               <div className={styles.spinner} />
             </div>
           ) : (
-            <button className={styles.removeMedia} onClick={removePending}>✕</button>
+            <button className={styles.removeMedia} onClick={removePending}>
+              ✕
+            </button>
           )}
         </div>
       )}
 
       <div className={styles.row}>
         <label className={styles.attachBtn} title="Прикрепить картинку">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" />
           </svg>
-          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif" style={{ display: 'none' }} onChange={onFileChange} />
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif"
+            style={{ display: 'none' }}
+            onChange={onFileChange}
+          />
         </label>
 
-        <div className={`${styles.inputArea} ${styles.dragOver}`}>
+        {/* ← фикс: isDragOver вместо styles.dragOver хардкодом */}
+        <div
+          className={`${styles.inputArea} ${isDragOver ? styles.dragOver : ''}`}
+        >
           <textarea
             ref={inputRef}
             className={styles.textarea}
@@ -201,19 +269,45 @@ export default function MessageInput() {
             onKeyDown={handleKey}
             onInput={autoGrow}
           />
-          <button className={styles.emojiBtn} onClick={handleEmojiBtn} title="Эмодзи">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-              <line x1="9" y1="9" x2="9.01" y2="9"/>
-              <line x1="15" y1="9" x2="15.01" y2="9"/>
+          <button
+            className={styles.emojiBtn}
+            onClick={handleEmojiBtn}
+            title="Эмодзи"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+              <line x1="9" y1="9" x2="9.01" y2="9" />
+              <line x1="15" y1="9" x2="15.01" y2="9" />
             </svg>
           </button>
         </div>
 
-        <button className={styles.sendBtn} onClick={sendMessage} disabled={isUploading}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
+        <button
+          className={styles.sendBtn}
+          onClick={sendMessage}
+          disabled={isUploading}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </button>
       </div>
