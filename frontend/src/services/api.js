@@ -81,3 +81,24 @@ export async function uploadMedia(file) {
   }
   return resp.json();
 }
+
+/**
+ * Загрузка аватара пользователя (multipart/form-data)
+ * @param {File} file
+ * @returns {Promise<{avatar_url: string}>}
+ */
+export async function uploadAvatar(file) {
+  const token = useAppStore.getState().token;
+  const fd = new FormData();
+  fd.append('avatar', file);
+  const resp = await fetch(API_BASE() + '/profile/avatar', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.detail || 'Avatar upload failed');
+  }
+  return resp.json();
+}

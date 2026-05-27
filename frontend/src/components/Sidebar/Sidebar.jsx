@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useAppStore from '../../store/useAppStore';
-import { api } from '../../services/api';
+import { api, uploadAvatar } from '../../services/api';
 import ChatList from './ChatList/ChatList';
 import { initials } from '../../utils/format';
 import { getAvatarColor } from '../../utils/avatarColor';
@@ -61,8 +61,18 @@ function SearchIcon() {
 }
 
 export default function Sidebar() {
-  const { me, isAdmin, chats, setChats, logout, lastInvite, setLastInvite } =
-    useAppStore();
+  const {
+    me,
+    isAdmin,
+    chats,
+    setChats,
+    setMe,
+    logout,
+    lastInvite,
+    setLastInvite,
+  } = useAppStore();
+
+  const fileInputRef = useRef(null);
 
   const [screen, setScreen] = useState('chats');
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,6 +140,20 @@ export default function Sidebar() {
     setScreen('editProfile');
   }
 
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Сбрасываем input чтобы можно было выбрать тот же файл повторно
+    e.target.value = '';
+    try {
+      const data = await uploadAvatar(file);
+      setMe({ ...me, avatar_url: data.avatar_url });
+      toast.success('Аватар обновлён');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   async function saveProfile() {
     try {
       await api('/profile', 'PATCH', {
@@ -192,9 +216,61 @@ export default function Sidebar() {
     toast.success('Скопировано');
   }
 
+  // ─── Скрытый input для загрузки аватара ──────────────────
+  function renderAvatarInput() {
+    return (
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleAvatarChange}
+      />
+    );
+  }
+
+  // ─── Переиспользуемый блок аватара с карандашом ──────────
+  function renderProfileAvatar(withEdit = false) {
+    return (
+      <div
+        className={styles.profileAvatar}
+        style={
+          !me?.avatar_url ? { background: getAvatarColor(me?.username) } : {}
+        }
+        onClick={withEdit ? () => fileInputRef.current?.click() : undefined}
+      >
+        {me?.avatar_url ? (
+          <img
+            src={me.avatar_url}
+            alt="avatar"
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          initials(me?.username || '?')
+        )}
+        {withEdit && (
+          <div
+            className={styles.profileEditBadge}
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+          >
+            ✎
+          </div>
+        )}
+        {renderAvatarInput()}
+      </div>
+    );
+  }
+
   // ─── Хедер ───────────────────────────────────────────────
   function renderHeader() {
-    // При поиске — заменяем заголовок на инпут + крестик
     if (screen === 'search') {
       return (
         <div className={styles.header}>
@@ -240,9 +316,26 @@ export default function Sidebar() {
         >
           <div
             className={styles.myAvatar}
-            style={{ background: getAvatarColor(me?.username) }}
+            style={
+              !me?.avatar_url
+                ? { background: getAvatarColor(me?.username) }
+                : {}
+            }
           >
-            {initials(me?.username || '?')}
+            {me?.avatar_url ? (
+              <img
+                src={me.avatar_url}
+                alt="avatar"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : (
+              initials(me?.username || '?')
+            )}
           </div>
         </button>
       </div>
@@ -338,14 +431,7 @@ export default function Sidebar() {
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-              onClick={openEditProfile}
-            >
-              {initials(me?.username || '?')}
-              <div className={styles.profileEditBadge}>✎</div>
-            </div>
+            {renderProfileAvatar(true)}
             <div className={styles.profileName}>{me?.username}</div>
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>
@@ -552,13 +638,7 @@ export default function Sidebar() {
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-            >
-              {initials(me?.username || '?')}
-              <div className={styles.profileEditBadge}>✎</div>
-            </div>
+            {renderProfileAvatar(true)}
             <div className={styles.profileName}>{me?.username}</div>
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>
@@ -622,12 +702,7 @@ export default function Sidebar() {
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-            >
-              {initials(me?.username || '?')}
-            </div>
+            {renderProfileAvatar(false)}
             <div className={styles.profileName}>{me?.username}</div>
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>
@@ -741,12 +816,7 @@ export default function Sidebar() {
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-            >
-              {initials(me?.username || '?')}
-            </div>
+            {renderProfileAvatar(false)}
             <div className={styles.profileName}>{me?.username}</div>
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>
@@ -838,12 +908,7 @@ export default function Sidebar() {
         {renderHeader()}
         <div className={styles.panel}>
           <div className={styles.profileCard}>
-            <div
-              className={styles.profileAvatar}
-              style={{ background: getAvatarColor(me?.username) }}
-            >
-              {initials(me?.username || '?')}
-            </div>
+            {renderProfileAvatar(false)}
             <div className={styles.profileName}>{me?.username}</div>
             <div className={styles.profileUsername}>@{me?.username}</div>
             <div className={styles.profileOnlineBadge}>В сети</div>

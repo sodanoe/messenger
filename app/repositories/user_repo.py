@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
@@ -28,3 +28,13 @@ class UserRepository:
         await self.db.flush()
         await self.db.refresh(user)
         return user
+
+    async def update_avatar(self, user_id: int, avatar_url: str | None) -> User | None:
+        await self.db.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(avatar_url=avatar_url)
+        )
+        await self.db.flush()
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
