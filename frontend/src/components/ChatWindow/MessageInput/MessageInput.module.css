@@ -1,14 +1,10 @@
 .wrap {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: transparent;
-  padding: 10px 16px max(12px, calc(8px + env(safe-area-inset-bottom)));
-  z-index: 10;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+  flex-shrink: 0;
 }
 
-/* ─── Превью ответа ─── */
 .replyPreview {
   display: flex;
   align-items: center;
@@ -44,12 +40,10 @@
   flex-shrink: 0;
   transition: color 0.15s;
 }
-
 .replyClose:hover {
   color: var(--text);
 }
 
-/* ─── Превью медиа ─── */
 .mediaPreview {
   position: relative;
   display: inline-block;
@@ -105,18 +99,14 @@
   }
 }
 
-/* ─── Строка ввода ─── */
 .row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-/* Скрепка снаружи поля слева */
 .attachBtn {
   cursor: pointer;
-  width: 32px;
-  height: 32px;
   background: none;
   border: none;
   color: var(--text2);
@@ -127,29 +117,15 @@
   transition: color 0.15s;
   padding: 0;
 }
-
 .attachBtn:hover {
   color: var(--text);
 }
 
-/* Поле — pill с тонкой рамкой, эмодзи внутри */
 .inputArea {
   flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 8px 12px 8px 16px;
-  transition: border-color 0.15s;
-}
-
-.inputArea:focus-within {
-  border-color: var(--accent-soft);
-}
-.inputArea.dragOver {
-  border-color: var(--accent);
 }
 
 .textarea {
@@ -168,7 +144,6 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
-
 .textarea::-webkit-scrollbar {
   display: none;
 }
@@ -177,7 +152,6 @@
   opacity: 0.55;
 }
 
-/* Эмодзи внутри поля справа */
 .emojiBtn {
   background: none;
   border: none;
@@ -190,12 +164,10 @@
   flex-shrink: 0;
   transition: color 0.15s;
 }
-
 .emojiBtn:hover {
   color: var(--text);
 }
 
-/* Кнопка отправки снаружи поля справа */
 .sendBtn {
   width: 36px;
   height: 36px;
@@ -213,9 +185,7 @@
     transform 0.1s,
     opacity 0.15s;
   padding: 0;
-  flex-shrink: 0;
 }
-
 .sendBtn:hover {
   background: var(--accent-hover);
   transform: scale(1.05);
