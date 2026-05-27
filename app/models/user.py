@@ -19,7 +19,6 @@ class User(Base):
         String(64), unique=True, nullable=False, index=True
     )
     password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
-    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True, default=None)
     last_seen: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

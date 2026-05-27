@@ -7,14 +7,6 @@ import { API_BASE } from '../../../config';
 import toast from 'react-hot-toast';
 import styles from './ContactPanel.module.css';
 
-function SearchIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
 function MuteIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -43,7 +35,7 @@ function BlockIcon() {
   );
 }
 
-export default function ContactPanel({ onClose, onOpenSearch }) {
+export default function ContactPanel({ onClose }) {
   const { currentChat, chats } = useAppStore();
   const [media, setMedia] = useState([]);
   const [muted, setMuted] = useState(false);
@@ -116,10 +108,6 @@ export default function ContactPanel({ onClose, onOpenSearch }) {
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.actionItem} onClick={onOpenSearch} title="Поиск по сообщениям">
-          <div className={styles.actionIcon}><SearchIcon /></div>
-          <span className={styles.actionLabel}>Поиск</span>
-        </button>
 
         <button className={styles.actionItem} onClick={handleMute}>
           <div className={styles.actionIcon}>

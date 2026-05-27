@@ -10,7 +10,7 @@
   border-right: 1px solid var(--border);
 }
 
-/* ─── Хедер — без border-bottom (баг 4) ─── */
+/* ─── Хедер ─── */
 .header {
   height: 62px;
   display: flex;
@@ -44,12 +44,8 @@
   border-radius: 50%;
 }
 
-.searchBtn:hover {
-  color: var(--text);
-}
-.searchBtn.active {
-  color: var(--accent);
-}
+.searchBtn:hover { color: var(--text); }
+.searchBtn.active { color: var(--accent); }
 
 .myAvatarBtn {
   border: none;
@@ -64,9 +60,7 @@
   transition: opacity 0.15s;
 }
 
-.myAvatarBtn:hover {
-  opacity: 0.85;
-}
+.myAvatarBtn:hover { opacity: 0.85; }
 
 .myAvatar {
   width: 32px;
@@ -79,6 +73,7 @@
   font-weight: 700;
   color: #fff;
   transition: outline 0.15s;
+  overflow: hidden;
 }
 
 .myAvatarBtn.active .myAvatar {
@@ -102,19 +97,11 @@
   justify-content: center;
   border-radius: 50%;
   color: var(--text2);
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.menuBtn:hover {
-  background: var(--bg3);
-  color: var(--text);
-}
-.menuBtn.active {
-  background: var(--bg3);
-  color: var(--text);
-}
+.menuBtn:hover { background: var(--bg3); color: var(--text); }
+.menuBtn.active { background: var(--bg3); color: var(--text); }
 
 .menuActions {
   position: absolute;
@@ -131,14 +118,8 @@
 }
 
 @keyframes menuIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .menuDivider {
@@ -156,12 +137,8 @@
   transition: background 0.12s;
 }
 
-.menuItem:hover {
-  background: var(--bg3);
-}
-.menuItem.danger {
-  color: var(--danger);
-}
+.menuItem:hover { background: var(--bg3); }
+.menuItem.danger { color: var(--danger); }
 
 .chatListContainer {
   flex: 1;
@@ -181,22 +158,17 @@
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ─── Профильная карточка — компактнее по макету ─── */
 .profileCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 16px 20px;
-  gap: 5px;
+  padding: 20px 16px 16px;
+  gap: 4px;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
 }
@@ -213,6 +185,8 @@
   color: #fff;
   position: relative;
   cursor: pointer;
+  overflow: hidden;
+  margin-bottom: 2px;
 }
 
 .profileEditBadge {
@@ -229,13 +203,14 @@
   justify-content: center;
   font-size: 10px;
   color: #fff;
+  z-index: 1;
 }
 
 .profileName {
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .profileUsername {
@@ -252,48 +227,42 @@
   margin-top: 2px;
 }
 
+/* ─── Меню профиля — без лишних отступов ─── */
 .profileMenu {
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
+  padding: 0;
 }
 
 .profileSection {
   border-bottom: 1px solid var(--border);
-  padding: 3px 0;
+  padding: 2px 0;
 }
 
-.profileSection:last-child {
-  border-bottom: none;
-}
+.profileSection:last-child { border-bottom: none; }
 
 .menuRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: background 0.12s;
 }
 
-.menuRow:hover {
-  background: var(--bg2);
-}
-.menuRow.menuRowActive {
-  background: var(--bg2);
-}
+.menuRow:hover { background: var(--bg2); }
+.menuRow.menuRowActive { background: var(--bg2); }
 
 .menuRowIcon {
-  font-size: 18px;
+  font-size: 20px;
   color: var(--accent);
-  width: 20px;
+  width: 22px;
   text-align: center;
   flex-shrink: 0;
 }
 
-.menuRowDanger .menuRowIcon {
-  color: var(--red);
-}
+.menuRowDanger .menuRowIcon { color: var(--red); }
+
 .menuRowBody {
   flex: 1;
   min-width: 0;
@@ -305,14 +274,12 @@
   font-weight: 500;
 }
 
-.menuRowDanger .menuRowLabel {
-  color: var(--red);
-}
+.menuRowDanger .menuRowLabel { color: var(--red); }
 
 .menuRowSub {
   font-size: 12px;
   color: var(--text2);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .menuRowChevron {
@@ -337,9 +304,8 @@
   transition: background 0.12s;
 }
 
-.subHeader:hover {
-  background: var(--bg2);
-}
+.subHeader:hover { background: var(--bg2); }
+
 .subHeaderBack {
   font-size: 16px;
   color: var(--text2);
@@ -389,25 +355,17 @@
   transition: border-color 0.15s;
 }
 
-.fieldInput:focus {
-  border-color: var(--accent);
-}
-.fieldInput::placeholder {
-  color: var(--text2);
-  opacity: 0.6;
-}
+.fieldInput:focus { border-color: var(--accent); }
+.fieldInput::placeholder { color: var(--text2); opacity: 0.6; }
+
 .fieldHint {
   font-size: 11px;
   color: var(--text2);
   opacity: 0.7;
 }
 
-.passwordWrap {
-  position: relative;
-}
-.passwordWrap .fieldInput {
-  padding-right: 42px;
-}
+.passwordWrap { position: relative; }
+.passwordWrap .fieldInput { padding-right: 42px; }
 
 .eyeBtn {
   position: absolute;
@@ -425,9 +383,7 @@
   transition: color 0.15s;
 }
 
-.eyeBtn:hover {
-  color: var(--text);
-}
+.eyeBtn:hover { color: var(--text); }
 
 .saveBtn {
   width: 100%;
@@ -443,9 +399,7 @@
   margin-top: 8px;
 }
 
-.saveBtn:hover {
-  background: var(--accent-hover);
-}
+.saveBtn:hover { background: var(--accent-hover); }
 
 .themeRow {
   display: flex;
@@ -471,9 +425,7 @@
   transition: border-color 0.15s;
 }
 
-.themeCircle.selected {
-  border-color: var(--accent);
-}
+.themeCircle.selected { border-color: var(--accent); }
 
 .themeCheck {
   position: absolute;
@@ -498,9 +450,7 @@
   letter-spacing: 0.05em;
 }
 
-.themeLabel.selected {
-  color: var(--accent);
-}
+.themeLabel.selected { color: var(--accent); }
 
 .settingRow {
   display: flex;
@@ -534,12 +484,8 @@
   padding: 0;
 }
 
-.toggle.on {
-  background: var(--accent);
-}
-.toggle.off {
-  background: var(--border);
-}
+.toggle.on { background: var(--accent); }
+.toggle.off { background: var(--border); }
 
 .toggleKnob {
   position: absolute;
@@ -552,12 +498,8 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.toggle.on .toggleKnob {
-  left: 21px;
-}
-.toggle.off .toggleKnob {
-  left: 3px;
-}
+.toggle.on .toggleKnob { left: 21px; }
+.toggle.off .toggleKnob { left: 3px; }
 
 .searchPanel {
   display: flex;
@@ -589,13 +531,8 @@
   background-position: 12px center;
 }
 
-.searchInput:focus {
-  border-color: var(--accent);
-}
-.searchInput::placeholder {
-  color: var(--text2);
-  opacity: 0.6;
-}
+.searchInput:focus { border-color: var(--accent); }
+.searchInput::placeholder { color: var(--text2); opacity: 0.6; }
 
 .contactsList {
   flex: 1;
@@ -622,12 +559,8 @@
   border-bottom: 1px solid var(--border);
 }
 
-.contactRow:last-child {
-  border-bottom: none;
-}
-.contactRow:hover {
-  background: var(--bg2);
-}
+.contactRow:last-child { border-bottom: none; }
+.contactRow:hover { background: var(--bg2); }
 
 .contactAvatar {
   width: 36px;
@@ -654,14 +587,9 @@
   color: var(--text2);
   margin-top: 1px;
 }
-.contactStatusOn {
-  font-size: 11px;
-  color: var(--green);
-}
-.contactStatusOff {
-  font-size: 11px;
-  color: var(--text2);
-}
+
+.contactStatusOn { font-size: 11px; color: var(--green); }
+.contactStatusOff { font-size: 11px; color: var(--text2); }
 
 .createGroupRow {
   display: flex;
@@ -673,9 +601,7 @@
   transition: background 0.12s;
 }
 
-.createGroupRow:hover {
-  background: var(--bg2);
-}
+.createGroupRow:hover { background: var(--bg2); }
 
 .createGroupIcon {
   font-size: 18px;
@@ -716,14 +642,10 @@
   transition: opacity 0.15s;
 }
 
-.mediaCell img:hover {
-  opacity: 0.85;
-}
+.mediaCell img:hover { opacity: 0.85; }
 
 @media (max-width: 767px) {
-  .sidebar {
-    width: 100%;
-  }
+  .sidebar { width: 100%; }
 }
 
 /* ─── Поиск в хедере ─── */
@@ -741,10 +663,57 @@
   min-width: 0;
 }
 
-.searchHeaderInput:focus {
-  border-color: var(--accent);
-}
-.searchHeaderInput::placeholder {
+.searchHeaderInput:focus { border-color: var(--accent); }
+.searchHeaderInput::placeholder { color: var(--text2); opacity: 0.6; }
+
+/* ─── Крестик закрытия поиска — увеличенная зона для iOS ─── */
+.closeBtnMobile {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text2);
-  opacity: 0.6;
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 16px;
+  transition: color 0.15s;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.closeBtnMobile:hover { color: var(--text); }
+
+/* ─── Индикатор дружбы ─── */
+.badgeFriends {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--green-dark);
+  background: var(--green-bg);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badgePending {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--bg3);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─── Хинт "Написать" для новых пользователей ─── */
+.startChatHint {
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
 }

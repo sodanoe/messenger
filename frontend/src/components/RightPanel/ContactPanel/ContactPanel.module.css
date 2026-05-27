@@ -115,7 +115,7 @@
 .actions {
   display: flex;
   justify-content: center;
-  gap: 32px;
+  gap: 48px;
   padding: 20px 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -130,6 +130,7 @@
   border: none;
   padding: 0;
   font-family: inherit;
+  width: 80px;
 }
 
 .actionIcon {
@@ -151,6 +152,7 @@
   color: var(--text2);
   text-align: center;
   white-space: nowrap;
+  width: 100%;
 }
 
 .actionDanger { color: var(--red); }
