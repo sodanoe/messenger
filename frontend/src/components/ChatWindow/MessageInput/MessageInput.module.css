@@ -1,10 +1,11 @@
 .wrap {
-  position: relative;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  padding: 10px 16px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  padding: 10px 16px max(12px, calc(8px + env(safe-area-inset-bottom)));
   z-index: 10;
-  flex-shrink: 0;
 }
 
 /* ─── Превью ответа ─── */
@@ -13,7 +14,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   border-radius: 10px;
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -41,7 +42,6 @@
   cursor: pointer;
   padding: 2px;
   flex-shrink: 0;
-  border-radius: 4px;
   transition: color 0.15s;
 }
 
@@ -53,7 +53,7 @@
 .mediaPreview {
   position: relative;
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .mediaPreview img {
@@ -109,10 +109,10 @@
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* Скрепка */
+/* Скрепка снаружи поля слева */
 .attachBtn {
   cursor: pointer;
   width: 32px;
@@ -132,7 +132,7 @@
   color: var(--text);
 }
 
-/* Поле ввода */
+/* Поле — pill с тонкой рамкой, эмодзи внутри */
 .inputArea {
   flex: 1;
   display: flex;
@@ -140,8 +140,8 @@
   gap: 6px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 8px 10px 8px 16px;
+  border-radius: 24px;
+  padding: 8px 12px 8px 16px;
   transition: border-color 0.15s;
 }
 
@@ -174,10 +174,10 @@
 }
 .textarea::placeholder {
   color: var(--text2);
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
-/* Эмодзи */
+/* Эмодзи внутри поля справа */
 .emojiBtn {
   background: none;
   border: none;
@@ -195,7 +195,7 @@
   color: var(--text);
 }
 
-/* Кнопка отправки */
+/* Кнопка отправки снаружи поля справа */
 .sendBtn {
   width: 36px;
   height: 36px;
@@ -213,6 +213,7 @@
     transform 0.1s,
     opacity 0.15s;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .sendBtn:hover {
