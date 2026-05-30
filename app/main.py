@@ -75,4 +75,6 @@ app.include_router(reactions.router)
 # ── Static media ──────────────────────────────
 os.makedirs("/app/media/emojis", exist_ok=True)
 os.makedirs("/app/media", exist_ok=True)
+os.makedirs("/app/media/avatars/users", exist_ok=True)
+os.makedirs("/app/media/avatars/chats", exist_ok=True)
 app.mount("/media", StaticFiles(directory="/app/media"), name="media")
