@@ -22,8 +22,6 @@ class ChatService:
         self.notifier = ChatNotifier()
 
     async def create_direct_chat(self, user_a_id: int, user_b_id: int) -> Chat:
-        # Один JOIN вместо N запросов is_member.
-        # Ищем direct-чат где оба пользователя уже являются участниками
         member_b = ChatMember.__table__.alias("member_b")
         stmt = (
             select(Chat)
@@ -99,7 +97,6 @@ class ChatService:
             for row in contacts_res.all():
                 unread_map[row.contact_user_id] = row.has_unread
 
-        # Параллельный decrypt всех last_message через asyncio.gather
         decrypted = await asyncio.gather(
             *[async_decrypt_safe(row.last_msg_content) for row in chats_data]
         )
@@ -130,22 +127,48 @@ class ChatService:
 
         return result
 
+    async def require_admin(self, chat_id: int, user_id: int) -> None:
+        """Бросает 403 если юзер не участник или не админ."""
+        member = await self.members.get_single_member(chat_id, user_id)
+        if not member:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
+            )
+        if member.role != ChatRole.admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Admins only"
+            )
+
+    async def require_group(self, chat_id: int) -> Chat:
+        """Бросает 404 если чат не найден, 400 если это не группа."""
+        chat = await self.chats.get_by_id(chat_id)
+        if not chat:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Чат не найден"
+            )
+        if chat.type != ChatType.group:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Аватарка доступна только для групп",
+            )
+        return chat
+
     async def delete_chat(self, chat_id: int, user_id: int) -> None:
         chat = await self.chats.get_by_id(chat_id)
         if not chat:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Чат не найден"
             )
-        requester = await self.members.get_single_member(chat_id, user_id)
-        if not requester:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
-            )
-        if chat.type == ChatType.group and requester.role != ChatRole.admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins can delete group",
-            )
+        # Переиспользуем require_admin вместо дублирования проверки
+        if chat.type == ChatType.group:
+            await self.require_admin(chat_id, user_id)
+        else:
+            member = await self.members.get_single_member(chat_id, user_id)
+            if not member:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
+                )
+
         member_ids = await self.members.get_member_ids(chat_id)
         await self.db.delete(chat)
         await self.db.commit()

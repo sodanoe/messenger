@@ -10,6 +10,7 @@ from app.models.chat import (
     ChatMessageReaction,
     CustomEmoji,
 )
+from app.models.avatar import UserAvatar, ChatAvatar
 
 __all__ = [
     "Base",
@@ -22,4 +23,6 @@ __all__ = [
     "ChatMessage",
     "ChatMessageReaction",
     "CustomEmoji",
+    "UserAvatar",
+    "ChatAvatar"
 ]
