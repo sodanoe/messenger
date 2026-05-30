@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 _CHANNEL = "ws:out"
+_RECONNECT_DELAY = 5  # секунд между попытками переподключения
 
 
 async def publish(user_id: int, payload: dict) -> None:
@@ -25,44 +26,60 @@ async def start_listener() -> None:
     from app.core.redis_client import get_redis
     from app.ws.manager import manager
 
-    redis = get_redis()
-    pubsub = redis.pubsub()
-
-    try:
-        await pubsub.subscribe(_CHANNEL)
-        logger.info("WS pubsub listener started channel=%s", _CHANNEL)
-
-        async for message in pubsub.listen():
-            if message["type"] != "message":
-                continue
-
-            try:
-                data = json.loads(message["data"])
-                user_id = data["user_id"]
-                payload = data["payload"]
-
-                # Отправляем локальному пользователю
-                success = await manager.send_to(user_id, payload)
-                if not success:
-                    logger.debug(
-                        "User %s not connected to this worker, message skipped", user_id
-                    )
-
-            except json.JSONDecodeError as exc:
-                logger.warning("Failed to decode pubsub message: %s", exc)
-            except Exception as exc:
-                logger.error("pubsub delivery error: %s", exc, exc_info=True)
-
-    except asyncio.CancelledError:
-        logger.info("WS pubsub listener cancelled, unsubscribing...")
+    while True:
+        pubsub = None
         try:
-            await pubsub.unsubscribe(_CHANNEL)
-        except Exception:
-            pass
-        raise
-    except Exception as exc:
-        logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
-        raise
+            redis = get_redis()
+            pubsub = redis.pubsub()
+            await pubsub.subscribe(_CHANNEL)
+            logger.info("WS pubsub listener started channel=%s", _CHANNEL)
+
+            async for message in pubsub.listen():
+                if message["type"] != "message":
+                    continue
+
+                try:
+                    data = json.loads(message["data"])
+                    user_id = data["user_id"]
+                    payload = data["payload"]
+
+                    success = await manager.send_to(user_id, payload)
+                    if not success:
+                        logger.debug(
+                            "User %s not connected to this worker, message skipped",
+                            user_id,
+                        )
+
+                except json.JSONDecodeError as exc:
+                    logger.warning("Failed to decode pubsub message: %s", exc)
+                except Exception as exc:
+                    logger.error("pubsub delivery error: %s", exc, exc_info=True)
+
+        except asyncio.CancelledError:
+            logger.info("WS pubsub listener cancelled, unsubscribing...")
+            if pubsub:
+                try:
+                    await pubsub.unsubscribe(_CHANNEL)
+                except Exception:
+                    pass
+            raise
+
+        except Exception as exc:
+            if "Timeout reading from" in str(exc):
+                logger.debug(
+                    "WS pubsub: Redis timeout, reconnecting in %ss...", _RECONNECT_DELAY
+                )
+            else:
+                logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
+
+        finally:
+            if pubsub:
+                try:
+                    await pubsub.unsubscribe(_CHANNEL)
+                except Exception:
+                    pass
+
+        await asyncio.sleep(_RECONNECT_DELAY)
 
 
 async def publish_to_many(user_ids: list[int], payload: dict) -> None:
@@ -70,6 +87,5 @@ async def publish_to_many(user_ids: list[int], payload: dict) -> None:
     if not user_ids:
         return
 
-    # Публикуем параллельно для скорости
     tasks = [publish(uid, payload) for uid in user_ids]
     await asyncio.gather(*tasks, return_exceptions=True)

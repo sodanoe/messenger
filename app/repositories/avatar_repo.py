@@ -16,9 +16,7 @@ class BaseAvatarRepo:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def add(
-        self, owner_id: int, path: str, original_name: str, size: int
-    ):
+    async def add(self, owner_id: int, path: str, original_name: str, size: int):
         avatar = self.model(
             **{self.owner_field: owner_id},
             path=path,
@@ -56,9 +54,7 @@ class BaseAvatarRepo:
         return result.scalar_one_or_none()
 
     async def delete(self, avatar_id: int) -> None:
-        await self.db.execute(
-            delete(self.model).where(self.model.id == avatar_id)
-        )
+        await self.db.execute(delete(self.model).where(self.model.id == avatar_id))
 
 
 class UserAvatarRepo(BaseAvatarRepo):

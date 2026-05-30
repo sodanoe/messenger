@@ -65,6 +65,7 @@ async def delete_chat(
 # Avatar endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.post("/{chat_id}/avatar", status_code=status.HTTP_201_CREATED)
 async def upload_chat_avatar(
     chat_id: int,

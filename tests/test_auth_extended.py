@@ -2,8 +2,6 @@
 Тесты: logout (refresh-токен), rate limiting, WS-тикет.
 """
 
-import pytest
-
 
 def auth(token):
     return {"Authorization": f"Bearer {token}"}

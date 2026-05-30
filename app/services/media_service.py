@@ -157,19 +157,19 @@ class MediaService:
             frames = []
             # Сохраняем длительность кадров из оригинала
             duration = img.info.get("duration", 100)
-            
+
             for frame in ImageSequence.Iterator(img):
                 # Копируем кадр, так как Iterator меняет состояние объекта img
                 curr = frame.copy()
-                
+
                 # Ресайз кадра, если он превышает лимит
                 if max_size and max(curr.size) > max_size:
                     ratio = max_size / max(curr.size)
                     new_size = (int(curr.size[0] * ratio), int(curr.size[1] * ratio))
                     curr = curr.resize(new_size, Image.Resampling.LANCZOS)
-                
+
                 frames.append(curr)
-        
+
             if not frames:
                 raise ValueError("Empty GIF")
 
@@ -182,7 +182,7 @@ class MediaService:
                 append_images=frames[1:],
                 optimize=True,
                 loop=0,  # Бесконечный цикл
-                duration=duration
+                duration=duration,
             )
             return output.getvalue(), ".gif"
 
@@ -195,7 +195,7 @@ class MediaService:
             background = Image.new("RGB", img.size, (255, 255, 255))
             if img.mode == "P":
                 img = img.convert("RGBA")
-            
+
             # Используем альфа-канал как маску, если он есть
             mask = img.split()[-1] if img.mode == "RGBA" else None
             background.paste(img, mask=mask)
@@ -220,7 +220,6 @@ class MediaService:
         )
 
         return output.getvalue(), ".jpg"
-
 
     def _guess_mime(self, header: bytes) -> str:
         if header.startswith(b"\xff\xd8\xff"):

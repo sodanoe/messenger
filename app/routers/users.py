@@ -57,7 +57,7 @@ async def delete_account(
         select(MediaFile).where(MediaFile.uploader_id == current_user.id)
     )
     user_files = result.scalars().all()
-    file_paths = [media_dir / mf.path[len("/media/"):] for mf in user_files]
+    file_paths = [media_dir / mf.path[len("/media/") :] for mf in user_files]
 
     repo = UserRepository(db)
     user = await repo.get_by_id(current_user.id)
@@ -73,6 +73,7 @@ async def delete_account(
 # ---------------------------------------------------------------------------
 # Avatar endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.post("/me/avatar", status_code=status.HTTP_201_CREATED)
 async def upload_my_avatar(

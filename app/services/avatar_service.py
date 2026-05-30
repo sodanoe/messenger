@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 AVATAR_DIR = Path(settings.MEDIA_DIR) / "avatars"
 
 # Аватарки сжимаем сильнее — они маленькие, квадратные
-AVATAR_MAX_SIZE = 512   # px
+AVATAR_MAX_SIZE = 512  # px
 AVATAR_QUALITY = 85
 AVATAR_COLORS = 256
 
@@ -29,9 +29,7 @@ class AvatarService:
         self.user_repo = UserAvatarRepo(db)
         self.chat_repo = ChatAvatarRepo(db)
 
-    async def upload_user_avatar(
-        self, user_id: int, file: UploadFile
-    ) -> dict:
+    async def upload_user_avatar(self, user_id: int, file: UploadFile) -> dict:
         return await self._upload(
             repo=self.user_repo,
             owner_id=user_id,
@@ -39,9 +37,7 @@ class AvatarService:
             subfolder="users",
         )
 
-    async def upload_chat_avatar(
-        self, chat_id: int, file: UploadFile
-    ) -> dict:
+    async def upload_chat_avatar(self, chat_id: int, file: UploadFile) -> dict:
         return await self._upload(
             repo=self.chat_repo,
             owner_id=chat_id,
@@ -65,22 +61,28 @@ class AvatarService:
         """Удаляет аватарку если она принадлежит этому юзеру."""
         avatar = await self.user_repo.get_by_id(avatar_id)
         if avatar is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
+            )
         if avatar.user_id != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your avatar")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not your avatar"
+            )
         await self._delete_file(avatar.path)
         await self.user_repo.delete(avatar_id)
         await self.db.commit()
 
-    async def delete_chat_avatar(
-        self, avatar_id: int, chat_id: int
-    ) -> None:
+    async def delete_chat_avatar(self, avatar_id: int, chat_id: int) -> None:
         """Удаляет аватарку чата (проверку прав делает роутер/сервис чата)."""
         avatar = await self.chat_repo.get_by_id(avatar_id)
         if avatar is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
+            )
         if avatar.chat_id != chat_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Wrong chat")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Wrong chat"
+            )
         await self._delete_file(avatar.path)
         await self.chat_repo.delete(avatar_id)
         await self.db.commit()
