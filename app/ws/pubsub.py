@@ -60,6 +60,7 @@ async def start_listener() -> None:
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)
+                    await pubsub.aclose()
                 except Exception:
                     pass
             raise
@@ -76,6 +77,7 @@ async def start_listener() -> None:
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)
+                    await pubsub.aclose()
                 except Exception:
                     pass
 

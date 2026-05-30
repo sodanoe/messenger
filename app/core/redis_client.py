@@ -2,16 +2,16 @@ import redis.asyncio as aioredis
 
 from app.core.config import settings
 
-_pool: aioredis.ConnectionPool | None = None
+_redis: aioredis.Redis | None = None
 
 
 def get_redis() -> aioredis.Redis:
-    """Return a Redis client backed by a shared connection pool."""
-    global _pool
-    if _pool is None:
-        _pool = aioredis.ConnectionPool.from_url(
+    """Return a shared Redis client singleton."""
+    global _redis
+    if _redis is None:
+        _redis = aioredis.Redis.from_url(
             settings.REDIS_URL,
             decode_responses=True,
             max_connections=100,
         )
-    return aioredis.Redis(connection_pool=_pool)
+    return _redis
