@@ -98,3 +98,9 @@ class ChatNotifier:
                 "chat_id": chat_id,
             },
         )
+
+    async def user_online(self, contact_ids: list[int], user_id: int) -> None:
+        await publish_to_many(contact_ids, {"type": "user_online", "user_id": user_id})
+
+    async def user_offline(self, contact_ids: list[int], user_id: int) -> None:
+        await publish_to_many(contact_ids, {"type": "user_offline", "user_id": user_id})

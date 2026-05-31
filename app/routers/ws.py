@@ -17,7 +17,7 @@ import logging
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.ws.manager import manager
-from app.ws.pubsub import publish_to_many
+from app.ws.notifier import ChatNotifier
 from app.core.database import AsyncSessionLocal
 from app.core.redis_client import get_redis
 from app.models.contact import ContactStatus
@@ -86,10 +86,8 @@ async def websocket_endpoint(
     await manager.connect(user_id, ws)
     await redis.set(f"user:online:{user_id}", "1", ex=30)
 
-    await manager.send_to_many(
-        contact_ids,
-        {"type": "user_online", "user_id": user_id},
-    )
+    notifier = ChatNotifier()
+    await notifier.user_online(contact_ids, user_id)
 
     # Один pipeline вместо N последовательных запросов к Redis
     online_contacts = []
@@ -162,9 +160,6 @@ async def websocket_endpoint(
         # Используем contact_ids из памяти (обновляется каждые 10 heartbeat).
         # Лишний DB-запрос при disconnect не нужен — уведомляем тех кого знаем.
         if contact_ids:
-            await publish_to_many(
-                contact_ids,
-                {"type": "user_offline", "user_id": user_id},
-            )
+            await notifier.user_offline(contact_ids, user_id)
 
         logger.info("WS cleaned user_id=%s", user_id)
