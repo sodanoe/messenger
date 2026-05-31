@@ -1,9 +1,7 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chat import ChatRole
-from app.models.user import User
 from app.repositories.chat.chat_repo import ChatRepo
 from app.repositories.chat.member_repo import MemberRepo
 from app.ws.notifier import ChatNotifier
@@ -31,17 +29,12 @@ class MemberService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
             )
-        members = await self.members.get_members(chat_id)
-        user_ids = [m.user_id for m in members]
-        users = await self.db.execute(
-            select(User.id, User.username).where(User.id.in_(user_ids))
-        )
-        username_map = {u.id: u.username for u in users.all()}
+        members = await self.members.get_members_with_usernames(chat_id)
         return {
             "members": [
                 {
                     "id": m.user_id,
-                    "username": username_map.get(m.user_id),
+                    "username": m.username,
                     "role": m.role,
                 }
                 for m in members

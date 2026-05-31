@@ -11,9 +11,11 @@ EMOJI_DIR = "/app/media/emojis"
 ALLOWED_MIME = {"image/png", "image/gif", "image/webp", "image/jpeg"}
 MAX_SIZE = 512 * 1024  # 512 KB
 
+
 def _write_file(path: str, data: bytes) -> None:
     with open(path, "wb") as f:
         f.write(data)
+
 
 class EmojiService:
     def __init__(self, db: AsyncSession) -> None:

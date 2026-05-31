@@ -25,7 +25,6 @@ def _verify_password(plain: str, hashed: str) -> bool:
 
 
 def _redis_refresh_key(user_id: int, token: str) -> str:
-    # Храним по первым 16 символам токена — достаточно для идентификации
     return f"refresh:{user_id}:{token[:16]}"
 
 
@@ -43,6 +42,26 @@ class AuthService:
         """Сохраняем refresh токен в Redis с TTL."""
         key = _redis_refresh_key(user_id, refresh_token)
         await redis.set(key, "1", ex=REFRESH_TOKEN_EXPIRE_DAYS * 86400)
+
+    async def check_rate_limit(self, ip: str, redis) -> None:
+        """Rate limit: 5 попыток / 60 сек / IP. Бросает 429 при превышении."""
+        rate_key = f"login:attempts:{ip}"
+        pipe = redis.pipeline()
+        pipe.incr(rate_key)
+        pipe.expire(rate_key, 60)
+        attempts, _ = await pipe.execute()
+        if attempts > 5:
+            ttl = await redis.ttl(rate_key)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Слишком много попыток. Повторите через {ttl} сек.",
+            )
+
+    async def create_ws_ticket(self, user_id: int, redis) -> str:
+        """Создаёт одноразовый короткоживущий токен для WS-подключения."""
+        ticket = secrets.token_hex(16)
+        await redis.set(f"ws:ticket:{ticket}", str(user_id), ex=30)
+        return ticket
 
     async def register(
         self, username: str, password: str, invite_code: str, redis
@@ -72,7 +91,13 @@ class AuthService:
     async def login(self, username: str, password: str, redis) -> tuple[str, str]:
         user = await self.users.get_by_username(username)
         loop = asyncio.get_running_loop()
-        ok = await loop.run_in_executor(None, _verify_password, password, user.password_hash) if user else False
+        ok = (
+            await loop.run_in_executor(
+                None, _verify_password, password, user.password_hash
+            )
+            if user
+            else False
+        )
         if not user or not ok:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
@@ -110,7 +135,7 @@ class AuthService:
             key = _redis_refresh_key(user_id, refresh_token)
             await redis.delete(key)
         except JWTError:
-            pass  # уже невалидный — ничего страшного
+            pass
 
     async def generate_invite(self, admin_user_id: int) -> dict:
         alphabet = string.ascii_letters + string.digits

@@ -1,5 +1,3 @@
-import secrets
-
 from fastapi import APIRouter, Depends, Request, Response, Cookie, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,10 +14,10 @@ REFRESH_COOKIE = "refresh_token"
 COOKIE_OPTS = dict(
     key=REFRESH_COOKIE,
     httponly=True,
-    secure=True,  # только HTTPS
+    secure=True,
     samesite="strict",
     max_age=30 * 86400,
-    path="/auth",  # cookie летит только на /auth/*
+    path="/auth",
 )
 
 
@@ -70,28 +68,17 @@ async def login(
 ):
     redis = get_redis()
 
-    # Rate limit: 5 попыток / 60 сек / IP
-    # За nginx request.client.host всегда 127.0.0.1 — берём реальный IP
+    # Реальный IP за nginx
     forwarded = request.headers.get("X-Forwarded-For")
     ip = (
         forwarded.split(",")[0].strip()
         if forwarded
         else (request.client.host if request.client else "unknown")
     )
-    rate_key = f"login:attempts:{ip}"
-    # incr + expire в одном pipeline — экономим round-trip
-    pipe = redis.pipeline()
-    pipe.incr(rate_key)
-    pipe.expire(rate_key, 60)  # expire идемпотентен — не сбрасывает счётчик
-    attempts, _ = await pipe.execute()
-    if attempts > 5:
-        ttl = await redis.ttl(rate_key)
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Слишком много попыток. Повторите через {ttl} сек.",
-        )
 
-    access, refresh = await AuthService(db).login(body.username, body.password, redis)
+    service = AuthService(db)
+    await service.check_rate_limit(ip, redis)
+    access, refresh = await service.login(body.username, body.password, redis)
     _set_refresh_cookie(response, refresh)
     return {"access_token": access, "token_type": "bearer"}
 
@@ -106,7 +93,6 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token"
         )
     redis = get_redis()
-    # db не нужна — только Redis + JWT
     access = await AuthService(db=None).refresh(refresh, redis)  # type: ignore[arg-type]
     return {"access_token": access, "token_type": "bearer"}
 
@@ -136,6 +122,5 @@ async def get_ws_ticket(
 ):
     """Выдаёт одноразовый короткоживущий токен для WS-подключения."""
     redis = get_redis()
-    ticket = secrets.token_hex(16)
-    await redis.set(f"ws:ticket:{ticket}", str(current_user.id), ex=30)
+    ticket = await AuthService(db=None).create_ws_ticket(current_user.id, redis)  # type: ignore[arg-type]
     return {"ticket": ticket}

@@ -45,17 +45,18 @@ class MessageRepo:
         )
         return list(result.scalars().all())
 
-    async def get_history(
-        self, chat_id: int, cursor: int | None, limit: int = 50
-    ) -> list[ChatMessage]:
-        q = select(ChatMessage).where(
-            ChatMessage.chat_id == chat_id, ChatMessage.is_deleted.is_(False)
-        )
-        if cursor is not None:
-            q = q.where(ChatMessage.id < cursor)
-        q = q.order_by(ChatMessage.id.desc()).limit(limit)
-        result = await self.db.execute(q)
-        return list(result.scalars().all())
+    # TODO: remove
+    # async def get_history(
+    #     self, chat_id: int, cursor: int | None, limit: int = 50
+    # ) -> list[ChatMessage]:
+    #     q = select(ChatMessage).where(
+    #         ChatMessage.chat_id == chat_id, ChatMessage.is_deleted.is_(False)
+    #     )
+    #     if cursor is not None:
+    #         q = q.where(ChatMessage.id < cursor)
+    #     q = q.order_by(ChatMessage.id.desc()).limit(limit)
+    #     result = await self.db.execute(q)
+    #     return list(result.scalars().all())
 
     async def get_history_with_details(
         self, chat_id: int, cursor: int | None, limit: int = 50

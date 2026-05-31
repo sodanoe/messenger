@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from fastapi import HTTPException, status
@@ -67,10 +68,10 @@ class MessageService:
                     detail="Invalid reply target",
                 )
 
+        # Вычисляем один раз для использования в двух местах ниже
+        other_id = next((m.user_id for m in members if m.user_id != sender_id), None)
+
         if chat.type == ChatType.direct:
-            other_id = next(
-                (m.user_id for m in members if m.user_id != sender_id), None
-            )
             if other_id is None:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -133,12 +134,8 @@ class MessageService:
             }
 
         # --- unread ---
-        if chat.type == ChatType.direct:
-            other_id = next(
-                (m.user_id for m in members if m.user_id != sender_id), None
-            )
-            if other_id:
-                await self.contacts.set_unread(other_id, sender_id, True)
+        if chat.type == ChatType.direct and other_id:
+            await self.contacts.set_unread(other_id, sender_id, True)
 
         await self.db.commit()
 
@@ -196,7 +193,7 @@ class MessageService:
 
         next_cursor = rows[-1][0].id if len(rows) == PAGE_SIZE else None
 
-        # --- реакции (как в оригинале) ---
+        # --- реакции ---
         msg_ids = [row[0].id for row in rows]
         all_reactions = await self.reactions.get_by_messages(msg_ids)
 
@@ -221,33 +218,43 @@ class MessageService:
                 item["custom_emoji_url"] = custom_emoji_map[r.custom_emoji_id]
             reactions_by_msg.setdefault(r.message_id, []).append(item)
 
+        # --- параллельный decrypt всех сообщений и reply ---
+        contents = await asyncio.gather(
+            *[async_decrypt_text(row[0].content_encrypted) for row in rows]
+        )
+        reply_contents = await asyncio.gather(
+            *[
+                async_decrypt_text(row.reply_content)
+                if row.reply_id
+                else asyncio.sleep(0, result="")
+                for row in rows
+            ]
+        )
+
         # --- сборка ответа ---
         messages = []
-        for row in rows:
+        for i, row in enumerate(rows):
             msg = row[0]
-            sender_username = row.sender_username
-            media_path = row.media_path
 
-            # Reply данные
             reply_to_data = None
             if row.reply_id:
                 reply_to_data = {
                     "id": row.reply_id,
                     "sender_id": row.reply_sender_id,
                     "sender_username": row.reply_sender_username,
-                    "content": (await async_decrypt_text(row.reply_content))[:120],
+                    "content": reply_contents[i][:120],
                     "media_url": row.reply_media_path,
                 }
 
             msg_data = {
                 "id": msg.id,
                 "sender_id": msg.sender_id,
-                "sender_username": sender_username,
-                "content": await async_decrypt_text(msg.content_encrypted),
+                "sender_username": row.sender_username,
+                "content": contents[i],
                 "created_at": msg.created_at,
                 "reactions": reactions_by_msg.get(msg.id, []),
                 "reply_to": reply_to_data,
-                "media_url": media_path,
+                "media_url": row.media_path,
             }
 
             messages.append(msg_data)

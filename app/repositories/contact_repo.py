@@ -17,16 +17,17 @@ class ContactRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_id_and_owner(
-        self, contact_id: int, user_id: int
-    ) -> Contact | None:
-        result = await self.db.execute(
-            select(Contact).where(
-                Contact.id == contact_id,
-                Contact.user_id == user_id,
-            )
-        )
-        return result.scalar_one_or_none()
+    # TODO: remove
+    # async def get_by_id_and_owner(
+    #     self, contact_id: int, user_id: int
+    # ) -> Contact | None:
+    #     result = await self.db.execute(
+    #         select(Contact).where(
+    #             Contact.id == contact_id,
+    #             Contact.user_id == user_id,
+    #         )
+    #     )
+    #     return result.scalar_one_or_none()
 
     async def list_for_user(self, user_id: int) -> list[Contact]:
         result = await self.db.execute(

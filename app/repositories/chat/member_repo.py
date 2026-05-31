@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete, exists, literal
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.chat import ChatMember, ChatRole
 
@@ -27,6 +27,17 @@ class MemberRepo:
             select(ChatMember).where(ChatMember.chat_id == chat_id)
         )
         return list(result.scalars().all())
+
+    async def get_members_with_usernames(self, chat_id: int) -> list:
+        """Участники с именами за один JOIN вместо двух запросов."""
+        from app.models.user import User
+
+        result = await self.db.execute(
+            select(ChatMember.user_id, ChatMember.role, User.username)
+            .join(User, User.id == ChatMember.user_id)
+            .where(ChatMember.chat_id == chat_id)
+        )
+        return result.all()
 
     # TODO: remove
     # async def is_member(self, chat_id: int, user_id: int) -> bool:
