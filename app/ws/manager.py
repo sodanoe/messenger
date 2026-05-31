@@ -137,21 +137,22 @@ class ConnectionManager:
 
     # ── helpers ───────────────────────────────────────────────────────
 
-    async def is_connected(self, user_id: int) -> bool:
-        """Thread-safe проверка онлайн-статуса."""
-        async with self._lock:
-            return bool(self._connections.get(user_id))
-
-    async def online_user_ids(self) -> list[int]:
-        """Thread-safe список онлайн пользователей."""
-        async with self._lock:
-            return list(self._connections.keys())
-
-    async def get_connection_count(self, user_id: int) -> int:
-        """Количество активных соединений пользователя."""
-        async with self._lock:
-            sockets = self._connections.get(user_id, set())
-            return len(sockets)
+    # TODO: remove
+    # async def is_connected(self, user_id: int) -> bool:
+    #     """Thread-safe проверка онлайн-статуса."""
+    #     async with self._lock:
+    #         return bool(self._connections.get(user_id))
+    #
+    # async def online_user_ids(self) -> list[int]:
+    #     """Thread-safe список онлайн пользователей."""
+    #     async with self._lock:
+    #         return list(self._connections.keys())
+    #
+    # async def get_connection_count(self, user_id: int) -> int:
+    #     """Количество активных соединений пользователя."""
+    #     async with self._lock:
+    #         sockets = self._connections.get(user_id, set())
+    #         return len(sockets)
 
 
 manager = ConnectionManager()

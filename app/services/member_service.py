@@ -27,7 +27,7 @@ class MemberService:
         )
 
     async def get_members(self, chat_id: int, requester_id: int) -> dict:
-        if not await self.members.is_member(chat_id, requester_id):
+        if not await self.members.get_single_member(chat_id, requester_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
             )

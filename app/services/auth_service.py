@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 import string
 
@@ -58,7 +59,8 @@ class AuthService:
                 status_code=status.HTTP_409_CONFLICT, detail="Username already taken"
             )
 
-        pw_hash = _hash_password(password)
+        loop = asyncio.get_running_loop()
+        pw_hash = await loop.run_in_executor(None, _hash_password, password)
         user = await self.users.create(username, pw_hash)
         await self.invites.mark_used(invite, user.id)
         await self.db.commit()
@@ -69,7 +71,9 @@ class AuthService:
 
     async def login(self, username: str, password: str, redis) -> tuple[str, str]:
         user = await self.users.get_by_username(username)
-        if not user or not _verify_password(password, user.password_hash):
+        loop = asyncio.get_running_loop()
+        ok = await loop.run_in_executor(None, _verify_password, password, user.password_hash) if user else False
+        if not user or not ok:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )

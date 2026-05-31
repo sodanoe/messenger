@@ -26,7 +26,7 @@ class ReactionService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
             )
-        if not await self.members.is_member(msg.chat_id, user_id):
+        if not await self.members.get_single_member(msg.chat_id, user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
             )

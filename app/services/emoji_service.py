@@ -11,6 +11,9 @@ EMOJI_DIR = "/app/media/emojis"
 ALLOWED_MIME = {"image/png", "image/gif", "image/webp", "image/jpeg"}
 MAX_SIZE = 512 * 1024  # 512 KB
 
+def _write_file(path: str, data: bytes) -> None:
+    with open(path, "wb") as f:
+        f.write(data)
 
 class EmojiService:
     def __init__(self, db: AsyncSession) -> None:
@@ -64,7 +67,7 @@ class EmojiService:
         ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "png"
         filename = f"{shortcode}_{uuid.uuid4().hex[:8]}.{ext}"
         filepath = os.path.join(EMOJI_DIR, filename)
-        await asyncio.to_thread(lambda: open(filepath, "wb").write(data))
+        await asyncio.to_thread(_write_file, filepath, data)
 
         emoji = await self.repo.create(shortcode=shortcode, file_location=filepath)
         await self.db.commit()

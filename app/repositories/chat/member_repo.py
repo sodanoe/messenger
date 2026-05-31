@@ -28,16 +28,17 @@ class MemberRepo:
         )
         return list(result.scalars().all())
 
-    async def is_member(self, chat_id: int, user_id: int) -> bool:
-        result = await self.db.execute(
-            select(literal(True)).where(
-                exists().where(
-                    ChatMember.chat_id == chat_id,
-                    ChatMember.user_id == user_id,
-                )
-            )
-        )
-        return result.scalar_one_or_none() is not None
+    # TODO: remove
+    # async def is_member(self, chat_id: int, user_id: int) -> bool:
+    #     result = await self.db.execute(
+    #         select(literal(True)).where(
+    #             exists().where(
+    #                 ChatMember.chat_id == chat_id,
+    #                 ChatMember.user_id == user_id,
+    #             )
+    #         )
+    #     )
+    #     return result.scalar_one_or_none() is not None
 
     async def get_single_member(self, chat_id: int, user_id: int) -> ChatMember | None:
         """Получает одного участника с его ролью."""

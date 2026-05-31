@@ -170,7 +170,7 @@ class MessageService:
 
     async def get_history(self, chat_id: int, user_id: int, cursor: int | None) -> dict:
         # Проверка членства
-        if not await self.members.is_member(chat_id, user_id):
+        if not await self.members.get_single_member(chat_id, user_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not a member"
             )
