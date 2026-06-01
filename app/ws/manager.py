@@ -2,21 +2,59 @@
 WebSocket Connection Manager.
 
 thread-safe, coroutine-safe менеджер WebSocket соединений.
+Использует изолированные In-Memory очереди для каждого сокета для предотвращения потерь.
 """
 
 import asyncio
 import logging
-from typing import Dict
+from typing import Dict, Set
 
 from fastapi import WebSocket
-from starlette.websockets import WebSocketState, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
 
 
+class SocketWrapper:
+    """Обертка над сокетом с изолированной очередью отправки."""
+
+    def __init__(self, ws: WebSocket) -> None:
+        self.ws = ws
+        # Ограничиваем размер очереди (например, 100 сообщений), чтобы защитить память сервера
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+        # Запускаем фоновый воркер, который будет последовательно писать в этот сокет
+        self.task: asyncio.Task = asyncio.create_task(self._worker())
+
+    async def _worker(self) -> None:
+        try:
+            while True:
+                payload = await self.queue.get()
+                try:
+                    # Строго последовательная отправка. Исключена конкуренция за сокет.
+                    if self.ws.client_state == WebSocketState.CONNECTED:
+                        await self.ws.send_json(payload)
+                except Exception as exc:
+                    logger.debug(
+                        "SocketWrapper worker send error (socket %s): %s",
+                        id(self.ws),
+                        exc,
+                    )
+                    break  # При любой ошибке сети ломаем цикл и завершаем воркер
+                finally:
+                    self.queue.task_done()
+        except asyncio.CancelledError:
+            pass  # Нормальное завершение при закрытии сокета
+
+    def close(self) -> None:
+        """Остановка фонового таска."""
+        self.task.cancel()
+
+
 class ConnectionManager:
+
     def __init__(self) -> None:
-        self._connections: Dict[int, set[WebSocket]] = {}
+        # Теперь храним Set из SocketWrapper вместо сырых сокетов WebSocket
+        self._connections: Dict[int, Set[SocketWrapper]] = {}
         self._lock = asyncio.Lock()
 
     # ── connect / disconnect ──────────────────────────────────────────
@@ -24,7 +62,9 @@ class ConnectionManager:
     async def connect(self, user_id: int, ws: WebSocket) -> None:
         await ws.accept()
         async with self._lock:
-            self._connections.setdefault(user_id, set()).add(ws)
+            wrapper = SocketWrapper(ws)
+            self._connections.setdefault(user_id, set()).add(wrapper)
+
         logger.debug(
             "WS connected: user_id=%s  sockets=%s  total_users=%s",
             user_id,
@@ -35,11 +75,17 @@ class ConnectionManager:
     async def disconnect(self, user_id: int, ws: WebSocket) -> None:
         """Безопасное отключение с блокировкой."""
         async with self._lock:
-            sockets = self._connections.get(user_id)
-            if sockets is None:
+            wrappers = self._connections.get(user_id)
+            if not wrappers:
                 return
-            sockets.discard(ws)
-            if not sockets:
+
+            # Находим нужную обертку по сырому сокету
+            target = next((w for w in wrappers if w.ws == ws), None)
+            if target:
+                target.close()  # Останавливаем воркер
+                wrappers.discard(target)
+
+            if not wrappers:
                 del self._connections[user_id]
 
         # Закрываем сокет вне блокировки
@@ -58,12 +104,13 @@ class ConnectionManager:
     async def disconnect_all(self, user_id: int) -> None:
         """Отключить все сокеты пользователя."""
         async with self._lock:
-            sockets = self._connections.pop(user_id, set())
+            wrappers = self._connections.pop(user_id, set())
 
-        for ws in sockets:
+        for w in wrappers:
+            w.close()  # Гасим воркер
             try:
-                if ws.client_state != WebSocketState.DISCONNECTED:
-                    await ws.close()
+                if w.ws.client_state != WebSocketState.DISCONNECTED:
+                    await w.ws.close()
             except Exception:
                 pass
 
@@ -71,88 +118,65 @@ class ConnectionManager:
 
     async def send_to(self, user_id: int, payload: dict) -> bool:
         """
-        Send JSON to all sockets of a user.
-        Returns True if at least one socket received the message.
+        Отправляет JSON во все сокеты пользователя через очереди.
+        Метод мгновенный, он НЕ блокирует вызовы из Redis Pub/Sub Listener.
         """
-        # Получаем копию списка сокетов под блокировкой
         async with self._lock:
-            sockets = self._connections.get(user_id, set())
-            if not sockets:
+            wrappers = self._connections.get(user_id, set())
+            if not wrappers:
                 return False
-            sockets_copy = list(sockets)
+            wrappers_copy = list(wrappers)
 
-        dead: set[WebSocket] = set()
+        dead: Set[SocketWrapper] = set()
         sent = False
 
-        for ws in sockets_copy:
-            # Проверяем состояние непосредственно перед отправкой
-            if ws.client_state != WebSocketState.CONNECTED:
-                dead.add(ws)
+        for w in wrappers_copy:
+            # Если сокет уже мертв на уровне протокола
+            if w.ws.client_state != WebSocketState.CONNECTED:
+                dead.add(w)
                 continue
 
             try:
-                await ws.send_json(payload)
+                # put_nowait мгновенно кладет сообщение в очередь сокета.
+                # Больше никакой uvicorn/fastapi RuntimeError здесь не вылетит.
+                w.queue.put_nowait(payload)
                 sent = True
-            except (WebSocketDisconnect, RuntimeError) as exc:
-                # WebSocketDisconnect: клиент отключился
-                # RuntimeError: "Cannot call 'send' once a close message has been sent"
-                logger.debug("send_to user_id=%s socket=%s: %s", user_id, id(ws), exc)
-                dead.add(ws)
-            except Exception as exc:
-                # Неожиданная ошибка — логируем как ошибку
-                logger.error(
-                    "send_to user_id=%s unexpected error: %s",
+            except asyncio.QueueFull:
+                # Очередь переполнена (клиент «завис» / backpressure).
+                # Удаляем сокет, чтобы не копить мусор в памяти.
+                logger.warning(
+                    "User %s socket %s queue full. Dropping connection.",
                     user_id,
-                    exc,
-                    exc_info=True,
+                    id(w.ws),
                 )
-                dead.add(ws)
+                dead.add(w)
 
-        # Очистка мёртвых соединений
+        # Очистка мертвых соединений
         if dead:
             async with self._lock:
-                current_sockets = self._connections.get(user_id)
-                if current_sockets:
-                    current_sockets.difference_update(dead)
-                    if not current_sockets:
+                current_wrappers = self._connections.get(user_id)
+                if current_wrappers:
+                    for d in dead:
+                        d.close()
+                        current_wrappers.discard(d)
+                    if not current_wrappers:
                         del self._connections[user_id]
 
         return sent
 
     async def send_to_many(self, user_ids: list[int], payload: dict) -> None:
-        """Send to multiple users with proper error isolation."""
+        """Отправка множеству пользователей с изоляцией ошибок."""
         if not user_ids:
             return
 
-        # Запускаем параллельно, но не даём одному упавшему заданию убить всё
         results = await asyncio.gather(
             *(self.send_to(uid, payload) for uid in user_ids),
             return_exceptions=True,
         )
 
-        # Логируем ошибки, если есть
         for uid, result in zip(user_ids, results):
             if isinstance(result, Exception):
                 logger.error("send_to_many failed for user_id=%s: %s", uid, result)
-
-    # ── helpers ───────────────────────────────────────────────────────
-
-    # TODO: remove
-    # async def is_connected(self, user_id: int) -> bool:
-    #     """Thread-safe проверка онлайн-статуса."""
-    #     async with self._lock:
-    #         return bool(self._connections.get(user_id))
-    #
-    # async def online_user_ids(self) -> list[int]:
-    #     """Thread-safe список онлайн пользователей."""
-    #     async with self._lock:
-    #         return list(self._connections.keys())
-    #
-    # async def get_connection_count(self, user_id: int) -> int:
-    #     """Количество активных соединений пользователя."""
-    #     async with self._lock:
-    #         sockets = self._connections.get(user_id, set())
-    #         return len(sockets)
 
 
 manager = ConnectionManager()
