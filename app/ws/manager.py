@@ -18,40 +18,68 @@ logger = logging.getLogger(__name__)
 class SocketWrapper:
     """Обертка над сокетом с изолированной очередью отправки."""
 
-    def __init__(self, ws: WebSocket) -> None:
+    def __init__(
+        self,
+        manager: "ConnectionManager",
+        user_id: int,
+        ws: WebSocket,
+    ) -> None:
+        self.manager = manager
+        self.user_id = user_id
         self.ws = ws
-        # Ограничиваем размер очереди (например, 100 сообщений), чтобы защитить память сервера
+
+        # Ограниченная очередь защищает память сервера
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=100)
-        # Запускаем фоновый воркер, который будет последовательно писать в этот сокет
+
+        # Фоновый writer-task
         self.task: asyncio.Task = asyncio.create_task(self._worker())
 
     async def _worker(self) -> None:
         try:
             while True:
                 payload = await self.queue.get()
+
                 try:
-                    # Строго последовательная отправка. Исключена конкуренция за сокет.
-                    if self.ws.client_state == WebSocketState.CONNECTED:
-                        await self.ws.send_json(payload)
+                    # Проверяем состояние перед отправкой
+                    if self.ws.client_state != WebSocketState.CONNECTED:
+                        break
+
+                    # Строго последовательная отправка
+                    await self.ws.send_json(payload)
+
                 except Exception as exc:
                     logger.debug(
-                        "SocketWrapper worker send error (socket %s): %s",
+                        "SocketWrapper worker send error (user_id=%s socket=%s): %s",
+                        self.user_id,
                         id(self.ws),
                         exc,
                     )
-                    break  # При любой ошибке сети ломаем цикл и завершаем воркер
+
+                    # Немедленно удаляем мертвый сокет из manager
+                    try:
+                        await self.manager.disconnect(
+                            self.user_id,
+                            self.ws,
+                        )
+                    except Exception:
+                        pass
+
+                    break
+
                 finally:
                     self.queue.task_done()
+
         except asyncio.CancelledError:
-            pass  # Нормальное завершение при закрытии сокета
+            # Нормальное завершение
+            pass
 
     def close(self) -> None:
         """Остановка фонового таска."""
-        self.task.cancel()
+        if not self.task.done():
+            self.task.cancel()
 
 
 class ConnectionManager:
-
     def __init__(self) -> None:
         # Теперь храним Set из SocketWrapper вместо сырых сокетов WebSocket
         self._connections: Dict[int, Set[SocketWrapper]] = {}
@@ -62,7 +90,7 @@ class ConnectionManager:
     async def connect(self, user_id: int, ws: WebSocket) -> None:
         await ws.accept()
         async with self._lock:
-            wrapper = SocketWrapper(ws)
+            wrapper = SocketWrapper(self, user_id, ws)
             self._connections.setdefault(user_id, set()).add(wrapper)
 
         logger.debug(

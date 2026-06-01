@@ -1,27 +1,14 @@
-"""
-WebSocket endpoint  –  GET /ws?ticket=<one-time-ticket>
-
-Жизненный цикл:
-  1. Валидируем одноразовый тикет из Redis
-  2. manager.connect(user_id, ws)
-  3. Redis SET user:online:{id} EX 30
-  4. Рассылаем контактам {type: user_online}
-  5. Отправляем себе статусы контактов которые уже онлайн
-  6. Receive-loop: heartbeat + обновление contact_ids каждые 10 пингов
-  7. On disconnect: manager.disconnect / Redis DEL / {type: user_offline}
-"""
-
 import asyncio
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from app.ws.manager import manager
-from app.ws.notifier import ChatNotifier
 from app.core.database import AsyncSessionLocal
 from app.core.redis_client import get_redis
 from app.models.contact import ContactStatus
 from app.repositories.contact_repo import ContactRepository
+from app.ws.manager import manager
+from app.ws.notifier import ChatNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -36,35 +23,6 @@ async def _get_accepted_contact_ids(user_id: int) -> list[int]:
         return [
             c.contact_user_id for c in contacts if c.status == ContactStatus.accepted
         ]
-
-
-async def _safe_send_json(ws: WebSocket, data: dict) -> bool:
-    """
-    Безопасная отправка JSON с обработкой всех возможных ошибок WebSocket.
-    Возвращает True если отправка успешна.
-    """
-    try:
-        from starlette.websockets import WebSocketState
-
-        if ws.client_state != WebSocketState.CONNECTED:
-            logger.debug(
-                "Skip send: socket state=%s data_type=%s",
-                ws.client_state,
-                data.get("type"),
-            )
-            return False
-
-        await ws.send_json(data)
-        return True
-    except WebSocketDisconnect:
-        logger.debug("Cannot send: client disconnected (type=%s)", data.get("type"))
-        return False
-    except RuntimeError as exc:
-        logger.debug("Cannot send: %s (type=%s)", exc, data.get("type"))
-        return False
-    except Exception as exc:
-        logger.warning("Unexpected error sending %s: %s", data.get("type"), exc)
-        return False
 
 
 @router.websocket("/ws")
@@ -94,20 +52,16 @@ async def websocket_endpoint(
     if contact_ids:
         pipe = redis.pipeline()
         for cid in contact_ids:
-            pipe.exists(f"user:online:{cid}")
+            await pipe.exists(f"user:online:{cid}")
         presences = await pipe.execute()
         online_contacts = [cid for cid, alive in zip(contact_ids, presences) if alive]
 
     if online_contacts:
-        success = await _safe_send_json(
-            ws, {"type": "contacts_online", "user_ids": online_contacts}
+        # ИСПРАВЛЕНО: Отправляем строго через менеджер, чтобы избежать гонки за сокет!
+        # Метод send_to не блокирует поток и безопасен.
+        await manager.send_to(
+            user_id, {"type": "contacts_online", "user_ids": online_contacts}
         )
-        if not success:
-            logger.warning(
-                "Failed to send initial online contacts to user_id=%s, "
-                "connection might be unstable",
-                user_id,
-            )
 
     logger.info("WS open  user_id=%s  contacts=%s", user_id, contact_ids)
 
@@ -116,14 +70,13 @@ async def websocket_endpoint(
         heartbeat_count = 0
         while True:
             try:
+                # Читаем входящие данные (пинг от клиента)
                 message = await asyncio.wait_for(ws.receive(), timeout=35.0)
 
-                # Если клиент закрыл соединение
                 if message["type"] == "websocket.disconnect":
                     logger.info("WS client disconnected user_id=%s", user_id)
                     break
 
-                # Нас интересует только факт получения (heartbeat)
                 if message["type"] == "websocket.receive":
                     await redis.expire(f"user:online:{user_id}", 30)
                     heartbeat_count += 1
@@ -131,7 +84,22 @@ async def websocket_endpoint(
                     # Обновляем список контактов каждые 10 пингов (~3 минуты)
                     if heartbeat_count % 10 == 0:
                         new_contact_ids = await _get_accepted_contact_ids(user_id)
+
                         if set(new_contact_ids) != set(contact_ids):
+                            # ИСПРАВЛЕНО: Логика дифференциации контактов
+                            old_set = set(contact_ids)
+                            new_set = set(new_contact_ids)
+
+                            # Кого добавили за эти 3 минуты? Уведомляем их, что мы ONLINE
+                            added_contacts = list(new_set - old_set)
+                            if added_contacts:
+                                await notifier.user_online(added_contacts, user_id)
+
+                            # Кого удалили? Уведомляем их, что мы для них OFFLINE
+                            removed_contacts = list(old_set - new_set)
+                            if removed_contacts:
+                                await notifier.user_offline(removed_contacts, user_id)
+
                             logger.info(
                                 "WS contacts changed user_id=%s old=%s new=%s",
                                 user_id,
@@ -147,18 +115,15 @@ async def websocket_endpoint(
                 logger.info("WS client disconnected user_id=%s", user_id)
                 break
 
-    except WebSocketDisconnect:
-        logger.info("WS close user_id=%s (clean disconnect)", user_id)
     except Exception as exc:
         logger.warning("WS error user_id=%s: %s", user_id, exc)
 
     # ── 4. Cleanup ─────────────────────────────────────────────────────────
     finally:
+        # Менеджер сам закроет сокет внутри себя корректно
         await manager.disconnect(user_id, ws)
         await redis.delete(f"user:online:{user_id}")
 
-        # Используем contact_ids из памяти (обновляется каждые 10 heartbeat).
-        # Лишний DB-запрос при disconnect не нужен — уведомляем тех кого знаем.
         if contact_ids:
             await notifier.user_offline(contact_ids, user_id)
 
