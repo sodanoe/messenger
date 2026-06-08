@@ -8,23 +8,44 @@ logger = logging.getLogger(__name__)
 
 _CHANNEL = "ws:out"
 _RECONNECT_DELAY = 5  # секунд между попытками переподключения
-
+_CHANNEL = "ws:signals"
+_INBOX_TTL = 300  # 5 минут
 
 async def publish(user_id: int, payload: dict) -> None:
-    """Publish a websocket event. Called from services instead of manager.send_to."""
     from app.core.redis_client import get_redis
-
-    message = json.dumps({"user_id": user_id, "payload": payload})
+    redis = get_redis()
+    msg_json = json.dumps(payload)
     try:
-        await get_redis().publish(_CHANNEL, message)
+        pipe = redis.pipeline()
+        # 1. Кладём в inbox — персистентно, с TTL
+        pipe.rpush(f"ws:inbox:{user_id}", msg_json)
+        pipe.expire(f"ws:inbox:{user_id}", _INBOX_TTL)
+        # 2. Сигнал listener'у: "у этого юзера есть pending"
+        pipe.publish(_CHANNEL, str(user_id))
+        await pipe.execute()
     except Exception as exc:
-        logger.error("Failed to publish to Redis: %s", exc)
+        logger.error("Failed to publish for user_id=%s: %s", user_id, exc)
+
+
+async def drain_inbox(user_id: int) -> None:
+    """Дренирует inbox юзера в его WS-очередь. Идемпотентно."""
+    from app.core.redis_client import get_redis
+    from app.ws.manager import manager
+
+    redis = get_redis()
+    while True:
+        msg_json = await redis.lpop(f"ws:inbox:{user_id}")
+        if not msg_json:
+            break
+        try:
+            payload = json.loads(msg_json)
+            await manager.send_to(user_id, payload)
+        except Exception as exc:
+            logger.error("drain_inbox error user_id=%s: %s", user_id, exc)
 
 
 async def start_listener() -> None:
-    """Background task: subscribe to Redis channel and deliver to local manager."""
     from app.core.redis_client import get_redis
-    from app.ws.manager import manager
 
     while True:
         pubsub = None
@@ -37,26 +58,13 @@ async def start_listener() -> None:
             async for message in pubsub.listen():
                 if message["type"] != "message":
                     continue
-
                 try:
-                    data = json.loads(message["data"])
-                    user_id = data["user_id"]
-                    payload = data["payload"]
-
-                    success = await manager.send_to(user_id, payload)
-                    if not success:
-                        logger.debug(
-                            "User %s not connected to this worker, message skipped",
-                            user_id,
-                        )
-
-                except json.JSONDecodeError as exc:
-                    logger.warning("Failed to decode pubsub message: %s", exc)
+                    user_id = int(message["data"])
+                    await drain_inbox(user_id)
                 except Exception as exc:
                     logger.error("pubsub delivery error: %s", exc, exc_info=True)
 
         except asyncio.CancelledError:
-            logger.info("WS pubsub listener cancelled, unsubscribing...")
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)
@@ -64,15 +72,8 @@ async def start_listener() -> None:
                 except Exception:
                     pass
             raise
-
         except Exception as exc:
-            if "Timeout reading from" in str(exc):
-                logger.debug(
-                    "WS pubsub: Redis timeout, reconnecting in %ss...", _RECONNECT_DELAY
-                )
-            else:
-                logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
-
+            logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
         finally:
             if pubsub:
                 try:
@@ -85,9 +86,9 @@ async def start_listener() -> None:
 
 
 async def publish_to_many(user_ids: list[int], payload: dict) -> None:
-    """Publish to multiple users via Redis Pub/Sub."""
     if not user_ids:
         return
-
-    tasks = [publish(uid, payload) for uid in user_ids]
-    await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(
+        *(publish(uid, payload) for uid in user_ids),
+        return_exceptions=True,
+    )

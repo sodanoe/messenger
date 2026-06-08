@@ -44,6 +44,9 @@ async def websocket_endpoint(
     await manager.connect(user_id, ws)
     await redis.set(f"user:online:{user_id}", "1", ex=30)
 
+    from app.ws.pubsub import drain_inbox
+    await drain_inbox(user_id)
+
     notifier = ChatNotifier()
     await notifier.user_online(contact_ids, user_id)
 
@@ -52,7 +55,7 @@ async def websocket_endpoint(
     if contact_ids:
         pipe = redis.pipeline()
         for cid in contact_ids:
-            await pipe.exists(f"user:online:{cid}")
+            pipe.exists(f"user:online:{cid}")
         presences = await pipe.execute()
         online_contacts = [cid for cid, alive in zip(contact_ids, presences) if alive]
 
