@@ -3,13 +3,14 @@
 import asyncio
 import json
 import logging
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
-_CHANNEL = "ws:out"
-_RECONNECT_DELAY = 5  # секунд между попытками переподключения
 _CHANNEL = "ws:signals"
-_INBOX_TTL = 300  # 5 минут
+_RECONNECT_DELAY = 5
+_INBOX_TTL = 300
+_PING_INTERVAL = 30
 
 
 async def publish(user_id: int, payload: dict) -> None:
@@ -19,10 +20,8 @@ async def publish(user_id: int, payload: dict) -> None:
     msg_json = json.dumps(payload)
     try:
         pipe = redis.pipeline()
-        # 1. Кладём в inbox — персистентно, с TTL
         pipe.rpush(f"ws:inbox:{user_id}", msg_json)
         pipe.expire(f"ws:inbox:{user_id}", _INBOX_TTL)
-        # 2. Сигнал listener'у: "у этого юзера есть pending"
         pipe.publish(_CHANNEL, str(user_id))
         await pipe.execute()
     except Exception as exc:
@@ -51,11 +50,24 @@ async def start_listener() -> None:
 
     while True:
         pubsub = None
+        ping_task = None
+
         try:
             redis = get_redis()
             pubsub = redis.pubsub()
             await pubsub.subscribe(_CHANNEL)
             logger.info("WS pubsub listener started channel=%s", _CHANNEL)
+
+            async def ping_loop():
+                while True:
+                    await asyncio.sleep(_PING_INTERVAL)
+                    try:
+                        await redis.ping()
+                    except Exception:
+                        logger.debug("Ping failed, reconnecting soon")
+                        break
+
+            ping_task = asyncio.create_task(ping_loop())
 
             async for message in pubsub.listen():
                 if message["type"] != "message":
@@ -67,6 +79,8 @@ async def start_listener() -> None:
                     logger.error("pubsub delivery error: %s", exc, exc_info=True)
 
         except asyncio.CancelledError:
+            if ping_task:
+                ping_task.cancel()
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)
@@ -74,9 +88,24 @@ async def start_listener() -> None:
                 except Exception:
                     pass
             raise
+
+        except (
+            aioredis.TimeoutError,
+            aioredis.ConnectionError,
+            aioredis.BusyLoadingError,
+        ) as exc:
+            logger.warning(
+                "Redis connection lost (%s), reconnecting in %ds...",
+                exc.__class__.__name__,
+                _RECONNECT_DELAY,
+            )
+
         except Exception as exc:
             logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
+
         finally:
+            if ping_task and not ping_task.done():
+                ping_task.cancel()
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)

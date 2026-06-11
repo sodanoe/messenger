@@ -15,6 +15,7 @@ class TokenService:
 
     async def refresh(self, refresh_token: str, redis) -> str:
         from jose import JWTError
+
         try:
             user_id, jti = decode_refresh_token(refresh_token)
         except JWTError:
@@ -34,6 +35,7 @@ class TokenService:
 
     async def logout(self, refresh_token: str, redis) -> None:
         from jose import JWTError
+
         try:
             user_id, jti = decode_refresh_token(refresh_token)
             key = _redis_refresh_key(user_id, jti)
