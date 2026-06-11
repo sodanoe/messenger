@@ -40,6 +40,7 @@ class AuthService:
 
     async def _store_refresh(self, redis, user_id: int, refresh_token: str) -> None:
         from jose import JWTError
+
         try:
             _, jti = decode_refresh_token(refresh_token)
         except JWTError:
@@ -50,10 +51,12 @@ class AuthService:
     async def check_rate_limit(self, ip: str, redis) -> None:
         """Rate limit: 5 попыток / 60 сек / IP. Бросает 429 при превышении."""
         rate_key = f"login:attempts:{ip}"
-        pipe = redis.pipeline()
-        pipe.incr(rate_key)
-        pipe.expire(rate_key, 60)
-        attempts, _ = await pipe.execute()
+
+        attempts = await redis.incr(rate_key)
+        if attempts == 1:
+            # Первая попытка — фиксируем окно. Expire больше не трогаем.
+            await redis.expire(rate_key, 60)
+
         if attempts > 5:
             ttl = await redis.ttl(rate_key)
             raise HTTPException(
@@ -114,6 +117,7 @@ class AuthService:
     async def refresh(self, refresh_token: str, redis) -> str:
         """Валидирует refresh токен, возвращает новый access токен."""
         from jose import JWTError
+
         try:
             user_id, jti = decode_refresh_token(refresh_token)
         except JWTError:
@@ -132,6 +136,7 @@ class AuthService:
     async def logout(self, refresh_token: str, redis) -> None:
         """Отзываем refresh токен — логаут настоящий."""
         from jose import JWTError
+
         try:
             user_id, jti = decode_refresh_token(refresh_token)
             key = _redis_refresh_key(user_id, jti)
