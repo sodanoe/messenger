@@ -24,8 +24,8 @@ def _verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def _redis_refresh_key(user_id: int, token: str) -> str:
-    return f"refresh:{user_id}:{token[:16]}"
+def _redis_refresh_key(user_id: int, jti: str) -> str:
+    return f"refresh:{user_id}:{jti}"
 
 
 class AuthService:
@@ -39,8 +39,12 @@ class AuthService:
         return create_access_token(user_id), create_refresh_token(user_id)
 
     async def _store_refresh(self, redis, user_id: int, refresh_token: str) -> None:
-        """Сохраняем refresh токен в Redis с TTL."""
-        key = _redis_refresh_key(user_id, refresh_token)
+        from jose import JWTError
+        try:
+            _, jti = decode_refresh_token(refresh_token)
+        except JWTError:
+            return
+        key = _redis_refresh_key(user_id, jti)
         await redis.set(key, "1", ex=REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     async def check_rate_limit(self, ip: str, redis) -> None:
@@ -110,15 +114,14 @@ class AuthService:
     async def refresh(self, refresh_token: str, redis) -> str:
         """Валидирует refresh токен, возвращает новый access токен."""
         from jose import JWTError
-
         try:
-            user_id = decode_refresh_token(refresh_token)
+            user_id, jti = decode_refresh_token(refresh_token)
         except JWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
             )
 
-        key = _redis_refresh_key(user_id, refresh_token)
+        key = _redis_refresh_key(user_id, jti)
         if not await redis.exists(key):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked"
@@ -129,10 +132,9 @@ class AuthService:
     async def logout(self, refresh_token: str, redis) -> None:
         """Отзываем refresh токен — логаут настоящий."""
         from jose import JWTError
-
         try:
-            user_id = decode_refresh_token(refresh_token)
-            key = _redis_refresh_key(user_id, refresh_token)
+            user_id, jti = decode_refresh_token(refresh_token)
+            key = _redis_refresh_key(user_id, jti)
             await redis.delete(key)
         except JWTError:
             pass

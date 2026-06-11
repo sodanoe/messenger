@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
@@ -17,7 +18,12 @@ def create_access_token(user_id: int) -> str:
 
 def create_refresh_token(user_id: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    payload = {"sub": str(user_id), "exp": expire, "type": "refresh"}
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "type": "refresh",
+        "jti": str(uuid.uuid4()),
+    }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
 
 
@@ -36,12 +42,12 @@ def decode_access_token(token: str) -> int:
     return int(sub)
 
 
-def decode_refresh_token(token: str) -> int:
-    """Returns user_id (int) or raises JWTError."""
+def decode_refresh_token(token: str) -> tuple[int, str]:
     payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
     if payload.get("type") != "refresh":
         raise JWTError("Wrong token type")
     sub = payload.get("sub")
-    if sub is None:
-        raise JWTError("Missing sub claim")
-    return int(sub)
+    jti = payload.get("jti")
+    if sub is None or jti is None:
+        raise JWTError("Missing sub or jti claim")
+    return int(sub), jti

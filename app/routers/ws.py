@@ -45,6 +45,7 @@ async def websocket_endpoint(
     await redis.set(f"user:online:{user_id}", "1", ex=30)
 
     from app.ws.pubsub import drain_inbox
+
     await drain_inbox(user_id)
 
     notifier = ChatNotifier()
