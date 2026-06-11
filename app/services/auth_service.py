@@ -64,12 +64,6 @@ class AuthService:
                 detail=f"Слишком много попыток. Повторите через {ttl} сек.",
             )
 
-    async def create_ws_ticket(self, user_id: int, redis) -> str:
-        """Создаёт одноразовый короткоживущий токен для WS-подключения."""
-        ticket = secrets.token_hex(16)
-        await redis.set(f"ws:ticket:{ticket}", str(user_id), ex=30)
-        return ticket
-
     async def register(
         self, username: str, password: str, invite_code: str, redis
     ) -> tuple[str, str]:
@@ -113,36 +107,6 @@ class AuthService:
         access, refresh = self._make_tokens(user.id)
         await self._store_refresh(redis, user.id, refresh)
         return access, refresh
-
-    async def refresh(self, refresh_token: str, redis) -> str:
-        """Валидирует refresh токен, возвращает новый access токен."""
-        from jose import JWTError
-
-        try:
-            user_id, jti = decode_refresh_token(refresh_token)
-        except JWTError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-            )
-
-        key = _redis_refresh_key(user_id, jti)
-        if not await redis.exists(key):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked"
-            )
-
-        return create_access_token(user_id)
-
-    async def logout(self, refresh_token: str, redis) -> None:
-        """Отзываем refresh токен — логаут настоящий."""
-        from jose import JWTError
-
-        try:
-            user_id, jti = decode_refresh_token(refresh_token)
-            key = _redis_refresh_key(user_id, jti)
-            await redis.delete(key)
-        except JWTError:
-            pass
 
     async def generate_invite(self, admin_user_id: int) -> dict:
         alphabet = string.ascii_letters + string.digits

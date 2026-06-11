@@ -7,6 +7,7 @@ from app.core.deps import get_admin_user, get_current_user
 from app.core.redis_client import get_redis
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.services.token_service import TokenService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -93,7 +94,7 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token"
         )
     redis = get_redis()
-    access = await AuthService(db=None).refresh(refresh, redis)  # type: ignore[arg-type]
+    access = await TokenService().refresh(refresh, redis)
     return {"access_token": access, "token_type": "bearer"}
 
 
@@ -104,7 +105,7 @@ async def logout(
 ):
     if refresh:
         redis = get_redis()
-        await AuthService(db=None).logout(refresh, redis)  # type: ignore[arg-type]
+        await TokenService().logout(refresh, redis)
     _clear_refresh_cookie(response)
 
 
@@ -122,5 +123,5 @@ async def get_ws_ticket(
 ):
     """Выдаёт одноразовый короткоживущий токен для WS-подключения."""
     redis = get_redis()
-    ticket = await AuthService(db=None).create_ws_ticket(current_user.id, redis)  # type: ignore[arg-type]
+    ticket = await TokenService().create_ws_ticket(current_user.id, redis)
     return {"ticket": ticket}
