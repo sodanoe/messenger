@@ -15,6 +15,10 @@ from pillow_heif import register_heif_opener
 from app.core.config import settings
 from app.models import MediaFile
 from app.repositories.media_repo import MediaRepository
+from concurrent.futures import ThreadPoolExecutor
+
+# Ограниченный пул для обработки изображений (2 потока максимум)
+_IMAGE_EXECUTOR = ThreadPoolExecutor(max_workers=2)
 
 # HEIC support
 register_heif_opener()
@@ -98,7 +102,7 @@ class MediaService:
         try:
             loop = asyncio.get_running_loop()
             processed_content, ext = await loop.run_in_executor(
-                None,
+                _IMAGE_EXECUTOR,
                 self._process_image_sync,
                 content,
                 mime_type,

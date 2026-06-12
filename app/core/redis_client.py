@@ -5,17 +5,18 @@ _redis: aioredis.Redis | None = None
 
 
 def get_redis() -> aioredis.Redis:
-    """Return a shared Redis client singleton."""
+    """Return a shared Redis client without ThreadPoolExecutor."""
     global _redis
     if _redis is None:
         _redis = aioredis.Redis.from_url(
             settings.REDIS_URL,
             decode_responses=True,
-            max_connections=10,
-            socket_timeout=5,
-            socket_connect_timeout=3,
-            socket_keepalive=True,
+            max_connections=5,
+            socket_timeout=2,
+            socket_connect_timeout=2,
+            socket_keepalive=False,
             retry_on_timeout=False,
+            retry_on_error=[],
         )
     return _redis
 

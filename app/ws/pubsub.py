@@ -71,9 +71,9 @@ async def start_listener() -> None:
 
                 if message is None:
                     # Тишина в канале _PING_INTERVAL секунд — пингуем
-                    # именно это (pubsub) соединение, чтобы Redis/прокси
-                    # не закрыли его по idle-таймауту.
                     await pubsub.ping()
+                    # Добавляем небольшую задержку для снижения CPU
+                    await asyncio.sleep(0.01)
                     continue
 
                 if message["type"] != "message":

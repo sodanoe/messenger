@@ -40,12 +40,12 @@ class SocketWrapper:
                 payload = await self.queue.get()
 
                 try:
-                    # Проверяем состояние перед отправкой
                     if self.ws.client_state != WebSocketState.CONNECTED:
                         break
 
-                    # Строго последовательная отправка
                     await self.ws.send_json(payload)
+                    # Небольшая задержка для снижения CPU
+                    await asyncio.sleep(0.001)
 
                 except Exception as exc:
                     logger.debug(
@@ -55,7 +55,6 @@ class SocketWrapper:
                         exc,
                     )
 
-                    # Немедленно удаляем мертвый сокет из manager
                     try:
                         await self.manager.disconnect(
                             self.user_id,
@@ -70,7 +69,6 @@ class SocketWrapper:
                     self.queue.task_done()
 
         except asyncio.CancelledError:
-            # Нормальное завершение
             pass
 
     def close(self) -> None:
