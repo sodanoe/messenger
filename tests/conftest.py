@@ -19,9 +19,22 @@ def redis_client():
     """Прямое подключение к Redis сервера — для очистки состояния,
     которое тесты не могут сбросить через публичный API (rate limit,
     presence-ключи и т.п.)."""
-    r = redis_sync.from_url(REDIS_URL, decode_responses=True)
-    yield r
-    r.close()
+    try:
+        import redis as redis_sync
+        from redis.exceptions import ConnectionError, TimeoutError
+
+        r = redis_sync.from_url(
+            REDIS_URL,
+            decode_responses=True,
+            socket_timeout=3,
+            socket_connect_timeout=3
+        )
+        # Проверяем соединение
+        r.ping()
+        yield r
+        r.close()
+    except (ConnectionError, TimeoutError, Exception) as e:
+        pytest.skip(f"Redis not available at {REDIS_URL}: {e}")
 
 
 def auth(token: str) -> dict:
