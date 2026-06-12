@@ -126,9 +126,13 @@ async def websocket_endpoint(
     finally:
         # Менеджер сам закроет сокет внутри себя корректно
         await manager.disconnect(user_id, ws)
-        await redis.delete(f"user:online:{user_id}")
 
-        if contact_ids:
-            await notifier.user_offline(contact_ids, user_id)
+        # Гасим presence и шлём user_offline только если ВСЕ устройства
+        # юзера отключились — иначе другие активные сессии (например,
+        # телефон при закрытии вкладки браузера) ложно станут "офлайн".
+        if not await manager.has_connection(user_id):
+            await redis.delete(f"user:online:{user_id}")
+            if contact_ids:
+                await notifier.user_offline(contact_ids, user_id)
 
         logger.info("WS cleaned user_id=%s", user_id)
