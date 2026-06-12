@@ -33,6 +33,12 @@ async def drain_inbox(user_id: int) -> None:
     from app.core.redis_client import get_redis
     from app.ws.manager import manager
 
+    # Нет активного сокета — нечего дренировать прямо сейчас.
+    # Сообщения останутся в inbox (TTL=_INBOX_TTL) и будут забраны
+    # явным drain_inbox() из websocket_endpoint при подключении.
+    if not await manager.has_connection(user_id):
+        return
+
     redis = get_redis()
     while True:
         msg_json = await redis.lpop(f"ws:inbox:{user_id}")
@@ -50,7 +56,6 @@ async def start_listener() -> None:
 
     while True:
         pubsub = None
-        ping_task = None
 
         try:
             redis = get_redis()
@@ -58,20 +63,22 @@ async def start_listener() -> None:
             await pubsub.subscribe(_CHANNEL)
             logger.info("WS pubsub listener started channel=%s", _CHANNEL)
 
-            async def ping_loop():
-                while True:
-                    await asyncio.sleep(_PING_INTERVAL)
-                    try:
-                        await redis.ping()
-                    except Exception:
-                        logger.debug("Ping failed, reconnecting soon")
-                        break
+            while True:
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True,
+                    timeout=_PING_INTERVAL,
+                )
 
-            ping_task = asyncio.create_task(ping_loop())
+                if message is None:
+                    # Тишина в канале _PING_INTERVAL секунд — пингуем
+                    # именно это (pubsub) соединение, чтобы Redis/прокси
+                    # не закрыли его по idle-таймауту.
+                    await pubsub.ping()
+                    continue
 
-            async for message in pubsub.listen():
                 if message["type"] != "message":
                     continue
+
                 try:
                     user_id = int(message["data"])
                     await drain_inbox(user_id)
@@ -79,8 +86,6 @@ async def start_listener() -> None:
                     logger.error("pubsub delivery error: %s", exc, exc_info=True)
 
         except asyncio.CancelledError:
-            if ping_task:
-                ping_task.cancel()
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)
@@ -104,8 +109,6 @@ async def start_listener() -> None:
             logger.error("WS pubsub listener crashed: %s", exc, exc_info=True)
 
         finally:
-            if ping_task and not ping_task.done():
-                ping_task.cancel()
             if pubsub:
                 try:
                     await pubsub.unsubscribe(_CHANNEL)

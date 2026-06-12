@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.core.redis_client import close_redis
 from app.routers import (
     admin,
     auth,
@@ -55,6 +56,8 @@ async def lifespan(app: FastAPI):
         await asyncio.gather(cleanup_task, pubsub_task, return_exceptions=True)
     except asyncio.CancelledError:
         pass
+
+    await close_redis()
 
 
 app = FastAPI(title="Messenger API", lifespan=lifespan)

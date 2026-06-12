@@ -142,6 +142,20 @@ class ConnectionManager:
             except Exception:
                 pass
 
+    # ── presence ─────────────────────────────────────────────────────
+
+    async def has_connection(self, user_id: int) -> bool:
+        """Есть ли хотя бы один зарегистрированный сокет у пользователя.
+
+        Используется pubsub-слушателем перед drain_inbox(), чтобы не
+        вычищать inbox в Redis, если для пользователя ещё не успел
+        зарегистрироваться сокет (race между connect() и приходом
+        pub/sub-сигнала).
+        """
+        async with self._lock:
+            wrappers = self._connections.get(user_id)
+            return bool(wrappers)
+
     # ── send helpers ──────────────────────────────────────────────────
 
     async def send_to(self, user_id: int, payload: dict) -> bool:
