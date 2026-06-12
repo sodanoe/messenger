@@ -1,12 +1,26 @@
 import os
 import uuid
 
+import redis as redis_sync
+
 import httpx
 import pytest
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
+
+@pytest.fixture
+def redis_client():
+    """Прямое подключение к Redis сервера — для очистки состояния,
+    которое тесты не могут сбросить через публичный API (rate limit,
+    presence-ключи и т.п.)."""
+    r = redis_sync.from_url(REDIS_URL, decode_responses=True)
+    yield r
+    r.close()
 
 
 def auth(token: str) -> dict:

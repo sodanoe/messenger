@@ -83,11 +83,10 @@ def test_reaction_from_non_member(client, make_user):
 
 
 def test_empty_message_rejected(client, make_user):
-    """
-    Пустое сообщение → 400 или 422.
+    """Пустое сообщение (content="", без media_id) → 422.
 
-    ОЖИДАЕМО УПАДЁТ: в schemas/chat.py нет min_length=1 на поле content.
-    Это баг — нужно добавить: content: str = Field(min_length=1)
+    Покрывает SendMessageRequest.check_content_or_media — без него
+    можно было отправить полностью пустое сообщение.
     """
     alice = make_user()
     bob = make_user()
@@ -98,10 +97,8 @@ def test_empty_message_rejected(client, make_user):
         json={"content": ""},
         headers=auth(alice["token"]),
     )
-    assert resp.status_code in (400, 422), (
-        "БАГ: пустое сообщение принято сервером. "
-        "Добавьте Field(min_length=1) в SendMessageRequest.content"
-    )
+    assert resp.status_code == 422
+    assert "пуст" in resp.text.lower()
 
 
 def test_whitespace_only_message_rejected(client, make_user):

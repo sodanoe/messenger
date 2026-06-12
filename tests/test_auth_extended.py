@@ -46,28 +46,31 @@ def test_refresh_without_cookie_returns_401(client):
     assert resp.status_code == 401
 
 
-def test_login_rate_limit(client, make_user):
+def test_login_rate_limit(client, make_user, redis_client):
     """
     6+ неверных попыток с одного IP → 429 Too Many Requests.
-
-    ВНИМАНИЕ: этот тест блокирует IP на 60 секунд!
-    Запускайте изолированно или добавьте sleep(61) после.
     Лимит: 5 попыток / 60 сек.
+
+    Ключ login:attempts:{ip} чистится в конце теста через redis_client,
+    чтобы не блокировать /auth/login для тестов, выполняющихся после.
     """
     alice = make_user()
 
     last_status = None
-    for i in range(7):
-        resp = client.post(
-            "/auth/login",
-            json={"username": alice["username"], "password": "wrong_password_!!!"},
-        )
-        last_status = resp.status_code
-        if resp.status_code == 429:
-            break
+    try:
+        for i in range(7):
+            resp = client.post(
+                "/auth/login",
+                json={"username": alice["username"], "password": "wrong_password_!!!"},
+            )
+            last_status = resp.status_code
+            if resp.status_code == 429:
+                break
 
-    assert last_status == 429, f"Ожидали 429 после 6 попыток, получили {last_status}"
-
+        assert last_status == 429, f"Ожидали 429 после 6 попыток, получили {last_status}"
+    finally:
+        for key in redis_client.scan_iter("login:attempts:*"):
+            redis_client.delete(key)
 
 def test_ws_ticket_requires_auth(client):
     """Без access-токена WS-тикет не выдаётся."""
