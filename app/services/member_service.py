@@ -48,6 +48,13 @@ class MemberService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins can add members",
             )
+
+        if await self.members.get_single_member(chat_id, user_id):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User is already a member",
+            )
+
         await self.members.add(chat_id, user_id, ChatRole.member)
         await self.db.commit()
         chat = await self.chats.get_by_id(chat_id)
