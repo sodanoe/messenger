@@ -13,6 +13,7 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 
+
 @pytest.fixture
 def redis_client():
     """Прямое подключение к Redis сервера — для очистки состояния,

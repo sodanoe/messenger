@@ -67,10 +67,13 @@ def test_login_rate_limit(client, make_user, redis_client):
             if resp.status_code == 429:
                 break
 
-        assert last_status == 429, f"Ожидали 429 после 6 попыток, получили {last_status}"
+        assert last_status == 429, (
+            f"Ожидали 429 после 6 попыток, получили {last_status}"
+        )
     finally:
         for key in redis_client.scan_iter("login:attempts:*"):
             redis_client.delete(key)
+
 
 def test_ws_ticket_requires_auth(client):
     """Без access-токена WS-тикет не выдаётся."""
