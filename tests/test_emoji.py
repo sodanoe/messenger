@@ -143,3 +143,75 @@ def test_delete_emoji_image_returns_404(client, make_user):
     # Теперь должен быть 404
     img_resp2 = client.get(f"/emojis/{shortcode}.png", headers=auth(alice["token"]))
     assert img_resp2.status_code == 404
+
+
+@pytest.mark.skipif(not HAS_PILLOW, reason="Pillow not installed")
+def test_emoji_extension_forced_by_content_type(client, make_user):
+    """Расширение сохранённого файла берётся из ВАЛИДНОГО content_type,
+    а не из filename — даже если filename подсовывает .svg/.html.
+
+    Regression для бага: раньше ext = filename.rsplit(".", 1)[-1],
+    что позволяло сохранить файл как evil_xxx.svg и получить
+    Content-Type: image/svg+xml от /media (stored XSS)."""
+    alice = make_user()
+    shortcode = f"ext_{uuid.uuid4().hex[:6]}"
+    png = make_png_bytes()
+
+    resp = client.post(
+        "/emojis/",
+        data={"shortcode": shortcode},
+        # Реальный PNG, но filename выглядит как .svg
+        files={"file": ("evil.svg", io.BytesIO(png), "image/png")},
+        headers=auth(alice["token"]),
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+
+    assert data["url"].endswith(".png"), (
+        f"URL должен оканчиваться на .png независимо от filename, "
+        f"получили: {data['url']!r}"
+    )
+    assert ".svg" not in data["url"]
+
+    client.delete(f"/emojis/{data['id']}", headers=auth(alice["token"]))
+
+
+def test_emoji_svg_with_spoofed_png_content_type_rejected(client, make_user):
+    """SVG-пейлоад с поддельным Content-Type: image/png должен быть
+    отклонён (400) — PIL не может декодировать SVG как изображение.
+
+    Это буквально payload из эксплойта бага #9: <script> внутри SVG,
+    отправленный с Content-Type: image/png и filename=evil.svg."""
+    alice = make_user()
+    shortcode = f"svg_{uuid.uuid4().hex[:6]}"
+
+    svg_payload = (
+        b'<svg xmlns="http://www.w3.org/2000/svg">'
+        b"<script>alert(document.cookie)</script></svg>"
+    )
+
+    resp = client.post(
+        "/emojis/",
+        data={"shortcode": shortcode},
+        files={"file": ("evil.svg", io.BytesIO(svg_payload), "image/png")},
+        headers=auth(alice["token"]),
+    )
+    assert resp.status_code == 400, (
+        f"SVG/HTML с поддельным image/png должен давать 400, "
+        f"получили {resp.status_code}: {resp.text}"
+    )
+
+    # Убедимся, что emoji НЕ создан — shortcode свободен
+    resp2 = client.post(
+        "/emojis/",
+        data={"shortcode": shortcode},
+        files={"file": (f"{shortcode}.png", io.BytesIO(make_png_bytes()), "image/png")}
+        if HAS_PILLOW
+        else {"file": (f"{shortcode}.png", io.BytesIO(svg_payload), "image/png")},
+        headers=auth(alice["token"]),
+    )
+    if HAS_PILLOW:
+        assert resp2.status_code == 201, (
+            "Shortcode не должен быть занят отклонённой загрузкой"
+        )
+        client.delete(f"/emojis/{resp2.json()['id']}", headers=auth(alice["token"]))
