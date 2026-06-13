@@ -89,3 +89,50 @@ def test_ws_ticket_issued_to_authed_user(client, make_user):
     data = resp.json()
     assert "ticket" in data
     assert len(data["ticket"]) == 32  # secrets.token_hex(16)
+
+
+def test_refresh_tokens_independent_per_session(client, make_user):
+    """Два логина (две "сессии"/устройства) должны давать разные
+    refresh-токены, и logout одной сессии не должен инвалидировать
+    refresh-токен другой.
+
+    Регрессия для бага: _redis_refresh_key использовал token[:16],
+    который одинаков для любого HS256 JWT (общий заголовок) — все
+    refresh-токены юзера попадали в один Redis-ключ, и logout с
+    одного устройства "отзывал" сессии всех остальных.
+    """
+    alice = make_user()
+
+    login1 = client.post(
+        "/auth/login",
+        json={"username": alice["username"], "password": alice["password"]},
+    )
+    assert login1.status_code == 200
+    refresh1 = login1.cookies.get("refresh_token")
+
+    login2 = client.post(
+        "/auth/login",
+        json={"username": alice["username"], "password": alice["password"]},
+    )
+    assert login2.status_code == 200
+    refresh2 = login2.cookies.get("refresh_token")
+
+    assert refresh1 and refresh2
+    assert refresh1 != refresh2, "Два логина дали одинаковый refresh-токен"
+
+    # Логаут сессии 1
+    logout1 = client.post(
+        "/auth/logout", headers={"Cookie": f"refresh_token={refresh1}"}
+    )
+    assert logout1.status_code == 204
+
+    # Сессия 1 теперь невалидна
+    r1 = client.post("/auth/refresh", headers={"Cookie": f"refresh_token={refresh1}"})
+    assert r1.status_code == 401
+
+    # Сессия 2 должна остаться рабочей
+    r2 = client.post("/auth/refresh", headers={"Cookie": f"refresh_token={refresh2}"})
+    assert r2.status_code == 200, (
+        "Logout одной сессии инвалидировал refresh-токен другой — "
+        "вернулась коллизия ключей в Redis"
+    )

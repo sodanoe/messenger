@@ -144,3 +144,34 @@ def test_non_member_cannot_read_members(client, make_user):
 
     # Cleanup
     client.delete(f"/chats/{gid}", headers=auth(alice["token"]))
+
+
+def test_add_member_twice_returns_409(client, make_user):
+    """Повторное добавление того же юзера в группу — 409, не 500."""
+    alice = make_user()
+    bob = make_user()
+    carol = make_user()
+
+    group = client.post(
+        "/chats/group",
+        json={"name": "DupMemberTest", "member_ids": [bob["id"]]},
+        headers=auth(alice["token"]),
+    )
+    assert group.status_code == 201
+    chat_id = group.json()["id"]
+
+    first = client.post(
+        f"/chats/{chat_id}/members",
+        json={"user_id": carol["id"]},
+        headers=auth(alice["token"]),
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        f"/chats/{chat_id}/members",
+        json={"user_id": carol["id"]},
+        headers=auth(alice["token"]),
+    )
+    assert second.status_code == 409
+
+    client.delete(f"/chats/{chat_id}", headers=auth(alice["token"]))

@@ -225,3 +225,102 @@ def test_group_message_flow(client, make_user):
 
     # Cleanup
     client.delete(f"/chats/{gid}", headers=auth(alice["token"]))
+
+
+def test_edit_deleted_message_returns_404(client, make_user):
+    """После удаления сообщение нельзя отредактировать — 404.
+
+    Регрессия для фикса: get_by_id не фильтровал is_deleted, поэтому
+    edit_message мог менять content уже "удалённого" сообщения.
+    """
+    alice = make_user()
+    bob = make_user()
+    chat_id = _dm(client, alice, bob)
+
+    msg = client.post(
+        f"/chats/{chat_id}/messages",
+        json={"content": "будет удалено"},
+        headers=auth(alice["token"]),
+    ).json()
+
+    deleted = client.delete(
+        f"/chats/{chat_id}/messages/{msg['id']}", headers=auth(alice["token"])
+    )
+    assert deleted.status_code == 204
+
+    edited = client.put(
+        f"/chats/{chat_id}/messages/{msg['id']}",
+        json={"new_content": "правка после удаления"},
+        headers=auth(alice["token"]),
+    )
+    assert edited.status_code == 404
+
+
+def test_delete_message_twice_is_idempotent(client, make_user):
+    """Повторное удаление уже удалённого сообщения — не ошибка (204)."""
+    alice = make_user()
+    bob = make_user()
+    chat_id = _dm(client, alice, bob)
+
+    msg = client.post(
+        f"/chats/{chat_id}/messages",
+        json={"content": "удалю дважды"},
+        headers=auth(alice["token"]),
+    ).json()
+
+    first = client.delete(
+        f"/chats/{chat_id}/messages/{msg['id']}", headers=auth(alice["token"])
+    )
+    assert first.status_code == 204
+
+    second = client.delete(
+        f"/chats/{chat_id}/messages/{msg['id']}", headers=auth(alice["token"])
+    )
+    assert second.status_code == 204
+
+
+def test_reply_to_message_with_media_includes_media_url(client, make_user):
+    """Reply на сообщение с картинкой должен содержать media_url
+    оригинала в reply_to (regression для рефакторинга send_message:
+    _load_media_map + _build_reply_payload)."""
+    import io
+
+    try:
+        from PIL import Image
+    except ImportError:
+        import pytest
+
+        pytest.skip("Pillow not installed")
+
+    alice = make_user()
+    bob = make_user()
+    chat_id = _dm(client, alice, bob)
+
+    buf = io.BytesIO()
+    Image.new("RGB", (10, 10), color=(0, 255, 0)).save(buf, format="JPEG")
+    buf.seek(0)
+
+    upload = client.post(
+        "/media/upload",
+        files={"file": ("photo.jpg", buf, "image/jpeg")},
+        headers=auth(alice["token"]),
+    )
+    assert upload.status_code == 200
+    media = upload.json()
+
+    original = client.post(
+        f"/chats/{chat_id}/messages",
+        json={"content": "Глянь фото", "media_id": media["id"]},
+        headers=auth(alice["token"]),
+    ).json()
+    assert original["media_url"] == media["url"]
+
+    reply = client.post(
+        f"/chats/{chat_id}/messages",
+        json={"content": "Красота!", "reply_to_id": original["id"]},
+        headers=auth(bob["token"]),
+    ).json()
+
+    assert reply["reply_to"] is not None
+    assert reply["reply_to"]["id"] == original["id"]
+    assert reply["reply_to"]["media_url"] == media["url"]
