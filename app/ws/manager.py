@@ -44,8 +44,6 @@ class SocketWrapper:
                         break
 
                     await self.ws.send_json(payload)
-                    # Небольшая задержка для снижения CPU
-                    await asyncio.sleep(0.001)
 
                 except Exception as exc:
                     logger.debug(

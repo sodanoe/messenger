@@ -1,7 +1,6 @@
 import os
 import uuid
 
-import redis as redis_sync
 
 import httpx
 import pytest
@@ -24,10 +23,7 @@ def redis_client():
         from redis.exceptions import ConnectionError, TimeoutError
 
         r = redis_sync.from_url(
-            REDIS_URL,
-            decode_responses=True,
-            socket_timeout=3,
-            socket_connect_timeout=3
+            REDIS_URL, decode_responses=True, socket_timeout=3, socket_connect_timeout=3
         )
         # Проверяем соединение
         r.ping()
