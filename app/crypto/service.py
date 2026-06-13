@@ -9,11 +9,14 @@ Storage format: base64(nonce[12] + ciphertext + tag[16])
 """
 
 import base64
+import logging
 import os
 from functools import lru_cache
 import asyncio as _asyncio
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+logger = logging.getLogger(__name__)
 
 _NONCE_SIZE = 12
 
@@ -58,10 +61,18 @@ async def async_decrypt_text(ciphertext: str) -> str:
 
 
 async def async_decrypt_safe(ciphertext: str | None) -> str:
-    """Decrypt with fallback: возвращает '' для None, исходник при ошибке."""
+    """Decrypt with fallback: возвращает '' для None/пустой строки, и
+    исходное значение при ЛЮБОЙ ошибке расшифровки — включая
+    InvalidTag (повреждённые данные, неверный ключ, немигрированные
+    пред-GCM записи), которые НЕ являются ValueError и поэтому
+    пробивали старый except (ValueError, TypeError, UnicodeDecodeError).
+
+    Одно "плохое" сообщение не должно валить gather() для всего
+    списка чатов / всей истории."""
     if not ciphertext:
         return ""
     try:
         return await async_decrypt_text(ciphertext)
-    except (ValueError, TypeError, UnicodeDecodeError):
+    except Exception as exc:
+        logger.warning("decrypt failed, falling back to raw value: %s", exc)
         return ciphertext

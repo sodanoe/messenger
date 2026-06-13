@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crypto.service import (
     async_encrypt_text,
-    async_decrypt_text,
+    async_decrypt_safe,
 )
 from app.models.chat import Chat, ChatMessage, ChatType, CustomEmoji
 from app.models.contact import ContactStatus
@@ -51,7 +51,7 @@ class MessageService:
         """Расшифровывает контент и обрезает до REPLY_PREVIEW_LEN —
         используется и для reply_to в send_message, и для reply-превью
         в истории сообщений."""
-        text = await async_decrypt_text(content_encrypted)
+        text = await async_decrypt_safe(content_encrypted)
         return text[:REPLY_PREVIEW_LEN]
 
     # ── send_message: orchestrator ─────────────────────────────────────
@@ -293,7 +293,7 @@ class MessageService:
         """Параллельно расшифровывает контент сообщений и превью
         их reply-целей."""
         contents = await asyncio.gather(
-            *[async_decrypt_text(row[0].content_encrypted) for row in rows]
+            *[async_decrypt_safe(row[0].content_encrypted) for row in rows]
         )
         reply_contents = await asyncio.gather(
             *[
