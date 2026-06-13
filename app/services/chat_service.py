@@ -22,22 +22,29 @@ class ChatService:
         self.notifier = ChatNotifier()
 
     async def create_direct_chat(self, user_a_id: int, user_b_id: int) -> Chat:
+        if user_a_id == user_b_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нельзя создать чат с самим собой",
+            )
+
+        other_user = await self.db.get(User, user_b_id)
+        if not other_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь не найден",
+            )
+
         member_b = ChatMember.__table__.alias("member_b")
         stmt = (
             select(Chat)
             .join(
                 ChatMember,
-                and_(
-                    ChatMember.chat_id == Chat.id,
-                    ChatMember.user_id == user_a_id,
-                ),
+                and_(ChatMember.chat_id == Chat.id, ChatMember.user_id == user_a_id),
             )
             .join(
                 member_b,
-                and_(
-                    member_b.c.chat_id == Chat.id,
-                    member_b.c.user_id == user_b_id,
-                ),
+                and_(member_b.c.chat_id == Chat.id, member_b.c.user_id == user_b_id),
             )
             .where(Chat.type == ChatType.direct)
             .limit(1)
