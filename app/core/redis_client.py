@@ -14,7 +14,8 @@ def get_redis() -> aioredis.Redis:
             max_connections=5,
             socket_timeout=2,
             socket_connect_timeout=2,
-            socket_keepalive=False,
+            socket_keepalive=True,  # ← вернули, единственное, что держит
+                                    #   pubsub-соединение живым при простое
             retry_on_timeout=False,
             retry_on_error=[],
         )

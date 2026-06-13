@@ -70,10 +70,13 @@ async def start_listener() -> None:
                 )
 
                 if message is None:
-                    # Тишина в канале _PING_INTERVAL секунд — пингуем
-                    await pubsub.ping()
-                    # Добавляем небольшую задержку для снижения CPU
-                    await asyncio.sleep(0.01)
+                    # Тишина _PING_INTERVAL секунд — это нормально.
+                    # TCP keepalive (socket_keepalive=True в redis_client)
+                    # держит соединение живым на уровне ОС. Явный
+                    # pubsub.ping() здесь не нужен и опасен: его pong
+                    # приходит как pub/sub-сообщение и немедленно
+                    # "съедается" следующим get_message(), превращая
+                    # этот цикл в busy-loop ~100Hz.
                     continue
 
                 if message["type"] != "message":
