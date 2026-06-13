@@ -11,7 +11,7 @@ def get_redis() -> aioredis.Redis:
         _redis = aioredis.Redis.from_url(
             settings.REDIS_URL,
             decode_responses=True,
-            max_connections=5,
+            max_connections=100,
             socket_timeout=2,
             socket_connect_timeout=2,
             socket_keepalive=True,  # ← вернули, единственное, что держит
