@@ -272,6 +272,16 @@
   margin: 0 2px;
 }
 
+.link {
+  color: var(--accent, #5B8DEF);
+  word-break: break-all;
+  text-decoration: underline;
+}
+
+.link:hover {
+  text-decoration: none;
+}
+
 .pillImg {
   height: 16px;
   width: 16px;

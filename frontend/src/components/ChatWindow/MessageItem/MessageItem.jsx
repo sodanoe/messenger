@@ -5,13 +5,21 @@ import { deleteGroupMessage } from '../../../services/groups';
 import { api } from '../../../services/api';
 import { fmtTime } from '../../../utils/format';
 import { API_BASE } from '../../../config';
+import { formatMessageContent } from '../../../utils/EmojiParser';
 import ReactionPicker from './ReactionPicker/ReactionPicker';
+import MessageContextMenu from './MessageContextMenu/MessageContextMenu';
 import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
+
+const CONTEXT_MENU_WIDTH = 190;
+const CONTEXT_MENU_ITEM_HEIGHT = 40;
+const CONTEXT_MENU_PADDING = 8;
+const CONTEXT_MENU_MARGIN = 8;
 
 export default function MessageItem({ message }) {
   const { me, currentChat, setReplyTo, addToMsgStore, removeMessage, updateChatLastMessage, customEmojis } = useAppStore();
   const [pickerState, setPickerState] = useState({ open: false, top: 0, left: 0 });
+  const [ctxMenuState, setCtxMenuState] = useState({ open: false, top: 0, left: 0 });
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const rowRef = useRef(null);
 
@@ -28,20 +36,10 @@ export default function MessageItem({ message }) {
     }
   }, [message.id, isMe, currentChat, addToMsgStore]);
 
-  const formatContent = (text) => {
-    if (!text) return '';
-    const parts = text.split(/(:[a-zA-Z0-9_]+:)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith(':') && part.endsWith(':')) {
-        const code = part.slice(1, -1);
-        const found = customEmojis.find((e) => e.shortcode === code);
-        if (found) {
-          return <img key={i} src={found.url} className={styles.inlineEmoji} alt={part} title={part} />;
-        }
-      }
-      return part;
-    });
-  };
+  const formatContent = (text) => formatMessageContent(text, customEmojis, {
+    emoji: styles.inlineEmoji,
+    link: styles.link,
+  });
 
   const trimmed = message.content?.trim() || '';
   const isSingleCustomEmoji = /^:[a-zA-Z0-9_]+:$/.test(trimmed);
@@ -72,6 +70,7 @@ export default function MessageItem({ message }) {
   }
 
   async function handleDelete() {
+    setCtxMenuState((prev) => ({ ...prev, open: false }));
     if (!confirm('Удалить сообщение?')) return;
     try {
       if (currentChat.type === 'direct') {
@@ -89,6 +88,16 @@ export default function MessageItem({ message }) {
       );
     } catch (e) {
       toast.error(e.message);
+    }
+  }
+
+  async function handleCopy() {
+    setCtxMenuState((prev) => ({ ...prev, open: false }));
+    try {
+      await navigator.clipboard.writeText(message.content || '');
+      toast.success('Скопировано');
+    } catch {
+      toast.error('Не удалось скопировать');
     }
   }
 
@@ -122,6 +131,25 @@ export default function MessageItem({ message }) {
     setPickerState({ open: true, top, left });
   };
 
+  function handleContextMenu(e) {
+    e.preventDefault();
+    const itemCount = message.content ? 2 : 1;
+    const menuHeight = itemCount * CONTEXT_MENU_ITEM_HEIGHT + CONTEXT_MENU_PADDING;
+
+    let top = e.clientY;
+    let left = e.clientX;
+    if (left + CONTEXT_MENU_WIDTH > window.innerWidth - CONTEXT_MENU_MARGIN) {
+      left = window.innerWidth - CONTEXT_MENU_WIDTH - CONTEXT_MENU_MARGIN;
+    }
+    if (top + menuHeight > window.innerHeight - CONTEXT_MENU_MARGIN) {
+      top = window.innerHeight - menuHeight - CONTEXT_MENU_MARGIN;
+    }
+    if (left < CONTEXT_MENU_MARGIN) left = CONTEXT_MENU_MARGIN;
+    if (top < CONTEXT_MENU_MARGIN) top = CONTEXT_MENU_MARGIN;
+
+    setCtxMenuState({ open: true, top, left });
+  }
+
   const mediaUrl = message.media_url
     ? message.media_url.startsWith('http') ? message.media_url : API_BASE() + message.media_url
     : null;
@@ -150,7 +178,7 @@ export default function MessageItem({ message }) {
         ref={rowRef}
         className={`${styles.row} ${isMe ? styles.me : styles.other}`}
         data-msg-id={message.id}
-        onContextMenu={(e) => { e.preventDefault(); handleDelete(); }}
+        onContextMenu={handleContextMenu}
       >
         <div className={styles.bubbleWrap}>
           <div className={styles.bubbleRow}>
@@ -228,6 +256,16 @@ export default function MessageItem({ message }) {
           position={{ top: pickerState.top, left: pickerState.left }}
           onReact={handleReact}
           onClose={() => setPickerState((prev) => ({ ...prev, open: false }))}
+        />
+      )}
+
+      {ctxMenuState.open && (
+        <MessageContextMenu
+          position={{ top: ctxMenuState.top, left: ctxMenuState.left }}
+          canCopy={!!message.content}
+          onCopy={handleCopy}
+          onDelete={handleDelete}
+          onClose={() => setCtxMenuState((prev) => ({ ...prev, open: false }))}
         />
       )}
 
