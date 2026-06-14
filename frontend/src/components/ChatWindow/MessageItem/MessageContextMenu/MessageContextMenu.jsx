@@ -31,11 +31,11 @@ export default function MessageContextMenu({ position, onCopy, onDelete, canCopy
     const handleKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('click', handleOutside);
     document.addEventListener('contextmenu', handleOutside);
     document.addEventListener('keydown', handleKey);
     return () => {
-      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('click', handleOutside);
       document.removeEventListener('contextmenu', handleOutside);
       document.removeEventListener('keydown', handleKey);
     };
