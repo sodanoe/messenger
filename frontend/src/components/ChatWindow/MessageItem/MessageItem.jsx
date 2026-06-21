@@ -134,6 +134,7 @@ export default function MessageItem({ message }) {
 
   function handleContextMenu(e) {
     e.preventDefault();
+    e.stopPropagation();
     const itemCount = message.content ? 2 : 1;
     const menuHeight = itemCount * CONTEXT_MENU_ITEM_HEIGHT + CONTEXT_MENU_PADDING;
 
