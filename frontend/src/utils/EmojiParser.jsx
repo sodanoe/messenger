@@ -84,3 +84,41 @@ export function formatMessageContent(text, customEmojis = [], classNames = {}) {
 
   return result;
 }
+
+// ```lang\n...код...\n```  (lang опционален)
+const CODE_BLOCK_REGEX = /```(\w*)\n?([\s\S]*?)```/g;
+
+/**
+ * Разбивает текст сообщения на сегменты:
+ * { type: 'text', content } — обычный текст (дальше через formatMessageContent)
+ * { type: 'code', lang, content } — содержимое ```fenced``` блока
+ *
+ * @param {string} text
+ * @returns {Array<{type: 'text'|'code', content: string, lang?: string}>}
+ */
+export function splitCodeBlocks(text) {
+  if (!text) return [];
+
+  const segments = [];
+  let lastIndex = 0;
+  let match;
+
+  CODE_BLOCK_REGEX.lastIndex = 0;
+  while ((match = CODE_BLOCK_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+    }
+    segments.push({
+      type: 'code',
+      lang: (match[1] || '').toLowerCase(),
+      content: match[2].replace(/\n$/, ''),
+    });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', content: text.slice(lastIndex) });
+  }
+
+  return segments;
+}

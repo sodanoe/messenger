@@ -5,9 +5,10 @@ import { deleteGroupMessage } from '../../../services/groups';
 import { api } from '../../../services/api';
 import { fmtTime } from '../../../utils/format';
 import { API_BASE } from '../../../config';
-import { formatMessageContent } from '../../../utils/EmojiParser';
+import { formatMessageContent, splitCodeBlocks } from '../../../utils/EmojiParser';
 import ReactionPicker from './ReactionPicker/ReactionPicker';
 import MessageContextMenu from './MessageContextMenu/MessageContextMenu';
+import CodeBlock from './CodeBlock/CodeBlock';
 import toast from 'react-hot-toast';
 import styles from './MessageItem.module.css';
 
@@ -133,7 +134,6 @@ export default function MessageItem({ message }) {
 
   function handleContextMenu(e) {
     e.preventDefault();
-    e.stopPropagation();
     const itemCount = message.content ? 2 : 1;
     const menuHeight = itemCount * CONTEXT_MENU_ITEM_HEIGHT + CONTEXT_MENU_PADDING;
 
@@ -214,7 +214,15 @@ export default function MessageItem({ message }) {
               )}
 
               {message.content && (
-                <div className={styles.text}>{formatContent(message.content)}</div>
+                <div className={styles.text}>
+                  {splitCodeBlocks(message.content).map((seg, i) =>
+                    seg.type === 'code' ? (
+                      <CodeBlock key={i} lang={seg.lang} code={seg.content} />
+                    ) : (
+                      <span key={i}>{formatContent(seg.content)}</span>
+                    ),
+                  )}
+                </div>
               )}
 
               <div className={`${styles.meta} ${mediaOnly ? styles.metaOverlay : ''}`}>
