@@ -5,7 +5,7 @@ import { deleteGroupMessage } from '../../../services/groups';
 import { api } from '../../../services/api';
 import { fmtTime } from '../../../utils/format';
 import { API_BASE } from '../../../config';
-import { formatMessageContent, splitCodeBlocks } from '../../../utils/EmojiParser';
+import { formatMessageContent, splitCodeBlocks } from '../../../utils/messageContent';
 import ReactionPicker from './ReactionPicker/ReactionPicker';
 import MessageContextMenu from './MessageContextMenu/MessageContextMenu';
 import CodeBlock from './CodeBlock/CodeBlock';
